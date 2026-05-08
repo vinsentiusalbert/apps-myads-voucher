@@ -11,7 +11,7 @@ use RuntimeException;
 class MyadsApiClient
 {
     public function __construct(
-        private readonly string $baseUrl = ''
+        private string $baseUrl = 'http://api.goto-myads.com'
     ) {
         $this->baseUrl = $this->baseUrl !== '' ? $this->baseUrl : (string) config('myads.api_base_url');
     }
