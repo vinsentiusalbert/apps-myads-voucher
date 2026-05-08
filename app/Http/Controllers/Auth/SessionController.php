@@ -55,7 +55,6 @@ class SessionController extends Controller
             ['email' => $userEmail],
             [
                 'name' => $userName,
-                // Password lokal tidak dipakai untuk login (login via API), tapi kolom wajib ada.
                 'password' => Str::random(32),
             ]
         );
