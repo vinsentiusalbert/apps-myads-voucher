@@ -4,9 +4,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
-        <link rel="icon" type="image/png" href="{{ asset('assets/logo.png') }}">
-        <link rel="apple-touch-icon" href="{{ asset('assets/logo.png') }}">
+        <title>GOTO Ads Portal</title>
+        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/goto-icon.svg') }}">
+        <link rel="apple-touch-icon" href="{{ asset('assets/goto-icon.svg') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
