@@ -1,5 +1,5 @@
 @php
-    $title = $page['title'] . ' | ' . config('app.name', 'MyAds');
+    $title = $page['title'];
     $bodyClass = 'campaign-title-locked';
     $mainClass = 'campaign-main';
     $contentClass = 'campaign-content';
@@ -132,7 +132,7 @@
                 <div class="field-group">
                     <label for="campaign_sender" class="field-label">Nama Pengirim</label>
                     <div class="campaign-inline-field">
-                        <select id="campaign_sender" class="text-input text-input--select">
+                        <select id="campaign_sender" name="sender_name" form="campaignGwSubmitForm" class="text-input text-input--select">
                             @if ($isTargeted)
                             <option selected>GRANDHIKA</option>
                             <option>IFTAR OFFER</option>
@@ -151,7 +151,7 @@
 
                 <div class="field-group">
                     <label for="campaign_message" class="field-label">{{ $isTargeted ? '' : 'Isi Konten' }}</label>
-                    <textarea id="campaign_message" class="text-input campaign-message-input">{{ $isTargeted ? 'asd' : 'Promosi outlet makin untung di MyAds! Top up MyAds Rp50k dapat BONUS SALDO Rp300k. Aktifkan di bit.ly/JoinMyAds' }}</textarea>
+                    <textarea id="campaign_message" name="message" form="campaignGwSubmitForm" class="text-input campaign-message-input">{{ $isTargeted ? 'asd' : 'Promosi outlet makin untung di MyAds! Top up MyAds Rp50k dapat BONUS SALDO Rp300k. Aktifkan di bit.ly/JoinMyAds' }}</textarea>
                     <div class="campaign-message-meta">
                         <span>Mohon pastikan pesan iklan Anda tidak mengandung unsur terlarang.</span>
                         <strong id="campaignMessageCount">{{ $isTargeted ? '3/160 karakter (1 SMS)' : '117/160 karakter' }}</strong>
@@ -422,7 +422,7 @@
                     <div class="campaign-send-grid">
                         <div class="field-group campaign-field-group--compact">
                             <label for="campaignRecipientCount" class="field-label">Jumlah Penerima</label>
-                            <input id="campaignRecipientCount" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
+                            <input id="campaignRecipientCount" name="recipient_total" form="campaignGwSubmitForm" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
                             <p class="campaign-step-two__alert">Jumlah penerima minimal 5 perhari</p>
                         </div>
                         <div class="campaign-estimate-card">
@@ -444,9 +444,9 @@
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label" for="campaignScheduleDate1">Tgl Kirim</label>
                                     <div class="campaign-range-field">
-                                        <input id="campaignScheduleDate1Start" type="date" class="text-input" value="2026-04-24" data-schedule-date-start="1">
+                                        <input id="campaignScheduleDate1Start" name="delivery_start_date" form="campaignGwSubmitForm" type="date" class="text-input" value="2026-04-24" data-schedule-date-start="1">
                                         <span class="campaign-range-field__separator">-</span>
-                                        <input id="campaignScheduleDate1End" type="date" class="text-input" value="2026-04-24" data-schedule-date-end="1">
+                                        <input id="campaignScheduleDate1End" name="delivery_end_date" form="campaignGwSubmitForm" type="date" class="text-input" value="2026-04-24" data-schedule-date-end="1">
                                     </div>
                                     <p class="campaign-range-preview" id="campaignScheduleDatePreview1">24/04/26 - 24/04/26</p>
                                 </div>
@@ -513,10 +513,10 @@
                     <h2 class="campaign-block__title">Tentukan Nomor Penerima Tes Iklan</h2>
                     <div class="field-group">
                         <label for="campaignTestRecipient" class="field-label">Nomor Penerima Tes Iklan</label>
-                        <select id="campaignTestRecipient" class="text-input text-input--select">
-                            <option>Nomor Penerima Tes Iklan</option>
-                            <option>081234567890</option>
-                            <option>082345678901</option>
+                        <select id="campaignTestRecipient" name="control_number" form="campaignGwSubmitForm" class="text-input text-input--select">
+                            <option value="">Nomor Penerima Tes Iklan</option>
+                            <option value="081234567890">081234567890</option>
+                            <option value="082345678901">082345678901</option>
                         </select>
                     </div>
                     <p class="campaign-block__copy">
@@ -691,19 +691,11 @@
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
                             <form id="campaignGwSubmitForm" method="POST" action="{{ route('campaign.lba.send', ['channel' => $channel]) }}" hidden>
                                 @csrf
-                                <input type="hidden" name="campaign_name" id="gwCampaignName">
-                                <input type="hidden" name="sender_name" id="gwSenderName">
-                                <input type="hidden" name="message" id="gwMessage">
-                                <input type="hidden" name="recipient_total" id="gwRecipientTotal">
-                                <input type="hidden" name="delivery_start_date" id="gwDeliveryStartDate">
-                                <input type="hidden" name="delivery_end_date" id="gwDeliveryEndDate">
                                 <input type="hidden" name="delivery_start_time" id="gwDeliveryStartTime">
                                 <input type="hidden" name="delivery_end_time" id="gwDeliveryEndTime">
-                                <input type="hidden" name="control_number" id="gwControlNumber">
                                 <input type="hidden" name="location_name" id="gwLocationName">
                                 <input type="hidden" name="location_lat" id="gwLocationLat">
                                 <input type="hidden" name="location_lng" id="gwLocationLng">
-                                <input type="hidden" name="location_radius" id="gwLocationRadius">
                             </form>
                             <p class="campaign-cost-card__footnote">
                                 Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim.
@@ -726,7 +718,7 @@
             <h2 id="campaignTitleHeading">Buat Judul Iklan</h2>
             <div class="field-group">
                 <label for="campaign_title" class="field-label">Judul Iklan</label>
-                <input id="campaign_title" type="text" class="text-input" value="tes" placeholder="Masukkan judul iklan">
+                <input id="campaign_title" name="campaign_name" form="campaignGwSubmitForm" type="text" class="text-input" value="tes" placeholder="Masukkan judul iklan">
             </div>
             <div class="campaign-title-modal__actions">
                 <a href="{{ route('dashboard') }}" class="campaign-modal-btn campaign-modal-btn--ghost">Batal</a>
@@ -768,7 +760,7 @@
                         <div class="campaign-map-settings__grid">
                             <div class="field-group campaign-field-group--compact">
                                 <label for="campaignLocationRadius" class="field-label">Radius (dalam Meter)</label>
-                                <input id="campaignLocationRadius" type="number" class="text-input" min="0" step="100" value="300">
+                                <input id="campaignLocationRadius" name="location_radius" form="campaignGwSubmitForm" type="number" class="text-input" min="0" step="100" value="300">
                             </div>
                         </div>
 
@@ -1826,19 +1818,11 @@
 
             const gwSubmitButton = document.getElementById('campaignGwSubmitButton');
             const gwSubmitForm = document.getElementById('campaignGwSubmitForm');
-            const gwCampaignName = document.getElementById('gwCampaignName');
-            const gwSenderName = document.getElementById('gwSenderName');
-            const gwMessage = document.getElementById('gwMessage');
-            const gwRecipientTotal = document.getElementById('gwRecipientTotal');
-            const gwDeliveryStartDate = document.getElementById('gwDeliveryStartDate');
-            const gwDeliveryEndDate = document.getElementById('gwDeliveryEndDate');
             const gwDeliveryStartTime = document.getElementById('gwDeliveryStartTime');
             const gwDeliveryEndTime = document.getElementById('gwDeliveryEndTime');
-            const gwControlNumber = document.getElementById('gwControlNumber');
             const gwLocationName = document.getElementById('gwLocationName');
             const gwLocationLat = document.getElementById('gwLocationLat');
             const gwLocationLng = document.getElementById('gwLocationLng');
-            const gwLocationRadius = document.getElementById('gwLocationRadius');
 
             const toIsoStamp = () => {
                 const d = new Date();
@@ -1852,7 +1836,7 @@
             };
 
             gwSubmitButton?.addEventListener('click', () => {
-                if (!gwSubmitForm || !gwCampaignName || !gwSenderName || !gwMessage || !gwRecipientTotal || !gwDeliveryStartDate || !gwDeliveryEndDate || !gwDeliveryStartTime || !gwDeliveryEndTime || !gwControlNumber || !gwLocationName || !gwLocationLat || !gwLocationLng || !gwLocationRadius) {
+                if (!gwSubmitForm || !gwDeliveryStartTime || !gwDeliveryEndTime || !gwLocationName || !gwLocationLat || !gwLocationLng) {
                     return;
                 }
 
@@ -1864,22 +1848,17 @@
                 const endHour = pickScheduleValue(`[data-schedule-time-end-hour="${scheduleId}"]`);
                 const endMinute = pickScheduleValue(`[data-schedule-time-end-minute="${scheduleId}"]`);
 
-                gwCampaignName.value = (titleInput?.value || '').trim() || `UAT SMS LBA ${toIsoStamp()}`;
-                gwSenderName.value = senderInput?.value || 'MyAds';
-                gwMessage.value = (messageInput?.value || '').trim();
-                gwRecipientTotal.value = String(document.getElementById('campaignRecipientCount')?.value || 10);
+                if (titleInput && titleInput.value.trim() === '') {
+                    titleInput.value = `UAT SMS LBA ${toIsoStamp()}`;
+                }
 
-                gwDeliveryStartDate.value = startDate;
-                gwDeliveryEndDate.value = endDate;
                 gwDeliveryStartTime.value = startHour && startMinute ? `${startHour}:${startMinute}` : '';
                 gwDeliveryEndTime.value = endHour && endMinute ? `${endHour}:${endMinute}` : '';
-                gwControlNumber.value = String(document.getElementById('campaignTestRecipient')?.value || '');
 
                 const state = window.campaignLocationState || {};
                 gwLocationName.value = String(state.name || 'Lokasi dipilih');
                 gwLocationLat.value = String(state.lat ?? '');
                 gwLocationLng.value = String(state.lng ?? '');
-                gwLocationRadius.value = String(locationRadiusInput?.value || 0);
 
                 gwSubmitForm.submit();
             });

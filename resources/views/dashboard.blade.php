@@ -1,5 +1,5 @@
 @php
-    $title = 'Dashboard | ' . config('app.name', 'MyAds');
+    $title = 'Dashboard';
     $navMenus = [
         [
             'key' => 'dashboard',
