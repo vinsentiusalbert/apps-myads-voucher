@@ -104,6 +104,22 @@ class MyadsApiClient
     /**
      * @return array{success:bool, data?:array}
      */
+    public function campaignTargetedAdd(string $gatewayToken, array $payload): array
+    {
+        return $this->postGw('/api/gw/targeted-add', $gatewayToken, $payload);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function campaignLbaAdd(string $gatewayToken, array $payload): array
+    {
+        return $this->postGw('/api/gw/lba-add', $gatewayToken, $payload);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
     public function postGw(string $path, string $gatewayToken, array $payload): array
     {
         try {

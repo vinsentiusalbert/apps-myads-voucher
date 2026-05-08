@@ -94,6 +94,14 @@
         <p>Pelajari cara membuat iklan Anda agar lebih menarik. <a href="#">Pelajari Selengkapnya.</a></p>
     </section>
 
+    @if (session('status'))
+        <div class="status-box status-box--success">{{ session('status') }}</div>
+    @endif
+
+    @if ($errors->any())
+        <p class="error-text">{{ $errors->first() }}</p>
+    @endif
+
     <section class="campaign-compose-card" id="campaignComposeCard">
         <div class="campaign-compose-card__header">
             <div>
@@ -680,7 +688,23 @@
                                     <strong id="campaignReviewPaymentMonetary">Rp 1.000</strong>
                                 </div>
                             </div>
-                            <button type="button" class="campaign-cost-card__cta">Bayar & Kirim Iklan</button>
+                            <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
+                            <form id="campaignGwSubmitForm" method="POST" action="{{ route('campaign.lba.send', ['channel' => $channel]) }}" hidden>
+                                @csrf
+                                <input type="hidden" name="campaign_name" id="gwCampaignName">
+                                <input type="hidden" name="sender_name" id="gwSenderName">
+                                <input type="hidden" name="message" id="gwMessage">
+                                <input type="hidden" name="recipient_total" id="gwRecipientTotal">
+                                <input type="hidden" name="delivery_start_date" id="gwDeliveryStartDate">
+                                <input type="hidden" name="delivery_end_date" id="gwDeliveryEndDate">
+                                <input type="hidden" name="delivery_start_time" id="gwDeliveryStartTime">
+                                <input type="hidden" name="delivery_end_time" id="gwDeliveryEndTime">
+                                <input type="hidden" name="control_number" id="gwControlNumber">
+                                <input type="hidden" name="location_name" id="gwLocationName">
+                                <input type="hidden" name="location_lat" id="gwLocationLat">
+                                <input type="hidden" name="location_lng" id="gwLocationLng">
+                                <input type="hidden" name="location_radius" id="gwLocationRadius">
+                            </form>
                             <p class="campaign-cost-card__footnote">
                                 Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim.
                             </p>
@@ -1799,6 +1823,66 @@
             senderInput?.addEventListener('change', syncSenderPreview);
             messageInput?.addEventListener('input', syncMessagePreview);
             addButton?.addEventListener('click', createButtonCard);
+
+            const gwSubmitButton = document.getElementById('campaignGwSubmitButton');
+            const gwSubmitForm = document.getElementById('campaignGwSubmitForm');
+            const gwCampaignName = document.getElementById('gwCampaignName');
+            const gwSenderName = document.getElementById('gwSenderName');
+            const gwMessage = document.getElementById('gwMessage');
+            const gwRecipientTotal = document.getElementById('gwRecipientTotal');
+            const gwDeliveryStartDate = document.getElementById('gwDeliveryStartDate');
+            const gwDeliveryEndDate = document.getElementById('gwDeliveryEndDate');
+            const gwDeliveryStartTime = document.getElementById('gwDeliveryStartTime');
+            const gwDeliveryEndTime = document.getElementById('gwDeliveryEndTime');
+            const gwControlNumber = document.getElementById('gwControlNumber');
+            const gwLocationName = document.getElementById('gwLocationName');
+            const gwLocationLat = document.getElementById('gwLocationLat');
+            const gwLocationLng = document.getElementById('gwLocationLng');
+            const gwLocationRadius = document.getElementById('gwLocationRadius');
+
+            const toIsoStamp = () => {
+                const d = new Date();
+                const pad = (n) => String(n).padStart(2, '0');
+                return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+            };
+
+            const pickScheduleValue = (selector) => {
+                const el = document.querySelector(selector);
+                return el && typeof el.value === 'string' ? el.value : '';
+            };
+
+            gwSubmitButton?.addEventListener('click', () => {
+                if (!gwSubmitForm || !gwCampaignName || !gwSenderName || !gwMessage || !gwRecipientTotal || !gwDeliveryStartDate || !gwDeliveryEndDate || !gwDeliveryStartTime || !gwDeliveryEndTime || !gwControlNumber || !gwLocationName || !gwLocationLat || !gwLocationLng || !gwLocationRadius) {
+                    return;
+                }
+
+                const scheduleId = '1';
+                const startDate = pickScheduleValue(`[data-schedule-date-start="${scheduleId}"]`);
+                const endDate = pickScheduleValue(`[data-schedule-date-end="${scheduleId}"]`);
+                const startHour = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
+                const startMinute = pickScheduleValue(`[data-schedule-time-start-minute="${scheduleId}"]`);
+                const endHour = pickScheduleValue(`[data-schedule-time-end-hour="${scheduleId}"]`);
+                const endMinute = pickScheduleValue(`[data-schedule-time-end-minute="${scheduleId}"]`);
+
+                gwCampaignName.value = (titleInput?.value || '').trim() || `UAT SMS LBA ${toIsoStamp()}`;
+                gwSenderName.value = senderInput?.value || 'MyAds';
+                gwMessage.value = (messageInput?.value || '').trim();
+                gwRecipientTotal.value = String(document.getElementById('campaignRecipientCount')?.value || 10);
+
+                gwDeliveryStartDate.value = startDate;
+                gwDeliveryEndDate.value = endDate;
+                gwDeliveryStartTime.value = startHour && startMinute ? `${startHour}:${startMinute}` : '';
+                gwDeliveryEndTime.value = endHour && endMinute ? `${endHour}:${endMinute}` : '';
+                gwControlNumber.value = String(document.getElementById('campaignTestRecipient')?.value || '');
+
+                const state = window.campaignLocationState || {};
+                gwLocationName.value = String(state.name || 'Lokasi dipilih');
+                gwLocationLat.value = String(state.lat ?? '');
+                gwLocationLng.value = String(state.lng ?? '');
+                gwLocationRadius.value = String(locationRadiusInput?.value || 0);
+
+                gwSubmitForm.submit();
+            });
         })();
     </script>
 @endpush

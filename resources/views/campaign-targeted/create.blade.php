@@ -94,6 +94,14 @@
         <p>Pelajari cara membuat iklan Anda agar lebih menarik. <a href="#">Pelajari Selengkapnya.</a></p>
     </section>
 
+    @if (session('status'))
+        <div class="status-box status-box--success">{{ session('status') }}</div>
+    @endif
+
+    @if ($errors->any())
+        <p class="error-text">{{ $errors->first() }}</p>
+    @endif
+
     <section class="campaign-compose-card" id="campaignComposeCard">
         <div class="campaign-compose-card__header">
             <div>
@@ -713,7 +721,17 @@
                                     <strong id="campaignReviewPaymentMonetary">Rp 1.000</strong>
                                 </div>
                             </div>
-                            <button type="button" class="campaign-cost-card__cta">Bayar & Kirim Iklan</button>
+                            <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
+                            <form id="campaignGwSubmitForm" method="POST" action="{{ route('campaign.targeted.send', ['channel' => $channel]) }}" hidden>
+                                @csrf
+                                <input type="hidden" name="campaign_name" id="gwCampaignName">
+                                <input type="hidden" name="sender_name" id="gwSenderName">
+                                <input type="hidden" name="message" id="gwMessage">
+                                <input type="hidden" name="recipient_total" id="gwRecipientTotal">
+                                <input type="hidden" name="delivery_date" id="gwDeliveryDate">
+                                <input type="hidden" name="delivery_time" id="gwDeliveryTime">
+                                <input type="hidden" name="control_number" id="gwControlNumber">
+                            </form>
                             <p class="campaign-cost-card__footnote">
                                 Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim.
                             </p>
@@ -1960,6 +1978,48 @@
             senderInput?.addEventListener('change', syncSenderPreview);
             messageInput?.addEventListener('input', syncMessagePreview);
             addButton?.addEventListener('click', createButtonCard);
+
+            const gwSubmitButton = document.getElementById('campaignGwSubmitButton');
+            const gwSubmitForm = document.getElementById('campaignGwSubmitForm');
+            const gwCampaignName = document.getElementById('gwCampaignName');
+            const gwSenderName = document.getElementById('gwSenderName');
+            const gwMessage = document.getElementById('gwMessage');
+            const gwRecipientTotal = document.getElementById('gwRecipientTotal');
+            const gwDeliveryDate = document.getElementById('gwDeliveryDate');
+            const gwDeliveryTime = document.getElementById('gwDeliveryTime');
+            const gwControlNumber = document.getElementById('gwControlNumber');
+
+            const toIsoStamp = () => {
+                const d = new Date();
+                const pad = (n) => String(n).padStart(2, '0');
+                return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+            };
+
+            const pickScheduleValue = (selector) => {
+                const el = document.querySelector(selector);
+                return el && typeof el.value === 'string' ? el.value : '';
+            };
+
+            gwSubmitButton?.addEventListener('click', () => {
+                if (!gwSubmitForm || !gwCampaignName || !gwSenderName || !gwMessage || !gwRecipientTotal || !gwDeliveryDate || !gwDeliveryTime || !gwControlNumber) {
+                    return;
+                }
+
+                const scheduleId = '1';
+                const dateValue = pickScheduleValue(`[data-schedule-date-start="${scheduleId}"]`);
+                const hourValue = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
+                const minuteValue = pickScheduleValue(`[data-schedule-time-start-minute="${scheduleId}"]`);
+
+                gwCampaignName.value = (titleInput?.value || '').trim() || `UAT SMS Targeted ${toIsoStamp()}`;
+                gwSenderName.value = senderInput?.value || 'MyAds';
+                gwMessage.value = (messageInput?.value || '').trim();
+                gwRecipientTotal.value = String(document.getElementById('campaignRecipientCount')?.value || 10);
+                gwDeliveryDate.value = dateValue;
+                gwDeliveryTime.value = hourValue && minuteValue ? `${hourValue}:${minuteValue}` : '';
+                gwControlNumber.value = String(document.getElementById('campaignTestRecipient')?.value || '');
+
+                gwSubmitForm.submit();
+            });
         })();
     </script>
 @endpush

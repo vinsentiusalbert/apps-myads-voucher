@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CampaignMenuController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\APIGW\ApiGatewayController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -24,6 +25,11 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/campaign/wa-business/campaign-template', [CampaignMenuController::class, 'listCampaignTemplates'])->name('campaign-template.index');
     Route::post('/campaign/wa-business/campaign-template', [CampaignMenuController::class, 'storeCampaignTemplate'])->name('campaign-template.store');
     Route::get('/campaign/wa-business/campaign-template/{template}', [CampaignMenuController::class, 'showCampaignTemplate'])->name('campaign-template.show');
+
+    // SMS campaign create (via myads_api proxy)
+    Route::post('/campaign/{channel}/targeted/send', [ApiGatewayController::class, 'targetedAdd'])->name('campaign.targeted.send');
+    Route::post('/campaign/{channel}/location-based-area/send', [ApiGatewayController::class, 'lbaAdd'])->name('campaign.lba.send');
+
     Route::get('/campaign/{channel}/{menu}', [CampaignMenuController::class, 'show'])->name('campaign.menu');
     Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
 });
