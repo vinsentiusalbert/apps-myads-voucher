@@ -1,5 +1,5 @@
 @php
-    $title = $page['title'] . ' | ' . config('app.name', 'MyAds');
+    $title = $page['title'];
     $bodyClass = '';
     $mainClass = '';
     $contentClass = 'portal-content--template-library';

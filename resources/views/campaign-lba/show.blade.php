@@ -1,5 +1,5 @@
 @php
-    $title = 'Detail Iklan | ' . config('app.name', 'MyAds');
+    $title = $page['title'];
     $bodyClass = '';
     $mainClass = '';
     $contentClass = 'portal-content--campaign-report';

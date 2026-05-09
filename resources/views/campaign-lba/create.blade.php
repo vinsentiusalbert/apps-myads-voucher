@@ -1,65 +1,65 @@
 @php
-$title = $page['title'] . ' | ' . config('app.name', 'MyAds');
-$bodyClass = 'campaign-title-locked';
-$mainClass = 'campaign-main';
-$contentClass = 'campaign-content';
-$isTargeted = $menu === 'targeted';
-$navMenus = [
-[
-'key' => 'dashboard',
-'label' => 'Dashboard',
-'icon' => 'dashboard',
-'href' => route('dashboard'),
-],
-[
-'key' => 'sms',
-'label' => 'SMS',
-'icon' => 'sms',
-'children' => [
-[
-'key' => 'sms-location-based-area',
-'label' => 'Location Based Area',
-'icon' => 'location',
-'href' => route('campaign.menu', ['channel' => 'sms', 'menu' => 'location-based-area']),
-],
-[
-'key' => 'sms-targeted',
-'label' => 'Targeted',
-'icon' => 'targeted',
-'href' => route('campaign.menu', ['channel' => 'sms', 'menu' => 'targeted']),
-],
-],
-],
-[
-'key' => 'wa-business',
-'label' => 'WA Business',
-'icon' => 'wa',
-'children' => [
-[
-'key' => 'wa-location-based-area',
-'label' => 'Location Based Area',
-'icon' => 'location',
-'href' => route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'location-based-area']),
-],
-[
-'key' => 'wa-campaign-template',
-'label' => 'Campaign Template',
-'icon' => 'template',
-'href' => route('campaign-template.index'),
-],
-[
-'key' => 'wa-targeted',
-'label' => 'Targeted',
-'icon' => 'targeted',
-'href' => route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'targeted']),
-],
-],
-],
-];
-$activeNav = $channel;
-$activeSubnav = $channel === 'sms'
-? ($isTargeted ? 'sms-targeted' : 'sms-location-based-area')
-: ($isTargeted ? 'wa-targeted' : 'wa-location-based-area');
+    $title = $page['title'];
+    $bodyClass = 'campaign-title-locked';
+    $mainClass = 'campaign-main';
+    $contentClass = 'campaign-content';
+    $isTargeted = $menu === 'targeted';
+    $navMenus = [
+        [
+            'key' => 'dashboard',
+            'label' => 'Dashboard',
+            'icon' => 'dashboard',
+            'href' => route('dashboard'),
+        ],
+        [
+            'key' => 'sms',
+            'label' => 'SMS',
+            'icon' => 'sms',
+            'children' => [
+                [
+                    'key' => 'sms-location-based-area',
+                    'label' => 'Location Based Area',
+                    'icon' => 'location',
+                    'href' => route('campaign.menu', ['channel' => 'sms', 'menu' => 'location-based-area']),
+                ],
+                [
+                    'key' => 'sms-targeted',
+                    'label' => 'Targeted',
+                    'icon' => 'targeted',
+                    'href' => route('campaign.menu', ['channel' => 'sms', 'menu' => 'targeted']),
+                ],
+            ],
+        ],
+        [
+            'key' => 'wa-business',
+            'label' => 'WA Business',
+            'icon' => 'wa',
+            'children' => [
+                [
+                    'key' => 'wa-location-based-area',
+                    'label' => 'Location Based Area',
+                    'icon' => 'location',
+                    'href' => route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'location-based-area']),
+                ],
+                [
+                    'key' => 'wa-campaign-template',
+                    'label' => 'Campaign Template',
+                    'icon' => 'template',
+                    'href' => route('campaign-template.index'),
+                ],
+                [
+                    'key' => 'wa-targeted',
+                    'label' => 'Targeted',
+                    'icon' => 'targeted',
+                    'href' => route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'targeted']),
+                ],
+            ],
+        ],
+    ];
+    $activeNav = $channel;
+    $activeSubnav = $channel === 'sms'
+        ? ($isTargeted ? 'sms-targeted' : 'sms-location-based-area')
+        : ($isTargeted ? 'wa-targeted' : 'wa-location-based-area');
 @endphp
 
 @extends('layouts.portal')
@@ -133,34 +133,34 @@ $activeSubnav = $channel === 'sms'
                 @endif
             </div>
 
-            <div class="field-group">
-                <label for="campaign_sender" class="field-label">Nama Pengirim</label>
-                <div class="campaign-inline-field">
-                    <select id="campaign_sender" class="text-input text-input--select">
-                        @if ($isTargeted)
-                        <option selected>GRANDHIKA</option>
-                        <option>IFTAR OFFER</option>
-                        <option>PROMO SMS</option>
-                        @else
-                        <option>MyAds SMS</option>
-                        <option>Promo Outlet</option>
-                        <option>Info Bisnis</option>
-                        @endif
-                    </select>
-                    <a href="#" class="campaign-inline-link">{{ $isTargeted ? 'Buat Nama Pengirim baru' : 'Buat Nama Pengirim Baru' }}</a>
+                <div class="field-group">
+                    <label for="campaign_sender" class="field-label">Nama Pengirim</label>
+                    <div class="campaign-inline-field">
+                        <select id="campaign_sender" name="sender_name" form="campaignGwSubmitForm" class="text-input text-input--select">
+                            @if ($isTargeted)
+                            <option selected>GRANDHIKA</option>
+                            <option>IFTAR OFFER</option>
+                            <option>PROMO SMS</option>
+                            @else
+                            <option>MyAds SMS</option>
+                            <option>Promo Outlet</option>
+                            <option>Info Bisnis</option>
+                            @endif
+                        </select>
+                        <a href="#" class="campaign-inline-link">{{ $isTargeted ? 'Buat Nama Pengirim baru' : 'Buat Nama Pengirim Baru' }}</a>
+                    </div>
                 </div>
-            </div>
 
             <a href="#" class="campaign-template-link">{{ $isTargeted ? 'Gunakan dari Template' : 'Gunakan dari Template' }}</a>
 
-            <div class="field-group">
-                <label for="campaign_message" class="field-label">{{ $isTargeted ? '' : 'Isi Konten' }}</label>
-                <textarea id="campaign_message" class="text-input campaign-message-input">{{ $isTargeted ? '' : '' }}</textarea>
-                <div class="campaign-message-meta">
-                    <span>Mohon pastikan pesan iklan Anda tidak mengandung unsur terlarang.</span>
-                    <strong id="campaignMessageCount">{{ $isTargeted ? '0/160 karakter (1 SMS)' : '0/160 karakter' }}</strong>
+                <div class="field-group">
+                    <label for="campaign_message" class="field-label">{{ $isTargeted ? '' : 'Isi Konten' }}</label>
+                    <textarea id="campaign_message" name="message" form="campaignGwSubmitForm" class="text-input campaign-message-input">{{ $isTargeted ? 'asd' : 'Promosi outlet makin untung di MyAds! Top up MyAds Rp50k dapat BONUS SALDO Rp300k. Aktifkan di bit.ly/JoinMyAds' }}</textarea>
+                    <div class="campaign-message-meta">
+                        <span>Mohon pastikan pesan iklan Anda tidak mengandung unsur terlarang.</span>
+                        <strong id="campaignMessageCount">{{ $isTargeted ? '3/160 karakter (1 SMS)' : '117/160 karakter' }}</strong>
+                    </div>
                 </div>
-            </div>
 
             <section class="campaign-block">
                 <div class="campaign-button-builder__head">
@@ -403,101 +403,101 @@ $activeSubnav = $channel === 'sms'
                 </div>
             </div>
 
-            <div class="campaign-form-actions campaign-form-actions--step-two campaign-form-actions--targeted">
-                <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="campaignStepTwoBack">Sebelumnya</button>
-                <button type="button" class="campaign-draft-btn">
-                    <span class="campaign-draft-btn__icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                            <path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
-                            <path d="M14 3v5h5M9 12h6M9 16h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
-                        </svg>
-                    </span>
-                    <span>Simpan Iklan Sebagai Draft</span>
-                </button>
-                <button type="button" class="submit-btn lba-primary-btn campaign-step-two__next" id="campaignStepTwoNext" disabled>Lanjutkan</button>
-            </div>
-        </section>
-    </div>
-    @else
-    <div class="campaign-step-panel" data-campaign-panel="2" hidden>
-        <section class="campaign-step-two">
-            <div class="campaign-step-two__section">
-                <h2 class="campaign-block__title">Tentukan Jumlah Penerima yang Akan Dikirim</h2>
-                <div class="campaign-send-grid">
-                    <div class="field-group campaign-field-group--compact">
-                        <label for="campaignRecipientCount" class="field-label">Jumlah Penerima</label>
-                        <input id="campaignRecipientCount" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
-                        <p class="campaign-step-two__alert">Jumlah penerima minimal 5 perhari</p>
-                    </div>
-                    <div class="campaign-estimate-card">
-                        <span class="campaign-estimate-card__label">Estimasi Penerima Potensial</span>
-                        <strong id="campaignStepTwoEstimate">-</strong>
+                <div class="campaign-form-actions campaign-form-actions--step-two campaign-form-actions--targeted">
+                    <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="campaignStepTwoBack">Sebelumnya</button>
+                    <button type="button" class="campaign-draft-btn">
+                        <span class="campaign-draft-btn__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                                <path d="M14 3v5h5M9 12h6M9 16h6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <span>Simpan Iklan Sebagai Draft</span>
+                    </button>
+                    <button type="button" class="submit-btn lba-primary-btn campaign-step-two__next" id="campaignStepTwoNext" disabled>Lanjutkan</button>
+                </div>
+            </section>
+        </div>
+        @else
+        <div class="campaign-step-panel" data-campaign-panel="2" hidden>
+            <section class="campaign-step-two">
+                <div class="campaign-step-two__section">
+                    <h2 class="campaign-block__title">Tentukan Jumlah Penerima yang Akan Dikirim</h2>
+                    <div class="campaign-send-grid">
+                        <div class="field-group campaign-field-group--compact">
+                            <label for="campaignRecipientCount" class="field-label">Jumlah Penerima</label>
+                            <input id="campaignRecipientCount" name="recipient_total" form="campaignGwSubmitForm" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
+                            <p class="campaign-step-two__alert">Jumlah penerima minimal 5 perhari</p>
+                        </div>
+                        <div class="campaign-estimate-card">
+                            <span class="campaign-estimate-card__label">Estimasi Penerima Potensial</span>
+                            <strong id="campaignStepTwoEstimate">131.409-160.609</strong>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="campaign-step-two__section">
-                <h2 class="campaign-block__title">Jadwal Pengiriman Pesan</h2>
-                <div class="campaign-schedule-list" id="campaignScheduleList">
-                    <article class="campaign-schedule-card" data-schedule-item="1">
-                        <div class="campaign-schedule-card__header">
-                            <span>Jadwal Pengiriman 1</span>
-                            <button type="button" class="campaign-schedule-card__remove" data-remove-schedule hidden>Hapus</button>
-                        </div>
-                        <div class="campaign-schedule-card__grid">
-                            <div class="field-group campaign-field-group--compact">
-                                <label class="field-label" for="campaignScheduleDate1">Tgl Kirim</label>
-                                <div class="campaign-range-field">
-                                    <input id="campaignScheduleDate1Start" type="date" class="text-input" value="{{ now()->toDateString() }}" data-schedule-date-start="1">
-                                    <span class="campaign-range-field__separator">-</span>
-                                    <input id="campaignScheduleDate1End" type="date" class="text-input" value="{{ now()->toDateString() }}" data-schedule-date-end="1">
-                                </div>
-                                <p class="campaign-range-preview" id="campaignScheduleDatePreview1">{{ now()->format('d/m/y') }} - {{ now()->format('d/m/y') }}</p>
+                <div class="campaign-step-two__section">
+                    <h2 class="campaign-block__title">Jadwal Pengiriman Pesan</h2>
+                    <div class="campaign-schedule-list" id="campaignScheduleList">
+                        <article class="campaign-schedule-card" data-schedule-item="1">
+                            <div class="campaign-schedule-card__header">
+                                <span>Jadwal Pengiriman 1</span>
+                                <button type="button" class="campaign-schedule-card__remove" data-remove-schedule hidden>Hapus</button>
                             </div>
-                            <div class="field-group campaign-field-group--compact">
-                                <label class="field-label" for="campaignScheduleTime1">Jam Kirim</label>
-                                <div class="campaign-time-picker" data-time-picker="1">
-                                    <button type="button" class="campaign-time-picker__trigger" data-time-trigger="1">
-                                        <span class="campaign-time-picker__value" id="campaignScheduleTimePreview1">09:30-10:00 WIB</span>
-                                        <span class="campaign-time-picker__clock">◷</span>
-                                    </button>
-                                    <div class="campaign-time-picker__panel" data-time-panel="1" hidden>
-                                        <div class="campaign-time-picker__columns">
-                                            <div class="campaign-time-picker__column">
-                                                <span class="campaign-time-picker__label">Jam Mulai</span>
-                                                <div class="campaign-time-picker__inputs">
-                                                    <select id="campaignScheduleTime1StartHour" class="campaign-time-picker__select" data-schedule-time-start-hour="1"></select>
-                                                    <span class="campaign-time-picker__colon">:</span>
-                                                    <select id="campaignScheduleTime1StartMinute" class="campaign-time-picker__select" data-schedule-time-start-minute="1"></select>
-                                                    <span class="campaign-time-picker__suffix">WIB</span>
+                            <div class="campaign-schedule-card__grid">
+                                <div class="field-group campaign-field-group--compact">
+                                    <label class="field-label" for="campaignScheduleDate1">Tgl Kirim</label>
+                                    <div class="campaign-range-field">
+                                        <input id="campaignScheduleDate1Start" name="delivery_start_date" form="campaignGwSubmitForm" type="date" class="text-input" value="2026-04-24" data-schedule-date-start="1">
+                                        <span class="campaign-range-field__separator">-</span>
+                                        <input id="campaignScheduleDate1End" name="delivery_end_date" form="campaignGwSubmitForm" type="date" class="text-input" value="2026-04-24" data-schedule-date-end="1">
+                                    </div>
+                                    <p class="campaign-range-preview" id="campaignScheduleDatePreview1">24/04/26 - 24/04/26</p>
+                                </div>
+                                <div class="field-group campaign-field-group--compact">
+                                    <label class="field-label" for="campaignScheduleTime1">Jam Kirim</label>
+                                    <div class="campaign-time-picker" data-time-picker="1">
+                                        <button type="button" class="campaign-time-picker__trigger" data-time-trigger="1">
+                                            <span class="campaign-time-picker__value" id="campaignScheduleTimePreview1">09:30-10:00 WIB</span>
+                                            <span class="campaign-time-picker__clock">◷</span>
+                                        </button>
+                                        <div class="campaign-time-picker__panel" data-time-panel="1" hidden>
+                                            <div class="campaign-time-picker__columns">
+                                                <div class="campaign-time-picker__column">
+                                                    <span class="campaign-time-picker__label">Jam Mulai</span>
+                                                    <div class="campaign-time-picker__inputs">
+                                                        <select id="campaignScheduleTime1StartHour" class="campaign-time-picker__select" data-schedule-time-start-hour="1"></select>
+                                                        <span class="campaign-time-picker__colon">:</span>
+                                                        <select id="campaignScheduleTime1StartMinute" class="campaign-time-picker__select" data-schedule-time-start-minute="1"></select>
+                                                        <span class="campaign-time-picker__suffix">WIB</span>
+                                                    </div>
+                                                </div>
+                                                <div class="campaign-time-picker__column">
+                                                    <span class="campaign-time-picker__label">Jam Berakhir</span>
+                                                    <div class="campaign-time-picker__inputs">
+                                                        <select id="campaignScheduleTime1EndHour" class="campaign-time-picker__select" data-schedule-time-end-hour="1"></select>
+                                                        <span class="campaign-time-picker__colon">:</span>
+                                                        <select id="campaignScheduleTime1EndMinute" class="campaign-time-picker__select" data-schedule-time-end-minute="1"></select>
+                                                        <span class="campaign-time-picker__suffix">WIB</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div class="campaign-time-picker__column">
-                                                <span class="campaign-time-picker__label">Jam Berakhir</span>
-                                                <div class="campaign-time-picker__inputs">
-                                                    <select id="campaignScheduleTime1EndHour" class="campaign-time-picker__select" data-schedule-time-end-hour="1"></select>
-                                                    <span class="campaign-time-picker__colon">:</span>
-                                                    <select id="campaignScheduleTime1EndMinute" class="campaign-time-picker__select" data-schedule-time-end-minute="1"></select>
-                                                    <span class="campaign-time-picker__suffix">WIB</span>
-                                                </div>
-                                            </div>
+                                            <p class="campaign-time-picker__hint">Disarankan durasi pengiriman pesan lebih dari 4 jam agar pengiriman lebih optimal</p>
                                         </div>
-                                        <p class="campaign-time-picker__hint">Disarankan durasi pengiriman pesan lebih dari 4 jam agar pengiriman lebih optimal</p>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <p class="campaign-step-two__alert">Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal</p>
-                    </article>
+                            <p class="campaign-step-two__alert">Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal</p>
+                        </article>
+                    </div>
+                    <div class="campaign-schedule-actions">
+                        <div class="campaign-schedule-divider"></div>
+                        <button type="button" class="campaign-inline-action" id="campaignAddSchedule">
+                            <span class="campaign-inline-action__icon">+</span>
+                            <span>Tambah Jadwal Pengirim</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="campaign-schedule-actions">
-                    <div class="campaign-schedule-divider"></div>
-                    <button type="button" class="campaign-inline-action" id="campaignAddSchedule">
-                        <span class="campaign-inline-action__icon">+</span>
-                        <span>Tambah Jadwal Pengirim</span>
-                    </button>
-                </div>
-            </div>
 
             <div class="campaign-step-two__section">
                 <div class="field-group">
@@ -513,20 +513,20 @@ $activeSubnav = $channel === 'sms'
                 </p>
             </div>
 
-            <div class="campaign-step-two__section">
-                <h2 class="campaign-block__title">Tentukan Nomor Penerima Tes Iklan</h2>
-                <div class="field-group">
-                    <label for="campaignTestRecipient" class="field-label">Nomor Penerima Tes Iklan</label>
-                    <select id="campaignTestRecipient" class="text-input text-input--select">
-                        <option>Nomor Penerima Tes Iklan</option>
-                        <option>081234567890</option>
-                        <option>082345678901</option>
-                    </select>
+                <div class="campaign-step-two__section">
+                    <h2 class="campaign-block__title">Tentukan Nomor Penerima Tes Iklan</h2>
+                    <div class="field-group">
+                        <label for="campaignTestRecipient" class="field-label">Nomor Penerima Tes Iklan</label>
+                        <select id="campaignTestRecipient" name="control_number" form="campaignGwSubmitForm" class="text-input text-input--select">
+                            <option value="">Nomor Penerima Tes Iklan</option>
+                            <option value="081234567890">081234567890</option>
+                            <option value="082345678901">082345678901</option>
+                        </select>
+                    </div>
+                    <p class="campaign-block__copy">
+                        Nomor Penerima Tes Iklan digunakan untuk memastikan apakah pesan berhasil terkirim. Pesan akan dikirimkan 1 jam sebelum jadwal pengiriman.
+                    </p>
                 </div>
-                <p class="campaign-block__copy">
-                    Nomor Penerima Tes Iklan digunakan untuk memastikan apakah pesan berhasil terkirim. Pesan akan dikirimkan 1 jam sebelum jadwal pengiriman.
-                </p>
-            </div>
 
             <div class="campaign-step-two__section">
                 <a href="#" class="campaign-inline-link campaign-inline-link--strong campaign-inline-link--arrow">Gunakan Pengiriman Pesan Spesifik (Optional)</a>
@@ -655,96 +655,81 @@ $activeSubnav = $channel === 'sms'
 
             </div>
 
-            <aside class="campaign-review__sidebar">
-                <div class="campaign-cost-card">
-                    <div class="campaign-cost-card__topbar"></div>
-                    <div class="campaign-cost-card__body">
-                        <h3>Detil Biaya</h3>
-                        <div class="campaign-cost-card__section">
-                            <span class="campaign-cost-card__section-title">Produk yang Dipilih</span>
-                            <div class="campaign-cost-card__row">
-                                <span>Kategori Iklan</span>
-                                <strong>LBA</strong>
+                <aside class="campaign-review__sidebar">
+                    <div class="campaign-cost-card">
+                        <div class="campaign-cost-card__topbar"></div>
+                        <div class="campaign-cost-card__body">
+                            <h3>Detil Biaya</h3>
+                            <div class="campaign-cost-card__section">
+                                <span class="campaign-cost-card__section-title">Produk yang Dipilih</span>
+                                <div class="campaign-cost-card__row">
+                                    <span>Kategori Iklan</span>
+                                    <strong>LBA</strong>
+                                </div>
+                                <div class="campaign-cost-card__row">
+                                    <span>Tipe Kanal</span>
+                                    <strong>SMS</strong>
+                                </div>
+                                <div class="campaign-cost-card__row">
+                                    <span>Harga Satuan</span>
+                                    <strong>Rp 200</strong>
+                                </div>
                             </div>
-                            <div class="campaign-cost-card__row">
-                                <span>Tipe Kanal</span>
-                                <strong>SMS</strong>
+                            <div class="campaign-cost-card__section">
+                                <div class="campaign-cost-card__row campaign-cost-card__row--total">
+                                    <span>Grand Total</span>
+                                    <strong id="campaignReviewGrandTotal">Rp 1.000</strong>
+                                </div>
                             </div>
-                            <div class="campaign-cost-card__row">
-                                <span>Harga Satuan</span>
-                                <strong id="campaignReviewUnitPrice">{{ isset($unitPrice) && is_numeric($unitPrice) && (int) $unitPrice > 0 ? 'Rp ' . number_format((int) $unitPrice, 0, ',', '.') : '-' }}</strong>
+                            <div class="campaign-cost-card__section">
+                                <span class="campaign-cost-card__section-title">Pembayaran Anda Menggunakan</span>
+                                <div class="campaign-cost-card__row">
+                                    <span>Saldo Umum</span>
+                                    <strong class="campaign-cost-card__danger">Rp 0</strong>
+                                </div>
+                                <div class="campaign-cost-card__row">
+                                    <span>Saldo Monetary</span>
+                                    <strong id="campaignReviewPaymentMonetary">Rp 1.000</strong>
+                                </div>
                             </div>
+                            <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
+                            <form id="campaignGwSubmitForm" method="POST" action="{{ route('campaign.lba.send', ['channel' => $channel]) }}" hidden>
+                                @csrf
+                                <input type="hidden" name="delivery_start_time" id="gwDeliveryStartTime">
+                                <input type="hidden" name="delivery_end_time" id="gwDeliveryEndTime">
+                                <input type="hidden" name="location_name" id="gwLocationName">
+                                <input type="hidden" name="location_lat" id="gwLocationLat">
+                                <input type="hidden" name="location_lng" id="gwLocationLng">
+                            </form>
+                            <p class="campaign-cost-card__footnote">
+                                Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim.
+                            </p>
                         </div>
-                        <div class="campaign-cost-card__section">
-                            <div class="campaign-cost-card__row campaign-cost-card__row--total">
-                                <span>Grand Total</span>
-                                <strong id="campaignReviewGrandTotal">-</strong>
-                            </div>
-                        </div>
-                        <div class="campaign-cost-card__section">
-                            <span class="campaign-cost-card__section-title">Pembayaran Anda Menggunakan</span>
-                            <div class="campaign-cost-card__row">
-                                <span>Saldo Umum</span>
-                                <strong class="campaign-cost-card__danger">-</strong>
-                            </div>
-                            <div class="campaign-cost-card__row">
-                                <span>Saldo Monetary</span>
-                                <strong id="campaignReviewPaymentMonetary">-</strong>
-                            </div>
-                        </div>
-                        <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
-                        <form id="campaignGwSubmitForm"
-                            method="POST"
-                            action="{{ $isTargeted
-            ? route('campaign.targeted.send', ['channel' => $channel])
-            : route('campaign.lba.send', ['channel' => $channel]) }}"
-                            hidden>
-                            @csrf
-                            <input type="hidden" name="campaign_name" id="gwCampaignName">
-                            <input type="hidden" name="sender_name" id="gwSenderName">
-                            <input type="hidden" name="message" id="gwMessage">
-                            <input type="hidden" name="content_name" id="gwContentName">
-                            <input type="hidden" name="recipient_total" id="gwRecipientTotal">
-                            <input type="hidden" name="delivery_start_date" id="gwDeliveryStartDate">
-                            <input type="hidden" name="delivery_end_date" id="gwDeliveryEndDate">
-                            <input type="hidden" name="delivery_start_time" id="gwDeliveryStartTime">
-                            <input type="hidden" name="delivery_end_time" id="gwDeliveryEndTime">
-                            <input type="hidden" name="control_number" id="gwControlNumber">
-                            <input type="hidden" name="location_name" id="gwLocationName">
-                            <input type="hidden" name="location_lat" id="gwLocationLat">
-                            <input type="hidden" name="location_lng" id="gwLocationLng">
-                            <input type="hidden" name="location_radius" id="gwLocationRadius">
-                            <input type="hidden" name="location_type" id="gwLocationType" value="ALL">
-                        </form>
-                        <p class="campaign-cost-card__footnote">
-                            Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim.
-                        </p>
                     </div>
+                </aside>
+                <div class="campaign-form-actions campaign-form-actions--review campaign-form-actions--review-bottom">
+                    <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="campaignStepThreeBack">Sebelumnya</button>
                 </div>
-            </aside>
-            <div class="campaign-form-actions campaign-form-actions--review campaign-form-actions--review-bottom">
-                <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="campaignStepThreeBack">Sebelumnya</button>
-            </div>
-        </section>
-    </div>
-</section>
+            </section>
+        </div>
+    </section>
 @endsection
 
 @section('after_shell')
-<div class="campaign-title-modal" id="campaignTitleModal" aria-hidden="false">
-    <div class="campaign-title-modal__backdrop"></div>
-    <div class="campaign-title-modal__card" role="dialog" aria-modal="true" aria-labelledby="campaignTitleHeading">
-        <h2 id="campaignTitleHeading">Buat Judul Iklan</h2>
-        <div class="field-group">
-            <label for="campaign_title" class="field-label">Judul Iklan</label>
-            <input id="campaign_title" type="text" class="text-input" value="" placeholder="Masukkan judul iklan">
-        </div>
-        <div class="campaign-title-modal__actions">
-            <a href="{{ route('dashboard') }}" class="campaign-modal-btn campaign-modal-btn--ghost">Batal</a>
-            <button type="button" class="campaign-modal-btn campaign-modal-btn--primary" id="campaignTitleSubmit" onclick="window.unlockCampaignTitleModal && window.unlockCampaignTitleModal()">Lanjutkan</button>
+    <div class="campaign-title-modal" id="campaignTitleModal" aria-hidden="false">
+        <div class="campaign-title-modal__backdrop"></div>
+        <div class="campaign-title-modal__card" role="dialog" aria-modal="true" aria-labelledby="campaignTitleHeading">
+            <h2 id="campaignTitleHeading">Buat Judul Iklan</h2>
+            <div class="field-group">
+                <label for="campaign_title" class="field-label">Judul Iklan</label>
+                <input id="campaign_title" name="campaign_name" form="campaignGwSubmitForm" type="text" class="text-input" value="tes" placeholder="Masukkan judul iklan">
+            </div>
+            <div class="campaign-title-modal__actions">
+                <a href="{{ route('dashboard') }}" class="campaign-modal-btn campaign-modal-btn--ghost">Batal</a>
+                <button type="button" class="campaign-modal-btn campaign-modal-btn--primary" id="campaignTitleSubmit" onclick="window.unlockCampaignTitleModal && window.unlockCampaignTitleModal()">Lanjutkan</button>
+            </div>
         </div>
     </div>
-</div>
 
 <div class="campaign-map-modal" id="campaignMapModal" hidden aria-hidden="true">
     <div class="campaign-map-modal__backdrop" data-location-close onclick="window.closeCampaignLocationModal && window.closeCampaignLocationModal()"></div>
@@ -774,14 +759,14 @@ $activeSubnav = $channel === 'sms'
                     <strong>Lokasi tidak aktif, mohon aktifkan lokasi</strong>
                 </label>
 
-                <section class="campaign-map-settings">
-                    <h3>Pengaturan</h3>
-                    <div class="campaign-map-settings__grid">
-                        <div class="field-group campaign-field-group--compact">
-                            <label for="campaignLocationRadius" class="field-label">Radius (dalam Meter)</label>
-                            <input id="campaignLocationRadius" type="number" class="text-input" min="0" step="100" value="300">
+                    <section class="campaign-map-settings">
+                        <h3>Pengaturan</h3>
+                        <div class="campaign-map-settings__grid">
+                            <div class="field-group campaign-field-group--compact">
+                                <label for="campaignLocationRadius" class="field-label">Radius (dalam Meter)</label>
+                                <input id="campaignLocationRadius" name="location_radius" form="campaignGwSubmitForm" type="number" class="text-input" min="0" step="100" value="300">
+                            </div>
                         </div>
-                    </div>
 
                     {{-- <div class="campaign-map-estimate">
                             <button type="button" class="campaign-outline-button campaign-map-estimate__button" id="campaignCalcAudience">
@@ -1844,33 +1829,29 @@ $activeSubnav = $channel === 'sms'
         messageInput?.addEventListener('input', syncMessagePreview);
         addButton?.addEventListener('click', createButtonCard);
 
-        const gwSubmitButton = document.getElementById('campaignGwSubmitButton');
-        const gwSubmitForm = document.getElementById('campaignGwSubmitForm');
-        const gwCampaignName = document.getElementById('gwCampaignName');
-        const gwSenderName = document.getElementById('gwSenderName');
-        const gwMessage = document.getElementById('gwMessage');
-        const gwContentName = document.getElementById('gwContentName');
-        const gwRecipientTotal = document.getElementById('gwRecipientTotal');
-        const gwDeliveryStartDate = document.getElementById('gwDeliveryStartDate');
-        const gwDeliveryEndDate = document.getElementById('gwDeliveryEndDate');
-        const gwDeliveryStartTime = document.getElementById('gwDeliveryStartTime');
-        const gwDeliveryEndTime = document.getElementById('gwDeliveryEndTime');
-        const gwControlNumber = document.getElementById('gwControlNumber');
-        const gwLocationName = document.getElementById('gwLocationName');
-        const gwLocationLat = document.getElementById('gwLocationLat');
-        const gwLocationLng = document.getElementById('gwLocationLng');
-        const gwLocationRadius = document.getElementById('gwLocationRadius');
-        const gwLocationType = document.getElementById('gwLocationType');
+            const gwSubmitButton = document.getElementById('campaignGwSubmitButton');
+            const gwSubmitForm = document.getElementById('campaignGwSubmitForm');
+            const gwDeliveryStartTime = document.getElementById('gwDeliveryStartTime');
+            const gwDeliveryEndTime = document.getElementById('gwDeliveryEndTime');
+            const gwLocationName = document.getElementById('gwLocationName');
+            const gwLocationLat = document.getElementById('gwLocationLat');
+            const gwLocationLng = document.getElementById('gwLocationLng');
+
+            const toIsoStamp = () => {
+                const d = new Date();
+                const pad = (n) => String(n).padStart(2, '0');
+                return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+            };
 
         const pickScheduleValue = (selector) => {
             const el = document.querySelector(selector);
             return el && typeof el.value === 'string' ? el.value : '';
         };
 
-        gwSubmitButton?.addEventListener('click', () => {
-            if (!gwSubmitForm || !gwCampaignName || !gwSenderName || !gwMessage || !gwContentName || !gwRecipientTotal || !gwDeliveryStartDate || !gwDeliveryEndDate || !gwDeliveryStartTime || !gwDeliveryEndTime || !gwControlNumber || !gwLocationName || !gwLocationLat || !gwLocationLng || !gwLocationRadius || !gwLocationType) {
-                return;
-            }
+            gwSubmitButton?.addEventListener('click', () => {
+                if (!gwSubmitForm || !gwDeliveryStartTime || !gwDeliveryEndTime || !gwLocationName || !gwLocationLat || !gwLocationLng) {
+                    return;
+                }
 
             const scheduleId = '1';
             const startDate = pickScheduleValue(`[data-schedule-date-start="${scheduleId}"]`);
@@ -1880,23 +1861,17 @@ $activeSubnav = $channel === 'sms'
             const endHour = pickScheduleValue(`[data-schedule-time-end-hour="${scheduleId}"]`);
             const endMinute = pickScheduleValue(`[data-schedule-time-end-minute="${scheduleId}"]`);
 
-            gwCampaignName.value = (titleInput?.value || '').trim();
-            gwSenderName.value = senderInput?.value || '';
-            gwMessage.value = (messageInput?.value || '').trim();
-            gwContentName.value = (titleInput?.value || '').trim();
-            gwRecipientTotal.value = String(document.getElementById('campaignRecipientCount')?.value || '');
+                if (titleInput && titleInput.value.trim() === '') {
+                    titleInput.value = `UAT SMS LBA ${toIsoStamp()}`;
+                }
 
-            gwDeliveryStartDate.value = startDate;
-            gwDeliveryEndDate.value = endDate;
-            gwDeliveryStartTime.value = startHour && startMinute ? `${startHour}:${startMinute}` : '';
-            gwDeliveryEndTime.value = endHour && endMinute ? `${endHour}:${endMinute}` : '';
-            gwControlNumber.value = String(document.getElementById('campaignTestRecipient')?.value || '');
+                gwDeliveryStartTime.value = startHour && startMinute ? `${startHour}:${startMinute}` : '';
+                gwDeliveryEndTime.value = endHour && endMinute ? `${endHour}:${endMinute}` : '';
 
-            const state = window.campaignLocationState || {};
-            gwLocationName.value = String(state.name || '');
-            gwLocationLat.value = String(state.lat ?? '');
-            gwLocationLng.value = String(state.lng ?? '');
-            gwLocationRadius.value = String(locationRadiusInput?.value || 0);
+                const state = window.campaignLocationState || {};
+                gwLocationName.value = String(state.name || 'Lokasi dipilih');
+                gwLocationLat.value = String(state.lat ?? '');
+                gwLocationLng.value = String(state.lng ?? '');
 
             gwSubmitForm.submit();
         });

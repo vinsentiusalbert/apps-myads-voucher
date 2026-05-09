@@ -1,5 +1,5 @@
 @php
-    $title = $page['title'] . ' | ' . config('app.name', 'MyAds');
+    $title = $page['title'];
     $bodyClass = 'campaign-title-locked';
     $mainClass = 'campaign-main';
     $contentClass = 'campaign-content';
@@ -132,7 +132,7 @@
                 <div class="field-group">
                     <label for="campaign_sender" class="field-label">Nama Pengirim</label>
                     <div class="campaign-inline-field">
-                        <select id="campaign_sender" class="text-input text-input--select">
+                        <select id="campaign_sender" name="sender_name" form="campaignGwSubmitForm" class="text-input text-input--select">
                             @if ($isTargeted)
                             <option selected>GRANDHIKA</option>
                             <option>IFTAR OFFER</option>
@@ -151,7 +151,7 @@
 
                 <div class="field-group">
                     <label for="campaign_message" class="field-label">{{ $isTargeted ? '' : 'Isi Konten' }}</label>
-                    <textarea id="campaign_message" class="text-input campaign-message-input">{{ $isTargeted ? '' : '' }}</textarea>
+                    <textarea id="campaign_message" name="message" form="campaignGwSubmitForm" class="text-input campaign-message-input">{{ $isTargeted ? 'asd' : 'Promosi outlet makin untung di MyAds! Top up MyAds Rp50k dapat BONUS SALDO Rp300k. Aktifkan di bit.ly/JoinMyAds' }}</textarea>
                     <div class="campaign-message-meta">
                         <span>Mohon pastikan pesan iklan Anda tidak mengandung unsur terlarang.</span>
                         <strong id="campaignMessageCount">{{ $isTargeted ? '0/160 karakter (1 SMS)' : '0/160 karakter' }}</strong>
@@ -456,7 +456,7 @@
                     <div class="campaign-send-grid">
                         <div class="field-group campaign-field-group--compact">
                             <label for="campaignRecipientCount" class="field-label">Jumlah Penerima</label>
-                            <input id="campaignRecipientCount" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
+                            <input id="campaignRecipientCount" name="recipient_total" form="campaignGwSubmitForm" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
                             <p class="campaign-step-two__alert">Jumlah penerima minimal 5 perhari</p>
                         </div>
                         <div class="campaign-estimate-card">
@@ -478,7 +478,7 @@
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label" for="campaignScheduleDate1">Tgl Kirim</label>
                                     <div class="campaign-range-field">
-                                        <input id="campaignScheduleDate1Start" type="date" class="text-input" value="{{ now()->toDateString() }}" data-schedule-date-start="1">
+                                        <input id="campaignScheduleDate1Start" name="delivery_date" form="campaignGwSubmitForm" type="date" class="text-input" value="2026-04-24" data-schedule-date-start="1">
                                         <span class="campaign-range-field__separator">-</span>
                                         <input id="campaignScheduleDate1End" type="date" class="text-input" value="{{ now()->toDateString() }}" data-schedule-date-end="1">
                                     </div>
@@ -547,10 +547,10 @@
                     <h2 class="campaign-block__title">Tentukan Nomor Penerima Tes Iklan</h2>
                     <div class="field-group">
                         <label for="campaignTestRecipient" class="field-label">Nomor Penerima Tes Iklan</label>
-                        <select id="campaignTestRecipient" class="text-input text-input--select">
-                            <option>Nomor Penerima Tes Iklan</option>
-                            <option>081234567890</option>
-                            <option>082345678901</option>
+                        <select id="campaignTestRecipient" name="control_number" form="campaignGwSubmitForm" class="text-input text-input--select">
+                            <option value="">Nomor Penerima Tes Iklan</option>
+                            <option value="081234567890">081234567890</option>
+                            <option value="082345678901">082345678901</option>
                         </select>
                     </div>
                     <p class="campaign-block__copy">
@@ -724,13 +724,7 @@
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
                             <form id="campaignGwSubmitForm" method="POST" action="{{ route('campaign.targeted.send', ['channel' => $channel]) }}" hidden>
                                 @csrf
-                                <input type="hidden" name="campaign_name" id="gwCampaignName">
-                                <input type="hidden" name="sender_name" id="gwSenderName">
-                                <input type="hidden" name="message" id="gwMessage">
-                                <input type="hidden" name="recipient_total" id="gwRecipientTotal">
-                                <input type="hidden" name="delivery_date" id="gwDeliveryDate">
                                 <input type="hidden" name="delivery_time" id="gwDeliveryTime">
-                                <input type="hidden" name="control_number" id="gwControlNumber">
                             </form>
                             <p class="campaign-cost-card__footnote">
                                 Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim.
@@ -753,7 +747,7 @@
             <h2 id="campaignTitleHeading">Buat Judul Iklan</h2>
             <div class="field-group">
                 <label for="campaign_title" class="field-label">Judul Iklan</label>
-                <input id="campaign_title" type="text" class="text-input" value="" placeholder="Masukkan judul iklan">
+                <input id="campaign_title" name="campaign_name" form="campaignGwSubmitForm" type="text" class="text-input" value="tes" placeholder="Masukkan judul iklan">
             </div>
             <div class="campaign-title-modal__actions">
                 <a href="{{ route('dashboard') }}" class="campaign-modal-btn campaign-modal-btn--ghost">Batal</a>
@@ -1990,13 +1984,13 @@
 
             const gwSubmitButton = document.getElementById('campaignGwSubmitButton');
             const gwSubmitForm = document.getElementById('campaignGwSubmitForm');
-            const gwCampaignName = document.getElementById('gwCampaignName');
-            const gwSenderName = document.getElementById('gwSenderName');
-            const gwMessage = document.getElementById('gwMessage');
-            const gwRecipientTotal = document.getElementById('gwRecipientTotal');
-            const gwDeliveryDate = document.getElementById('gwDeliveryDate');
             const gwDeliveryTime = document.getElementById('gwDeliveryTime');
-            const gwControlNumber = document.getElementById('gwControlNumber');
+
+            const toIsoStamp = () => {
+                const d = new Date();
+                const pad = (n) => String(n).padStart(2, '0');
+                return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+            };
 
             const pickScheduleValue = (selector) => {
                 const el = document.querySelector(selector);
@@ -2004,22 +1998,19 @@
             };
 
             gwSubmitButton?.addEventListener('click', () => {
-                if (!gwSubmitForm || !gwCampaignName || !gwSenderName || !gwMessage || !gwRecipientTotal || !gwDeliveryDate || !gwDeliveryTime || !gwControlNumber) {
+                if (!gwSubmitForm || !gwDeliveryTime) {
                     return;
                 }
 
                 const scheduleId = '1';
-                const dateValue = pickScheduleValue(`[data-schedule-date-start="${scheduleId}"]`);
                 const hourValue = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
                 const minuteValue = pickScheduleValue(`[data-schedule-time-start-minute="${scheduleId}"]`);
 
-                gwCampaignName.value = (titleInput?.value || '').trim();
-                gwSenderName.value = senderInput?.value || '';
-                gwMessage.value = (messageInput?.value || '').trim();
-                gwRecipientTotal.value = String(document.getElementById('campaignRecipientCount')?.value || '');
-                gwDeliveryDate.value = dateValue;
+                if (titleInput && titleInput.value.trim() === '') {
+                    titleInput.value = `UAT SMS Targeted ${toIsoStamp()}`;
+                }
+
                 gwDeliveryTime.value = hourValue && minuteValue ? `${hourValue}:${minuteValue}` : '';
-                gwControlNumber.value = String(document.getElementById('campaignTestRecipient')?.value || '');
 
                 gwSubmitForm.submit();
             });

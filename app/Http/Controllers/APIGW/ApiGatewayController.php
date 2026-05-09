@@ -245,4 +245,3 @@ class ApiGatewayController extends Controller
 		return $raw;
 	}
 }
-
