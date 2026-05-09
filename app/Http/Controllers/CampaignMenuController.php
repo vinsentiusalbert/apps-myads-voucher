@@ -7,6 +7,7 @@ use App\Services\MyadsApiClient;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use RuntimeException;
 use Throwable;
 
 class CampaignMenuController extends Controller
@@ -96,10 +97,12 @@ class CampaignMenuController extends Controller
             $view = $request->query('view');
 
             if ($view === 'create') {
+                $unitPrice = $this->resolveUnitPrice($request, $channel, $menu);
                 return view('campaign-lba.create', [
                     'channel' => $channel,
                     'menu' => $menu,
                     'page' => $page,
+                    'unitPrice' => $unitPrice,
                 ]);
             }
 
@@ -128,10 +131,12 @@ class CampaignMenuController extends Controller
             $view = $request->query('view');
 
             if ($view === 'create') {
+                $unitPrice = $this->resolveUnitPrice($request, $channel, $menu);
                 return view('campaign-targeted.create', [
                     'channel' => $channel,
                     'menu' => $menu,
                     'page' => $page,
+                    'unitPrice' => $unitPrice,
                 ]);
             }
 
@@ -344,7 +349,8 @@ class CampaignMenuController extends Controller
             $client = app(MyadsApiClient::class);
             $listResp = $client->campaignList($gatewayToken, ['campaignId' => null]);
 
-            $items = data_get($listResp, 'data.data.campaigns')
+            $items = data_get($listResp, 'data.data.list')
+                ?? data_get($listResp, 'data.data.campaigns')
                 ?? data_get($listResp, 'data.data.items')
                 ?? data_get($listResp, 'data.data')
                 ?? [];
@@ -362,17 +368,23 @@ class CampaignMenuController extends Controller
             $wantedType = match ($menu) {
                 'location-based-area' => 'LBA',
                 'targeted' => 'TARGETED',
-                'broadcast' => 'BROADCAST',
                 default => null,
             };
 
             $filtered = array_values(array_filter($items, function ($row) use ($wantedChannel, $wantedType) {
                 if (! is_array($row)) return false;
 
-                if ($wantedChannel) {
-                    $channelValue = strtoupper((string) (data_get($row, 'channel') ?? data_get($row, 'channel_type') ?? ''));
+                // Remove BROADCAST completely (product not used)
+                $typeValue = strtoupper((string) (data_get($row, 'campaignType') ?? data_get($row, 'campaign_type') ?? data_get($row, 'type') ?? ''));
+                if ($typeValue === 'BROADCAST' || str_contains($typeValue, 'BROADCAST')) {
+                    return false;
+                }
 
-                    if ($wantedChannel === 'SMS' && $channelValue !== 'SMS') {
+                if ($wantedChannel) {
+                    $channelValue = strtoupper((string) (data_get($row, 'inventoryType') ?? data_get($row, 'inventory_type') ?? data_get($row, 'channel') ?? data_get($row, 'channel_type') ?? ''));
+
+                    // For SMS dashboard, inventoryType can be SMS or MMS.
+                    if ($wantedChannel === 'SMS' && ! in_array($channelValue, ['SMS', 'MMS'], true)) {
                         return false;
                     }
 
@@ -383,7 +395,6 @@ class CampaignMenuController extends Controller
                 }
 
                 if ($wantedType) {
-                    $typeValue = strtoupper((string) (data_get($row, 'campaignType') ?? data_get($row, 'campaign_type') ?? data_get($row, 'type') ?? ''));
                     if ($typeValue !== '' && ! str_contains($typeValue, $wantedType)) {
                         return false;
                     }
@@ -393,34 +404,38 @@ class CampaignMenuController extends Controller
             }));
 
             return array_map(function ($row) {
-                $id = (string) (data_get($row, 'campaignId') ?? data_get($row, 'id') ?? '');
+                $id = (string) (data_get($row, 'id') ?? data_get($row, 'campaignId') ?? '');
                 $title = (string) (data_get($row, 'campaignName') ?? data_get($row, 'title') ?? data_get($row, 'name') ?? '');
 
-                $createdAt = data_get($row, 'createdAt') ?? data_get($row, 'created_at') ?? data_get($row, 'date');
-                $dateLabel = is_string($createdAt) ? $createdAt : '';
-                if ($dateLabel !== '') {
+                $startDate = (string) (data_get($row, 'startDate') ?? '');
+                $endDate = (string) (data_get($row, 'endDate') ?? '');
+                $dateLabel = '';
+                if ($startDate !== '') {
                     try {
-                        $dateLabel = \Carbon\Carbon::parse($dateLabel)->translatedFormat('d M Y');
+                        $startLabel = \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y');
+                        $endLabel = $endDate !== ''
+                            ? \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y')
+                            : '';
+                        $dateLabel = ($endLabel !== '' && $endLabel !== $startLabel)
+                            ? $startLabel . ' - ' . $endLabel
+                            : $startLabel;
                     } catch (Throwable) {
-                        // keep original
+                        $dateLabel = $startDate . ($endDate !== '' ? (' - ' . $endDate) : '');
                     }
                 }
 
-                $channelType = (string) (data_get($row, 'channel') ?? data_get($row, 'channel_type') ?? '');
-                $category = (string) (data_get($row, 'category') ?? data_get($row, 'campaignType') ?? '');
-                $operator = (string) (data_get($row, 'operator') ?? '');
+                $channelType = (string) (data_get($row, 'inventoryType') ?? data_get($row, 'channel') ?? data_get($row, 'channel_type') ?? '');
+                $category = (string) (data_get($row, 'campaignType') ?? data_get($row, 'category') ?? '');
+                $operator = (string) (data_get($row, 'operator') ?? '-');
 
-                $success = data_get($row, 'success') ?? data_get($row, 'successCount') ?? data_get($row, 'success_count');
-                $failed = data_get($row, 'failed') ?? data_get($row, 'failedCount') ?? data_get($row, 'failed_count');
-                $statusDetail = '';
-                if (is_numeric($success) || is_numeric($failed)) {
-                    $statusDetail = sprintf('Sukses: %s Gagal: %s', (string) ($success ?? 0), (string) ($failed ?? 0));
-                }
+                $status = (string) (data_get($row, 'status') ?? '');
+                $reason = (string) (data_get($row, 'reason') ?? '');
+                $statusDetail = trim($status . ($reason !== '' ? (': ' . $reason) : ''));
 
-                $totalPrice = data_get($row, 'totalPrice') ?? data_get($row, 'total_price') ?? data_get($row, 'price');
-                $totalPriceLabel = is_numeric($totalPrice)
-                    ? 'Rp ' . number_format((float) $totalPrice, 0, ',', '.')
-                    : (is_string($totalPrice) ? $totalPrice : '');
+                $bucketMain = data_get($row, 'bucketMain');
+                $totalPriceLabel = is_numeric($bucketMain)
+                    ? 'Rp ' . number_format((float) $bucketMain, 0, ',', '.')
+                    : '-';
 
                 return [
                     'id' => $id,
@@ -436,6 +451,40 @@ class CampaignMenuController extends Controller
         } catch (Throwable) {
             return [];
         }
+    }
+
+    private function resolveUnitPrice(Request $request, string $channel, string $menu): int
+    {
+        // Only SMS create flows need this for now.
+        if ($channel !== 'sms') {
+            return 0;
+        }
+
+        $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
+        if ($gatewayToken === '') {
+            return 0;
+        }
+
+        $priceKey = match ($menu) {
+            'location-based-area' => 'LBA_SMS',
+            'targeted' => 'TARGETED_SMS',
+            default => null,
+        };
+
+        if ($priceKey === null) {
+            return 0;
+        }
+
+        /** @var MyadsApiClient $client */
+        $client = app(MyadsApiClient::class);
+        $resp = $client->campaignPriceView($gatewayToken, ['campaignType' => 'ALL']);
+
+        $value = data_get($resp, 'data.data.' . $priceKey);
+        if (is_numeric($value)) {
+            return (int) $value;
+        }
+
+        return 0;
     }
 
     private function pages(): array
@@ -487,20 +536,6 @@ class CampaignMenuController extends Controller
                         'Review & Pembayaran',
                         'Menunggu Persetujuan',
                     ],
-                ],
-                'broadcast' => [
-                    'title' => 'SMS Broadcast',
-                    'headline' => 'Flow campaign broadcast SMS dari draft sampai approval',
-                    'description' => 'Struktur halaman mengikuti deck PPT untuk pembuatan broadcast SMS, termasuk konten iklan, waktu pengiriman, preview, review biaya, dan status approval.',
-                    'badge' => 'SMS Broadcast',
-                    'steps' => [
-                        'Buat konten iklan',
-                        'Atur pengiriman',
-                        'Preview pesan',
-                        'Review pembayaran',
-                        'Menunggu persetujuan',
-                    ],
-                    'screenshots' => $broadcastShots,
                 ],
                 'targeted' => [
                     'title' => 'SMS Targeted',

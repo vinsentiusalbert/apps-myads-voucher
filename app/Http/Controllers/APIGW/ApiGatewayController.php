@@ -17,13 +17,13 @@ class ApiGatewayController extends Controller
 		abort_unless($channel === 'sms', 404);
 
 		$validated = $request->validate([
-			'campaign_name' => ['nullable', 'string', 'max:255'],
-			'sender_name' => ['nullable', 'string', 'max:255'],
-			'message' => ['nullable', 'string', 'max:1024'],
-			'recipient_total' => ['nullable', 'integer', 'min:1', 'max:100000'],
+			'campaign_name' => ['required', 'string', 'max:255'],
+			'sender_name' => ['required', 'string', 'max:255'],
+			'message' => ['required', 'string', 'max:1024'],
+			'recipient_total' => ['required', 'integer', 'min:1', 'max:100000'],
 			'delivery_date' => ['nullable', 'date_format:Y-m-d'],
 			'delivery_time' => ['nullable', 'date_format:H:i'],
-			'control_number' => ['nullable', 'string', 'max:32'],
+			'control_number' => ['required', 'string', 'max:32'],
 			'mms_file' => ['nullable', 'string', 'max:5000'],
 		]);
 
@@ -31,36 +31,19 @@ class ApiGatewayController extends Controller
 			$gwToken = $this->requireGatewayToken($request);
 
 			$campaignName = trim((string) ($validated['campaign_name'] ?? ''));
-			if ($campaignName === '') {
-				$campaignName = 'UAT SMS Targeted ' . now()->format('YmdHis');
-			}
-
 			$senderName = trim((string) ($validated['sender_name'] ?? ''));
-			if ($senderName === '') {
-				$senderName = 'MyAds';
-			}
-
 			$message = trim((string) ($validated['message'] ?? ''));
-			if ($message === '') {
-				$message = 'testing SIT';
-			}
+			$recipientTotal = (int) ($validated['recipient_total'] ?? 0);
 
-			$recipientTotal = (int) ($validated['recipient_total'] ?? 10);
-			if ($recipientTotal <= 0) {
-				$recipientTotal = 10;
-			}
-
-			$deliveryDate = $this->formatDateYmd($validated['delivery_date'] ?? null) ?? now()->format('Ymd');
-			$deliveryTime = $this->formatTimeHiToHmm($validated['delivery_time'] ?? null) ?? '0800';
+			$deliveryDate = $this->formatDateYmd($validated['delivery_date'] ?? null);
+			$deliveryTime = $this->formatTimeHiToHmm($validated['delivery_time'] ?? null);
 
 			$controlNumber = $this->normalizeMsisdn((string) ($validated['control_number'] ?? ''));
-			if ($controlNumber === null) {
-				$controlNumber = '6282381600327';
-			}
 
 			$mmsFile = trim((string) ($validated['mms_file'] ?? ''));
-			if ($mmsFile === '') {
-				$mmsFile = trim((string) config('myads.dummy_mms_file', ''));
+
+			if ($campaignName === '' || $senderName === '' || $message === '' || $recipientTotal <= 0 || $controlNumber === null || $deliveryDate === null || $deliveryTime === null) {
+				throw new RuntimeException('Data belum lengkap. Mohon lengkapi judul, pengirim, isi pesan, jumlah penerima, jadwal kirim, dan nomor kontrol.');
 			}
 
 			$payload = [
@@ -109,64 +92,47 @@ class ApiGatewayController extends Controller
 		abort_unless($channel === 'sms', 404);
 
 		$validated = $request->validate([
-			'campaign_name' => ['nullable', 'string', 'max:255'],
-			'sender_name' => ['nullable', 'string', 'max:255'],
-			'message' => ['nullable', 'string', 'max:1024'],
-			'recipient_total' => ['nullable', 'integer', 'min:1', 'max:100000'],
+			'campaign_name' => ['required', 'string', 'max:255'],
+			'sender_name' => ['required', 'string', 'max:255'],
+			'message' => ['required', 'string', 'max:1024'],
+			'content_name' => ['required', 'string', 'max:255'],
+			'recipient_total' => ['required', 'integer', 'min:1', 'max:100000'],
 			'delivery_start_date' => ['nullable', 'date_format:Y-m-d'],
 			'delivery_end_date' => ['nullable', 'date_format:Y-m-d'],
 			'delivery_start_time' => ['nullable', 'date_format:H:i'],
 			'delivery_end_time' => ['nullable', 'date_format:H:i'],
-			'control_number' => ['nullable', 'string', 'max:32'],
-			'location_name' => ['nullable', 'string', 'max:255'],
-			'location_lat' => ['nullable', 'numeric'],
-			'location_lng' => ['nullable', 'numeric'],
-			'location_radius' => ['nullable', 'integer', 'min:1', 'max:50000'],
+			'control_number' => ['required', 'string', 'max:32'],
+			'location_name' => ['required', 'string', 'max:255'],
+			'location_lat' => ['required', 'numeric'],
+			'location_lng' => ['required', 'numeric'],
+			'location_radius' => ['required', 'integer', 'min:1', 'max:50000'],
+			'location_type' => ['required', 'string', 'in:ALL,HOME,MALL'],
 		]);
 
 		try {
 			$gwToken = $this->requireGatewayToken($request);
 
 			$campaignName = trim((string) ($validated['campaign_name'] ?? ''));
-			if ($campaignName === '') {
-				$campaignName = 'UAT SMS LBA ' . now()->format('YmdHis');
-			}
-
 			$senderName = trim((string) ($validated['sender_name'] ?? ''));
-			if ($senderName === '') {
-				$senderName = 'MyAds';
-			}
-
 			$message = trim((string) ($validated['message'] ?? ''));
-			if ($message === '') {
-				$message = 'description campaign add';
-			}
+			$contentName = trim((string) ($validated['content_name'] ?? ''));
+			$recipientTotal = (int) ($validated['recipient_total'] ?? 0);
 
-			$recipientTotal = (int) ($validated['recipient_total'] ?? 10);
-			if ($recipientTotal <= 0) {
-				$recipientTotal = 10;
-			}
-
-			$startDate = $this->formatDateYmd($validated['delivery_start_date'] ?? null) ?? now()->format('Ymd');
-			$endDate = $this->formatDateYmd($validated['delivery_end_date'] ?? null) ?? $startDate;
-			$startTime = $this->formatTimeHiToHmm($validated['delivery_start_time'] ?? null) ?? '0800';
-			$endTime = $this->formatTimeHiToHmm($validated['delivery_end_time'] ?? null) ?? '1344';
+			$startDate = $this->formatDateYmd($validated['delivery_start_date'] ?? null);
+			$endDate = $this->formatDateYmd($validated['delivery_end_date'] ?? null);
+			$startTime = $this->formatTimeHiToHmm($validated['delivery_start_time'] ?? null);
+			$endTime = $this->formatTimeHiToHmm($validated['delivery_end_time'] ?? null);
 
 			$controlNumber = $this->normalizeMsisdn((string) ($validated['control_number'] ?? ''));
-			if ($controlNumber === null) {
-				$controlNumber = '6282381600326';
-			}
 
 			$locationName = trim((string) ($validated['location_name'] ?? ''));
-			if ($locationName === '') {
-				$locationName = 'Bundaran HI, Jakarta';
-			}
+			$lat = (float) ($validated['location_lat'] ?? 0);
+			$lng = (float) ($validated['location_lng'] ?? 0);
+			$radius = (int) ($validated['location_radius'] ?? 0);
+			$locationType = trim((string) ($validated['location_type'] ?? ''));
 
-			$lat = (float) ($validated['location_lat'] ?? -6.1944491);
-			$lng = (float) ($validated['location_lng'] ?? 106.8229198);
-			$radius = (int) ($validated['location_radius'] ?? 500);
-			if ($radius <= 0) {
-				$radius = 500;
+			if ($campaignName === '' || $senderName === '' || $message === '' || $contentName === '' || $recipientTotal <= 0 || $controlNumber === null || $startDate === null || $endDate === null || $startTime === null || $endTime === null || $locationName === '' || $radius <= 0 || $locationType === '') {
+				throw new RuntimeException('Data belum lengkap. Mohon lengkapi semua field sebelum mengirim campaign.');
 			}
 
 			$payload = [
@@ -185,7 +151,7 @@ class ApiGatewayController extends Controller
 				],
 				'controlNumbers' => [$controlNumber],
 				'contents' => [
-					'contentName' => 'test',
+					'contentName' => $contentName,
 					'message' => $message,
 					'locations' => [
 						'address' => $locationName,
@@ -194,7 +160,7 @@ class ApiGatewayController extends Controller
 						'locationNameMap' => $locationName,
 						'locationNameUser' => $locationName,
 						'radius' => $radius,
-						'locationType' => 'ALL',
+						'locationType' => $locationType,
 					],
 				],
 			];

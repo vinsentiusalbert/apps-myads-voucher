@@ -22,13 +22,15 @@ class DashboardController extends Controller
             try {
                 $balanceResp = $client->getBalance($gatewayToken);
 
-                $amount = data_get($balanceResp, 'data.data.balance')
+                $amount = data_get($balanceResp, 'data.data.balanceMain')
                     ?? data_get($balanceResp, 'data.data.mainBalance')
                     ?? data_get($balanceResp, 'data.data.amount');
 
-                $balanceExpiry = data_get($balanceResp, 'data.data.expiredAt')
-                    ?? data_get($balanceResp, 'data.data.expired_at')
-                    ?? data_get($balanceResp, 'data.data.exp');
+                $rawExpiry = data_get($balanceResp, 'data.data.expiredBalance');
+                if ($rawExpiry && is_numeric($rawExpiry)) {
+                    // Convert milliseconds to seconds and format date
+                    $balanceExpiry = date('d M Y', (int)($rawExpiry / 1000));
+                }
 
                 if (is_numeric($amount)) {
                     $balanceFormatted = 'Rp ' . number_format((float) $amount, 0, ',', '.');

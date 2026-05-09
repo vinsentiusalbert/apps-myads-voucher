@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -22,6 +23,56 @@ class MyadsApiClient
             ->acceptJson()
             ->asJson()
             ->timeout(20);
+    }
+
+    /**
+     * API gateway wrapper shape:
+     * - Outer (proxy) : { success: bool, data?: mixed, error?: mixed, message?: string }
+     * - Inner (upstream) usually: { code: int, desc: string, data: mixed }
+     *
+     * We treat `success !== true` OR `inner.code != 0` as failure.
+     */
+    private function assertGatewayOk(array $json, string $fallback): array
+    {
+        $success = $json['success'] ?? null;
+        if ($success !== null && $success !== true) {
+            throw new RuntimeException($this->extractGatewayMessage($json, $fallback));
+        }
+
+        $inner = $json['data'] ?? null;
+        if (is_array($inner)) {
+            $innerSuccess = $inner['success'] ?? null;
+            if ($innerSuccess !== null && $innerSuccess !== true) {
+                throw new RuntimeException($this->extractGatewayMessage($inner, $fallback));
+            }
+
+            $code = $inner['code'] ?? null;
+            if (is_numeric($code) && (int) $code !== 0) {
+                $desc = $inner['desc'] ?? null;
+                $message = is_string($desc) && trim($desc) !== '' ? $desc : $fallback;
+                throw new RuntimeException($message);
+            }
+        }
+
+        return $json;
+    }
+
+    private function extractGatewayMessage(array $json, string $fallback): string
+    {
+        $msg = $json['message'] ?? $json['error'] ?? null;
+        if (is_string($msg) && trim($msg) !== '') {
+            return $msg;
+        }
+
+        $desc = data_get($json, 'desc')
+            ?? data_get($json, 'error.desc')
+            ?? data_get($json, 'data.desc')
+            ?? null;
+        if (is_string($desc) && trim($desc) !== '') {
+            return $desc;
+        }
+
+        return $fallback;
     }
 
     /**
@@ -96,6 +147,22 @@ class MyadsApiClient
     /**
      * @return array{success:bool, data?:array}
      */
+    public function campaignPriceView(string $gatewayToken, array $payload = ['campaignType' => 'ALL']): array
+    {
+        return $this->postGw('/api/gw/price-view', $gatewayToken, $payload);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function profileDropdownList(string $gatewayToken, array $payload = ['profile' => 'ALL']): array
+    {
+        return $this->postGw('/api/gw/profile-dropdown-list', $gatewayToken, $payload);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
     public function campaignList(string $gatewayToken, array $payload = ['campaignId' => null]): array
     {
         return $this->postGw('/api/gw/list', $gatewayToken, $payload);
@@ -136,7 +203,8 @@ class MyadsApiClient
             throw new RuntimeException($this->extractErrorMessage($response, 'Request ke API GW gagal'));
         }
 
-        return (array) $response->json();
+        $json = (array) $response->json();
+        return $this->assertGatewayOk($json, 'Request ke API GW gagal');
     }
 
     private function extractErrorMessage(Response $response, string $fallback): string
@@ -157,5 +225,34 @@ class MyadsApiClient
         }
 
         return $fallback;
+    }
+
+    /**
+     * Upload file via gateway if needed by MMS flows.
+     * Kept here because ApiGatewayTestController references it.
+     */
+    public function uploadFile(string $gatewayToken, UploadedFile $file, string $type = 'FILE'): array
+    {
+        try {
+            $response = Http::baseUrl($this->baseUrl)
+                ->acceptJson()
+                ->timeout(60)
+                ->withHeaders([
+                    'x-api-gw-token' => $gatewayToken,
+                ])
+                ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
+                ->post('/api/gw/upload', [
+                    'type' => $type,
+                ]);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API upload: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Upload gagal'));
+        }
+
+        $json = (array) $response->json();
+        return $this->assertGatewayOk($json, 'Upload gagal');
     }
 }

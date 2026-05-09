@@ -151,10 +151,10 @@
 
                 <div class="field-group">
                     <label for="campaign_message" class="field-label">{{ $isTargeted ? '' : 'Isi Konten' }}</label>
-                    <textarea id="campaign_message" class="text-input campaign-message-input">{{ $isTargeted ? 'asd' : 'Promosi outlet makin untung di MyAds! Top up MyAds Rp50k dapat BONUS SALDO Rp300k. Aktifkan di bit.ly/JoinMyAds' }}</textarea>
+                    <textarea id="campaign_message" class="text-input campaign-message-input">{{ $isTargeted ? '' : '' }}</textarea>
                     <div class="campaign-message-meta">
                         <span>Mohon pastikan pesan iklan Anda tidak mengandung unsur terlarang.</span>
-                        <strong id="campaignMessageCount">{{ $isTargeted ? '3/160 karakter (1 SMS)' : '117/160 karakter' }}</strong>
+                        <strong id="campaignMessageCount">{{ $isTargeted ? '0/160 karakter (1 SMS)' : '0/160 karakter' }}</strong>
                     </div>
                 </div>
 
@@ -274,7 +274,7 @@
                     <p class="campaign-phone__time">Hari ini 13:59</p>
                     <div class="campaign-phone__sheet">
                         <div class="campaign-phone__bubble" id="campaignMessagePreview">
-                            Promosi outlet makin untung di MyAds! Top up MyAds Rp50k dapat BONUS SALDO Rp300k. Aktifkan di bit.ly/JoinMyAds
+                            
                         </div>
                         <div class="campaign-phone__actions" id="campaignPhoneActions"></div>
                     </div>
@@ -461,7 +461,7 @@
                         </div>
                         <div class="campaign-estimate-card">
                             <span class="campaign-estimate-card__label">Estimasi Penerima Potensial</span>
-                            <strong id="campaignStepTwoEstimate">131.409-160.609</strong>
+                            <strong id="campaignStepTwoEstimate">-</strong>
                         </div>
                     </div>
                 </div>
@@ -478,11 +478,11 @@
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label" for="campaignScheduleDate1">Tgl Kirim</label>
                                     <div class="campaign-range-field">
-                                        <input id="campaignScheduleDate1Start" type="date" class="text-input" value="2026-04-24" data-schedule-date-start="1">
+                                        <input id="campaignScheduleDate1Start" type="date" class="text-input" value="{{ now()->toDateString() }}" data-schedule-date-start="1">
                                         <span class="campaign-range-field__separator">-</span>
-                                        <input id="campaignScheduleDate1End" type="date" class="text-input" value="2026-04-24" data-schedule-date-end="1">
+                                        <input id="campaignScheduleDate1End" type="date" class="text-input" value="{{ now()->toDateString() }}" data-schedule-date-end="1">
                                     </div>
-                                    <p class="campaign-range-preview" id="campaignScheduleDatePreview1">24/04/26 - 24/04/26</p>
+                                    <p class="campaign-range-preview" id="campaignScheduleDatePreview1">{{ now()->format('d/m/y') }} - {{ now()->format('d/m/y') }}</p>
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label" for="campaignScheduleTime1">Jam Kirim</label>
@@ -599,7 +599,7 @@
                             <span class="campaign-review__label">Judul Iklan</span>
                             <button type="button" class="campaign-review-card__link" data-review-edit="1">Ubah</button>
                         </div>
-                        <strong id="campaignReviewTitle">tes</strong>
+                        <strong id="campaignReviewTitle">-</strong>
                     </div>
 
                     <article class="campaign-review-card" data-review-card="content">
@@ -693,7 +693,7 @@
                                 <span class="campaign-cost-card__section-title">Produk yang Dipilih</span>
                                 <div class="campaign-cost-card__row">
                                     <span>Kategori Iklan</span>
-                                    <strong>LBA</strong>
+                                    <strong>TARGETED</strong>
                                 </div>
                                 <div class="campaign-cost-card__row">
                                     <span>Tipe Kanal</span>
@@ -701,24 +701,24 @@
                                 </div>
                                 <div class="campaign-cost-card__row">
                                     <span>Harga Satuan</span>
-                                    <strong>Rp 200</strong>
+                                    <strong id="campaignReviewUnitPrice">{{ isset($unitPrice) && is_numeric($unitPrice) && (int) $unitPrice > 0 ? 'Rp ' . number_format((int) $unitPrice, 0, ',', '.') : '-' }}</strong>
                                 </div>
                             </div>
                             <div class="campaign-cost-card__section">
                                 <div class="campaign-cost-card__row campaign-cost-card__row--total">
                                     <span>Grand Total</span>
-                                    <strong id="campaignReviewGrandTotal">Rp 1.000</strong>
+                                    <strong id="campaignReviewGrandTotal">-</strong>
                                 </div>
                             </div>
                             <div class="campaign-cost-card__section">
                                 <span class="campaign-cost-card__section-title">Pembayaran Anda Menggunakan</span>
                                 <div class="campaign-cost-card__row">
                                     <span>Saldo Umum</span>
-                                    <strong class="campaign-cost-card__danger">Rp 0</strong>
+                                    <strong class="campaign-cost-card__danger">-</strong>
                                 </div>
                                 <div class="campaign-cost-card__row">
                                     <span>Saldo Monetary</span>
-                                    <strong id="campaignReviewPaymentMonetary">Rp 1.000</strong>
+                                    <strong id="campaignReviewPaymentMonetary">-</strong>
                                 </div>
                             </div>
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
@@ -753,7 +753,7 @@
             <h2 id="campaignTitleHeading">Buat Judul Iklan</h2>
             <div class="field-group">
                 <label for="campaign_title" class="field-label">Judul Iklan</label>
-                <input id="campaign_title" type="text" class="text-input" value="tes" placeholder="Masukkan judul iklan">
+                <input id="campaign_title" type="text" class="text-input" value="" placeholder="Masukkan judul iklan">
             </div>
             <div class="campaign-title-modal__actions">
                 <a href="{{ route('dashboard') }}" class="campaign-modal-btn campaign-modal-btn--ghost">Batal</a>
@@ -907,7 +907,7 @@
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
         (() => {
-            const isTargeted = @json($isTargeted);
+            const isTargeted = "{{ $isTargeted ? 'true' : 'false' }}" === 'true';
             const body = document.body;
             const titleInput = document.getElementById('campaign_title');
             const titleSubmit = document.getElementById('campaignTitleSubmit');
@@ -959,8 +959,8 @@
 
             let buttonIndex = 0;
             const locationState = {
-                name: 'Bundaran HI, Jakarta',
-                audience: 2400,
+                name: '',
+                audience: 0,
                 lat: -6.1944491,
                 lng: 106.8229198,
             };
@@ -1207,6 +1207,9 @@
 
             const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(Number(value || 0))}`;
 
+            const unitPrice = Number("{{ (int) ($unitPrice ?? 0) }}") || 0;
+            const formatUnitPrice = () => unitPrice > 0 ? formatCurrency(unitPrice) : '-';
+
             const hasTargetedProfileFilters = () => targetedProfileFields.some((field) => field?.value?.trim());
 
             const profileTemplates = {
@@ -1357,7 +1360,8 @@
                 const testRecipient = document.getElementById('campaignTestRecipient');
                 const recipientCount = Number(document.getElementById('campaignRecipientCount')?.value || 0);
                 const radius = Number(locationRadiusInput?.value || 0);
-                const totalCost = recipientCount * 200;
+                const totalCost = unitPrice > 0 ? recipientCount * unitPrice : 0;
+                const totalCostLabel = unitPrice > 0 ? formatCurrency(totalCost) : '-';
 
                 setText('campaignReviewTitle', titleInput?.value?.trim() || 'Tanpa Judul');
                 setText('campaignReviewSender', sender?.value || 'MyAds SMS');
@@ -1381,8 +1385,9 @@
                 setText('campaignReviewTestRecipient', testRecipient?.value || 'Belum dipilih');
                 setText('campaignReviewRecipientCount', `${normalizeAudience(recipientCount)} Pesan`);
                 setText('campaignReviewPotentialRange', normalizeAudience(locationState.audience));
-                setText('campaignReviewGrandTotal', formatCurrency(totalCost));
-                setText('campaignReviewPaymentMonetary', formatCurrency(totalCost));
+                setText('campaignReviewUnitPrice', formatUnitPrice());
+                setText('campaignReviewGrandTotal', totalCostLabel);
+                setText('campaignReviewPaymentMonetary', totalCostLabel);
 
                 if (reviewSchedules) {
                     const schedules = Array.from(scheduleList?.querySelectorAll('[data-schedule-item]') || []).map((item, index) => {
@@ -1472,6 +1477,10 @@
                     return;
                 }
 
+                const pad = (n) => String(n).padStart(2, '0');
+                const now = new Date();
+                const defaultDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
                 scheduleIndex += 1;
 
                 const item = document.createElement('article');
@@ -1486,11 +1495,11 @@
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label" for="campaignScheduleDate${scheduleIndex}Start">Tgl Kirim</label>
                             <div class="campaign-range-field">
-                                <input id="campaignScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="2026-04-24" data-schedule-date-start="${scheduleIndex}">
+                                <input id="campaignScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${defaultDate}" data-schedule-date-start="${scheduleIndex}">
                                 <span class="campaign-range-field__separator">-</span>
-                                <input id="campaignScheduleDate${scheduleIndex}End" type="date" class="text-input" value="2026-04-24" data-schedule-date-end="${scheduleIndex}">
+                                <input id="campaignScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${defaultDate}" data-schedule-date-end="${scheduleIndex}">
                             </div>
-                            <p class="campaign-range-preview" id="campaignScheduleDatePreview${scheduleIndex}">24/04/26 - 24/04/26</p>
+                            <p class="campaign-range-preview" id="campaignScheduleDatePreview${scheduleIndex}">${formatScheduleDate(defaultDate)} - ${formatScheduleDate(defaultDate)}</p>
                         </div>
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label" for="campaignScheduleTime${scheduleIndex}Start">Jam Kirim</label>
@@ -1596,8 +1605,8 @@
                         </div>
                         <div class="campaign-button-card__field">
                             <label>Button Text</label>
-                            <input type="text" class="text-input" data-button-text maxlength="25" value="tes">
-                            <div class="campaign-button-card__meta" data-button-meta>3 / 25</div>
+                            <input type="text" class="text-input" data-button-text maxlength="25" value="">
+                            <div class="campaign-button-card__meta" data-button-meta>0 / 25</div>
                         </div>
                         <div class="campaign-button-card__field">
                             <label>Url Type</label>
@@ -1607,8 +1616,8 @@
                         </div>
                         <div class="campaign-button-card__field">
                             <label>Website URL</label>
-                            <input type="text" class="text-input" data-action-url maxlength="2000" value="https://asd.com">
-                            <div class="campaign-button-card__meta" data-url-meta>15 / 2000</div>
+                            <input type="text" class="text-input" data-action-url maxlength="2000" value="">
+                            <div class="campaign-button-card__meta" data-url-meta>0 / 2000</div>
                         </div>
                     </div>
                 `;
@@ -1989,12 +1998,6 @@
             const gwDeliveryTime = document.getElementById('gwDeliveryTime');
             const gwControlNumber = document.getElementById('gwControlNumber');
 
-            const toIsoStamp = () => {
-                const d = new Date();
-                const pad = (n) => String(n).padStart(2, '0');
-                return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-            };
-
             const pickScheduleValue = (selector) => {
                 const el = document.querySelector(selector);
                 return el && typeof el.value === 'string' ? el.value : '';
@@ -2010,10 +2013,10 @@
                 const hourValue = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
                 const minuteValue = pickScheduleValue(`[data-schedule-time-start-minute="${scheduleId}"]`);
 
-                gwCampaignName.value = (titleInput?.value || '').trim() || `UAT SMS Targeted ${toIsoStamp()}`;
-                gwSenderName.value = senderInput?.value || 'MyAds';
+                gwCampaignName.value = (titleInput?.value || '').trim();
+                gwSenderName.value = senderInput?.value || '';
                 gwMessage.value = (messageInput?.value || '').trim();
-                gwRecipientTotal.value = String(document.getElementById('campaignRecipientCount')?.value || 10);
+                gwRecipientTotal.value = String(document.getElementById('campaignRecipientCount')?.value || '');
                 gwDeliveryDate.value = dateValue;
                 gwDeliveryTime.value = hourValue && minuteValue ? `${hourValue}:${minuteValue}` : '';
                 gwControlNumber.value = String(document.getElementById('campaignTestRecipient')?.value || '');
