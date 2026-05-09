@@ -27,6 +27,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/campaign/wa-business/campaign-template/{template}', [CampaignMenuController::class, 'showCampaignTemplate'])->name('campaign-template.show');
 
     // SMS campaign create (via myads_api proxy)
+    Route::get('/campaign/price-view', [ApiGatewayController::class, 'priceView'])->name('campaign.price-view');
+    Route::get('/campaign/{channel}/targeted/profile-dropdown-list', [ApiGatewayController::class, 'profileDropdownList'])->name('campaign.targeted.profile-dropdown-list');
     Route::post('/campaign/{channel}/targeted/send', [ApiGatewayController::class, 'targetedAdd'])->name('campaign.targeted.send');
     Route::post('/campaign/{channel}/location-based-area/send', [ApiGatewayController::class, 'lbaAdd'])->name('campaign.lba.send');
 

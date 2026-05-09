@@ -80,6 +80,13 @@
         $campaignSmsLabel = $campaignSmsTotal === null ? '-' : (string) $campaignSmsTotal;
         $campaignWaLabel = $campaignWaTotal === null ? '-' : (string) $campaignWaTotal;
         $gwStatusLabel = session()->has('myads.gw_token') ? 'OK' : '-';
+        $formatPrice = static fn ($value): string => is_numeric($value)
+            ? 'Rp ' . number_format((float) $value, 0, ',', '.') . ' / pesan'
+            : 'Harga belum tersedia';
+        $smsLbaPrice = $formatPrice(data_get($campaignPrices ?? [], 'sms_lba'));
+        $smsTargetedPrice = $formatPrice(data_get($campaignPrices ?? [], 'sms_targeted'));
+        $waLbaPrice = $formatPrice(data_get($campaignPrices ?? [], 'wa_lba'));
+        $waTargetedPrice = $formatPrice(data_get($campaignPrices ?? [], 'wa_targeted'));
     @endphp
 
     <section class="portal-hero">
@@ -107,7 +114,7 @@
     <section class="portal-card portal-card--insight">
         <div class="portal-card__header">
             <h2>Ringkasan Dashboard</h2>
-            <a href="#">Refresh</a>
+            <a href="{{ route('dashboard') }}">Refresh</a>
         </div>
 
         <div class="portal-stats">
@@ -140,8 +147,14 @@
                     <span>{{ $campaignSmsLabel }} campaign</span>
                 </div>
                 <div class="portal-service-list">
-                    <span class="portal-service-list__item">Lihat campaign SMS di menu navigasi.</span>
-                    <span class="portal-service-list__item">Gunakan token gateway untuk request list / create.</span>
+                    <a href="{{ route('campaign.menu', ['channel' => 'sms', 'menu' => 'location-based-area', 'view' => 'create']) }}" class="portal-service-list__item portal-service-list__item--campaign">
+                        <span>Location Based Area</span>
+                        <strong>{{ $smsLbaPrice }}</strong>
+                    </a>
+                    <a href="{{ route('campaign.menu', ['channel' => 'sms', 'menu' => 'targeted', 'view' => 'create']) }}" class="portal-service-list__item portal-service-list__item--campaign">
+                        <span>Targeted</span>
+                        <strong>{{ $smsTargetedPrice }}</strong>
+                    </a>
                 </div>
             </article>
 
@@ -151,13 +164,19 @@
                     <span>{{ $campaignWaLabel }} campaign</span>
                 </div>
                 <div class="portal-service-list">
-                    <span class="portal-service-list__item">Lihat campaign WA Business di menu navigasi.</span>
-                    <span class="portal-service-list__item">Campaign Template tetap dari database UI.</span>
-                    <span class="portal-service-list__item">Data campaign list/stop/add dari API GW.</span>
+                    <a href="{{ route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'location-based-area', 'view' => 'create']) }}" class="portal-service-list__item portal-service-list__item--campaign">
+                        <span>Location Based Area</span>
+                        <strong>{{ $waLbaPrice }}</strong>
+                    </a>
+                    <a href="{{ route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'targeted', 'view' => 'create']) }}" class="portal-service-list__item portal-service-list__item--campaign">
+                        <span>Targeted</span>
+                        <strong>{{ $waTargetedPrice }}</strong>
+                    </a>
                 </div>
             </article>
         </div>
     </section>
+
 @endsection
 
 @push('scripts')

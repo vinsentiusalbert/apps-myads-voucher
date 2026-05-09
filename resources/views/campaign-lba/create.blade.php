@@ -1,6 +1,7 @@
 @php
     $title = $page['title'];
-    $bodyClass = 'campaign-title-locked';
+    $autoCampaignName = 'gotoads_sms_lba_' . now()->format('YmdHis');
+    $bodyClass = 'campaign-title-ready';
     $mainClass = 'campaign-main';
     $contentClass = 'campaign-content';
     $isTargeted = $menu === 'targeted';
@@ -114,7 +115,7 @@
         </div>
         <div class="campaign-title-chip">
             <span>Judul Iklan</span>
-            <strong id="campaignTitlePreview">Belum diisi</strong>
+            <strong id="campaignTitlePreview">{{ $autoCampaignName }}</strong>
         </div>
     </div>
 
@@ -125,12 +126,6 @@
                     {{-- <input type="radio" name="compose_type" checked> --}}
                     <span>Isi Konten Pesan Manual</span>
                 </label>
-                @if ($isTargeted)
-                <label class="campaign-radio campaign-radio--muted">
-                    <input type="radio" name="compose_type" disabled>
-                    <span>Buat Pesan Otomatis dengan GenAI</span>
-                </label>
-                @endif
             </div>
 
                 <div class="field-group">
@@ -155,10 +150,10 @@
 
                 <div class="field-group">
                     <label for="campaign_message" class="field-label">{{ $isTargeted ? '' : 'Isi Konten' }}</label>
-                    <textarea id="campaign_message" name="message" form="campaignGwSubmitForm" class="text-input campaign-message-input">{{ $isTargeted ? 'asd' : 'Promosi outlet makin untung di MyAds! Top up MyAds Rp50k dapat BONUS SALDO Rp300k. Aktifkan di bit.ly/JoinMyAds' }}</textarea>
+                    <textarea id="campaign_message" name="message" form="campaignGwSubmitForm" class="text-input campaign-message-input"></textarea>
                     <div class="campaign-message-meta">
                         <span>Mohon pastikan pesan iklan Anda tidak mengandung unsur terlarang.</span>
-                        <strong id="campaignMessageCount">{{ $isTargeted ? '3/160 karakter (1 SMS)' : '117/160 karakter' }}</strong>
+                        <strong id="campaignMessageCount">{{ $isTargeted ? '0/160 karakter (1 SMS)' : '0/160 karakter' }}</strong>
                     </div>
                 </div>
 
@@ -209,7 +204,7 @@
                     <div class="field-group campaign-field-group--compact">
                         <label for="campaign_gender" class="field-label">Jenis Kelamin</label>
                         <select id="campaign_gender" class="campaign-search-multiselect" multiple data-placeholder="Cari jenis kelamin">
-                            <option value="male" selected>Laki-laki</option>
+                            <option value="male">Laki-laki</option>
                             <option value="female">Perempuan</option>
                             <option value="all">Semua</option>
                         </select>
@@ -218,7 +213,7 @@
                     <div class="field-group campaign-field-group--compact">
                         <label for="campaign_age" class="field-label">Rentang Umur</label>
                         <select id="campaign_age" class="campaign-search-multiselect" multiple data-placeholder="Cari rentang umur">
-                            <option value="under-15" selected>&lt; 15 tahun</option>
+                            <option value="under-15">&lt; 15 tahun</option>
                             <option value="15-24">15 - 24 tahun</option>
                             <option value="25-34">25 - 34 tahun</option>
                             <option value="35-44">35 - 44 tahun</option>
@@ -427,7 +422,7 @@
                         <div class="field-group campaign-field-group--compact">
                             <label for="campaignRecipientCount" class="field-label">Jumlah Penerima</label>
                             <input id="campaignRecipientCount" name="recipient_total" form="campaignGwSubmitForm" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
-                            <p class="campaign-step-two__alert">Jumlah penerima minimal 5 perhari</p>
+                            <p class="campaign-step-two__alert" data-recipient-count-alert>Jumlah penerima minimal 5 perhari</p>
                         </div>
                         <div class="campaign-estimate-card">
                             <span class="campaign-estimate-card__label">Estimasi Penerima Potensial</span>
@@ -487,7 +482,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <p class="campaign-step-two__alert">Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal</p>
+                            <p class="campaign-step-two__alert" data-schedule-duration-alert>Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal</p>
                         </article>
                     </div>
                     <div class="campaign-schedule-actions">
@@ -515,22 +510,23 @@
 
                 <div class="campaign-step-two__section">
                     <h2 class="campaign-block__title">Tentukan Nomor Penerima Tes Iklan</h2>
-                    <div class="field-group">
-                        <label for="campaignTestRecipient" class="field-label">Nomor Penerima Tes Iklan</label>
-                        <select id="campaignTestRecipient" name="control_number" form="campaignGwSubmitForm" class="text-input text-input--select">
-                            <option value="">Nomor Penerima Tes Iklan</option>
-                            <option value="081234567890">081234567890</option>
-                            <option value="082345678901">082345678901</option>
-                        </select>
+                    <div class="campaign-test-recipient" id="campaignTestRecipientBuilder">
+                        <input type="hidden" id="campaignTestRecipient" name="control_number" form="campaignGwSubmitForm" value="">
+                        <fieldset class="campaign-test-recipient__box">
+                            <legend>Nomor Penerima Tes Iklan</legend>
+                            <div class="campaign-test-recipient__entry">
+                                <span class="campaign-test-recipient__prefix">+62</span>
+                                <input id="campaignTestRecipientInput" type="text" inputmode="numeric" class="campaign-test-recipient__input" placeholder="Nomor Penerima Tes Iklan">
+                                <button type="button" class="campaign-test-recipient__add" id="campaignTestRecipientAdd">Tambahkan</button>
+                            </div>
+                            <div class="campaign-test-recipient__list" id="campaignTestRecipientList"></div>
+                        </fieldset>
                     </div>
-                    <p class="campaign-block__copy">
-                        Nomor Penerima Tes Iklan digunakan untuk memastikan apakah pesan berhasil terkirim. Pesan akan dikirimkan 1 jam sebelum jadwal pengiriman.
-                    </p>
                 </div>
 
-            <div class="campaign-step-two__section">
+            {{-- <div class="campaign-step-two__section">
                 <a href="#" class="campaign-inline-link campaign-inline-link--strong campaign-inline-link--arrow">Gunakan Pengiriman Pesan Spesifik (Optional)</a>
-            </div>
+            </div> --}}
 
             <div class="campaign-step-two__section">
                 <label class="campaign-terms">
@@ -695,6 +691,9 @@
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
                             <form id="campaignGwSubmitForm" method="POST" action="{{ route('campaign.lba.send', ['channel' => $channel]) }}" hidden>
                                 @csrf
+                                <input type="hidden" name="campaign_name" id="campaign_title" value="{{ $autoCampaignName }}">
+                                <input type="hidden" name="content_name" id="gwContentName" value="{{ $autoCampaignName }}">
+                                <input type="hidden" name="location_type" id="gwLocationType" value="ALL">
                                 <input type="hidden" name="delivery_start_time" id="gwDeliveryStartTime">
                                 <input type="hidden" name="delivery_end_time" id="gwDeliveryEndTime">
                                 <input type="hidden" name="location_name" id="gwLocationName">
@@ -716,21 +715,6 @@
 @endsection
 
 @section('after_shell')
-    <div class="campaign-title-modal" id="campaignTitleModal" aria-hidden="false">
-        <div class="campaign-title-modal__backdrop"></div>
-        <div class="campaign-title-modal__card" role="dialog" aria-modal="true" aria-labelledby="campaignTitleHeading">
-            <h2 id="campaignTitleHeading">Buat Judul Iklan</h2>
-            <div class="field-group">
-                <label for="campaign_title" class="field-label">Judul Iklan</label>
-                <input id="campaign_title" name="campaign_name" form="campaignGwSubmitForm" type="text" class="text-input" value="tes" placeholder="Masukkan judul iklan">
-            </div>
-            <div class="campaign-title-modal__actions">
-                <a href="{{ route('dashboard') }}" class="campaign-modal-btn campaign-modal-btn--ghost">Batal</a>
-                <button type="button" class="campaign-modal-btn campaign-modal-btn--primary" id="campaignTitleSubmit" onclick="window.unlockCampaignTitleModal && window.unlockCampaignTitleModal()">Lanjutkan</button>
-            </div>
-        </div>
-    </div>
-
 <div class="campaign-map-modal" id="campaignMapModal" hidden aria-hidden="true">
     <div class="campaign-map-modal__backdrop" data-location-close onclick="window.closeCampaignLocationModal && window.closeCampaignLocationModal()"></div>
     <div class="campaign-map-modal__card" role="dialog" aria-modal="true" aria-labelledby="campaignMapHeading">
@@ -795,19 +779,6 @@
 </div>
 
 <script>
-    window.unlockCampaignTitleModal = function() {
-        const body = document.body;
-        const titleInput = document.getElementById('campaign_title');
-        const titlePreview = document.getElementById('campaignTitlePreview');
-
-        if (titlePreview) {
-            titlePreview.textContent = titleInput?.value?.trim() || 'Tanpa Judul';
-        }
-
-        body.classList.remove('campaign-title-locked');
-        body.classList.add('campaign-title-ready');
-    };
-
     window.openCampaignLocationModal = function() {
         const body = document.body;
         const modal = document.getElementById('campaignMapModal');
@@ -879,7 +850,6 @@
         const isTargeted = "{{ $isTargeted ? 'true' : 'false' }}" === 'true';
         const body = document.body;
         const titleInput = document.getElementById('campaign_title');
-        const titleSubmit = document.getElementById('campaignTitleSubmit');
         const titlePreview = document.getElementById('campaignTitlePreview');
         const senderInput = document.getElementById('campaign_sender');
         const senderPreview = document.getElementById('campaignSenderPreview');
@@ -906,6 +876,11 @@
         const scheduleList = document.getElementById('campaignScheduleList');
         const addScheduleButton = document.getElementById('campaignAddSchedule');
         const termsCheck = document.getElementById('campaignTermsCheck');
+        const recipientCountInput = document.getElementById('campaignRecipientCount');
+        const testRecipientField = document.getElementById('campaignTestRecipient');
+        const testRecipientInput = document.getElementById('campaignTestRecipientInput');
+        const testRecipientAdd = document.getElementById('campaignTestRecipientAdd');
+        const testRecipientList = document.getElementById('campaignTestRecipientList');
         const locationModal = document.getElementById('campaignMapModal');
         const openLocationModalButton = document.getElementById('campaignOpenLocationModal');
         const locationCloseButtons = document.querySelectorAll('[data-location-close]');
@@ -1326,10 +1301,48 @@
 
         const syncStepTwoValidity = () => {
             if (stepTwoNext) {
+                const isRecipientScheduleValid = syncRecipientScheduleValidity();
                 stepTwoNext.disabled = isTargeted ?
                     (!targetedRecipient?.value || (targetedRecipient.value === 'profile-recipient' && !recipientProfile?.value && !hasTargetedProfileFilters())) :
-                    !termsCheck?.checked;
+                    (!termsCheck?.checked || !isRecipientScheduleValid);
             }
+        };
+
+        const getScheduleDurationMinutes = (scheduleId) => {
+            const startHour = Number(document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
+            const startMinute = Number(document.querySelector(`[data-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
+            const endHour = Number(document.querySelector(`[data-schedule-time-end-hour="${scheduleId}"]`)?.value || NaN);
+            const endMinute = Number(document.querySelector(`[data-schedule-time-end-minute="${scheduleId}"]`)?.value || NaN);
+
+            if ([startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
+                return 0;
+            }
+
+            return (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+        };
+
+        const syncRecipientScheduleValidity = () => {
+            const recipientCount = Number(recipientCountInput?.value || 0);
+            const isRecipientValid = recipientCount >= 5;
+            const recipientAlert = document.querySelector('[data-recipient-count-alert]');
+            if (recipientAlert) {
+                recipientAlert.hidden = isRecipientValid;
+            }
+
+            let isScheduleValid = true;
+            document.querySelectorAll('[data-schedule-item]').forEach((item) => {
+                const scheduleId = item.dataset.scheduleItem;
+                const alert = item.querySelector('[data-schedule-duration-alert]');
+                const isItemValid = getScheduleDurationMinutes(scheduleId) >= 240;
+
+                if (alert) {
+                    alert.hidden = isItemValid;
+                }
+
+                isScheduleValid = isScheduleValid && isItemValid;
+            });
+
+            return isRecipientValid && isScheduleValid;
         };
 
         const collapseReviewCards = () => {
@@ -1408,13 +1421,14 @@
                             </div>
                         </div>
                     </div>
-                    <p class="campaign-step-two__alert">Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal</p>
+                    <p class="campaign-step-two__alert" data-schedule-duration-alert>Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal</p>
                 `;
 
             scheduleList.appendChild(item);
             initScheduleTimeSelects(scheduleIndex, '09:30', '10:00');
             syncScheduleRemoveState();
             syncSchedulePreview(scheduleIndex);
+            syncStepTwoValidity();
         };
 
         const renderPhoneActions = () => {
@@ -1422,29 +1436,52 @@
                 return;
             }
 
-            const cards = Array.from(buttonBuilder.querySelectorAll('[data-button-card]'));
+            phoneActions.innerHTML = '';
+        };
 
-            if (!cards.length) {
-                phoneActions.innerHTML = '';
+        const escapeHtml = (value) => String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+
+        const escapeRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+        const linkifyMessage = (value) => escapeHtml(value).replace(
+            /(https?:\/\/[^\s<]+|www\.[^\s<]+)/g,
+            '<span class="campaign-phone__url">$1</span>'
+        );
+
+        const syncUrlIntoMessage = (card) => {
+            if (!messageInput) {
                 return;
             }
 
-            phoneActions.innerHTML = cards.map((card) => {
-                const buttonText = card.querySelector('[data-button-text]').value.trim();
-                const previewLabel = buttonText || 'Visit website';
+            const websiteInput = card.querySelector('[data-action-url]');
+            const previousUrl = card.dataset.syncedUrl || '';
+            const nextUrl = websiteInput?.value?.trim() || '';
+            let message = messageInput.value;
 
-                return `<div class="campaign-phone__action">${previewLabel}</div>`;
-            }).join('');
+            if (previousUrl !== '') {
+                message = message.replace(new RegExp(`\\n?${escapeRegExp(previousUrl)}`, 'g'), '');
+            }
+
+            if (nextUrl !== '') {
+                message = `${message.trimEnd()}${message.trim() === '' ? '' : '\n'}${nextUrl}`;
+            }
+
+            card.dataset.syncedUrl = nextUrl;
+            messageInput.value = message;
+            syncMessagePreview();
         };
 
         const updateButtonCardMeta = (card) => {
-            const buttonText = card.querySelector('[data-button-text]');
             const websiteInput = card.querySelector('[data-action-url]');
-            const buttonMeta = card.querySelector('[data-button-meta]');
             const urlMeta = card.querySelector('[data-url-meta]');
 
-            buttonMeta.innerHTML = `${buttonText.value.length} / 25`;
             urlMeta.innerHTML = `${websiteInput.value.length} / 2000`;
+            syncUrlIntoMessage(card);
             renderPhoneActions();
         };
 
@@ -1472,17 +1509,6 @@
                     </div>
                     <div class="campaign-button-card__fields">
                         <div class="campaign-button-card__field">
-                            <label>Type of action</label>
-                            <select class="text-input text-input--select" data-action-type>
-                                <option value="visit_website">Visit website</option>
-                            </select>
-                        </div>
-                        <div class="campaign-button-card__field">
-                            <label>Button Text</label>
-                            <input type="text" class="text-input" data-button-text maxlength="25" value="">
-                            <div class="campaign-button-card__meta" data-button-meta>0 / 25</div>
-                        </div>
-                        <div class="campaign-button-card__field">
                             <label>Url Type</label>
                             <select class="text-input text-input--select" data-url-type>
                                 <option value="static">static</option>
@@ -1499,14 +1525,14 @@
             buttonBuilder.appendChild(card);
 
             const removeButton = card.querySelector('[data-remove-button]');
-            const buttonText = card.querySelector('[data-button-text]');
             const websiteInput = card.querySelector('[data-action-url]');
 
             const syncCard = () => updateButtonCardMeta(card);
 
-            buttonText.addEventListener('input', syncCard);
             websiteInput.addEventListener('input', syncCard);
             removeButton.addEventListener('click', () => {
+                card.querySelector('[data-action-url]').value = '';
+                syncUrlIntoMessage(card);
                 card.remove();
                 renderPhoneActions();
                 syncButtonLimitState();
@@ -1516,15 +1542,9 @@
             syncButtonLimitState();
         };
 
-        const unlockCampaign = window.unlockCampaignTitleModal || (() => {
-            titlePreview.textContent = titleInput.value.trim() || 'Tanpa Judul';
-            body.classList.remove('campaign-title-locked');
-            body.classList.add('campaign-title-ready');
-        });
-
         const syncMessagePreview = () => {
             const message = messageInput.value.trim();
-            messagePreview.textContent = message || 'Preview pesan akan muncul di sini.';
+            messagePreview.innerHTML = message ? linkifyMessage(message) : 'Preview pesan akan muncul di sini.';
             messageCount.textContent = isTargeted ?
                 `${messageInput.value.length}/160 karakter (1 SMS)` :
                 `${messageInput.value.length}/160 karakter`;
@@ -1538,6 +1558,85 @@
 
         const normalizeAudience = (value) => new Intl.NumberFormat('id-ID').format(value);
         const formatCoordinate = (value) => Number(value).toFixed(6);
+
+        const normalizeTestRecipient = (value) => {
+            const digits = String(value || '').replace(/\D/g, '');
+            if (digits === '') {
+                return '';
+            }
+
+            if (digits.startsWith('62')) {
+                return digits;
+            }
+
+            if (digits.startsWith('0')) {
+                return `62${digits.slice(1)}`;
+            }
+
+            return `62${digits}`;
+        };
+
+        const renderTestRecipientItem = (number) => {
+            if (!testRecipientList || !testRecipientField) {
+                return;
+            }
+
+            const existing = testRecipientList.querySelector(`[data-test-recipient="${number}"]`);
+            if (existing) {
+                testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
+                    other.checked = false;
+                });
+                existing.querySelector('input[type="checkbox"]').checked = true;
+                testRecipientField.value = number;
+                return;
+            }
+
+            const item = document.createElement('label');
+            item.className = 'campaign-test-recipient__item';
+            item.dataset.testRecipient = number;
+            item.innerHTML = `
+                    <input type="checkbox" checked>
+                    <span>${number}</span>
+                    <button type="button" class="campaign-test-recipient__remove" aria-label="Hapus nomor" title="Hapus nomor">&times;</button>
+                `;
+
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            const removeButton = item.querySelector('button');
+
+            checkbox.addEventListener('change', () => {
+                testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
+                    if (other !== checkbox) {
+                        other.checked = false;
+                    }
+                });
+
+                testRecipientField.value = checkbox.checked ? number : '';
+            });
+
+            removeButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                if (testRecipientField.value === number) {
+                    testRecipientField.value = '';
+                }
+                item.remove();
+            });
+
+            testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
+                other.checked = false;
+            });
+            testRecipientList.appendChild(item);
+            testRecipientField.value = number;
+        };
+
+        const addTestRecipient = () => {
+            const number = normalizeTestRecipient(testRecipientInput?.value);
+            if (number === '') {
+                return;
+            }
+
+            renderTestRecipientItem(number);
+            testRecipientInput.value = '';
+        };
 
         const syncLocationButtonSummary = () => {
             window.campaignLocationState = locationState;
@@ -1692,6 +1791,14 @@
         stepThreeBack?.addEventListener('click', () => syncCampaignStep(isTargeted ? 1 : 2));
         addScheduleButton?.addEventListener('click', addScheduleItem);
         termsCheck?.addEventListener('change', syncStepTwoValidity);
+        recipientCountInput?.addEventListener('input', syncStepTwoValidity);
+        testRecipientAdd?.addEventListener('click', addTestRecipient);
+        testRecipientInput?.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                addTestRecipient();
+            }
+        });
         targetedRecipient?.addEventListener('change', () => {
             syncTargetedProfileBuilder();
             syncStepTwoValidity();
@@ -1742,6 +1849,7 @@
 
             removeButton.closest('[data-schedule-item]')?.remove();
             syncScheduleRemoveState();
+            syncStepTwoValidity();
         });
         document.addEventListener('click', (event) => {
             const editButton = event.target.closest('[data-review-edit]');
@@ -1781,6 +1889,26 @@
 
             if (scheduleId) {
                 syncSchedulePreview(scheduleId);
+                syncStepTwoValidity();
+            }
+        });
+        scheduleList?.addEventListener('change', (event) => {
+            const field = event.target.closest('[data-schedule-date-start], [data-schedule-date-end], [data-schedule-time-start-hour], [data-schedule-time-start-minute], [data-schedule-time-end-hour], [data-schedule-time-end-minute]');
+            if (!field) {
+                return;
+            }
+
+            const scheduleId =
+                field.dataset.scheduleDateStart ||
+                field.dataset.scheduleDateEnd ||
+                field.dataset.scheduleTimeStartHour ||
+                field.dataset.scheduleTimeStartMinute ||
+                field.dataset.scheduleTimeEndHour ||
+                field.dataset.scheduleTimeEndMinute;
+
+            if (scheduleId) {
+                syncSchedulePreview(scheduleId);
+                syncStepTwoValidity();
             }
         });
         document.addEventListener('click', (event) => {
@@ -1809,22 +1937,11 @@
         });
 
         document.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' && body.classList.contains('campaign-title-locked')) {
-                event.preventDefault();
-                unlockCampaign();
-            }
-
             if (event.key === 'Escape' && !locationModal.hidden) {
                 closeLocationModal();
             }
         });
 
-        titleSubmit?.addEventListener('click', unlockCampaign);
-        document.addEventListener('click', (event) => {
-            if (event.target.closest('#campaignTitleSubmit')) {
-                unlockCampaign();
-            }
-        });
         senderInput?.addEventListener('change', syncSenderPreview);
         messageInput?.addEventListener('input', syncMessagePreview);
         addButton?.addEventListener('click', createButtonCard);
@@ -1852,6 +1969,10 @@
                 if (!gwSubmitForm || !gwDeliveryStartTime || !gwDeliveryEndTime || !gwLocationName || !gwLocationLat || !gwLocationLng) {
                     return;
                 }
+
+            if (!testRecipientField?.value && testRecipientInput?.value?.trim()) {
+                addTestRecipient();
+            }
 
             const scheduleId = '1';
             const startDate = pickScheduleValue(`[data-schedule-date-start="${scheduleId}"]`);

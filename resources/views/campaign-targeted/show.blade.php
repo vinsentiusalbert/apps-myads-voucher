@@ -1,10 +1,11 @@
 @php
     $title = $page['title'];
-    $bodyClass = '';
+    $autoCampaignName = 'gotoads_sms_targeted_' . now()->format('YmdHis');
+    $bodyClass = 'campaign-title-ready';
     $mainClass = 'campaign-main';
     $contentClass = 'campaign-content';
     $isTargeted = $menu === 'targeted';
-    $campaignTitle = $campaignRow['title'] ?? 'Belum diisi';
+    $campaignTitle = $autoCampaignName;
     $navMenus = [
         [
             'key' => 'dashboard',
@@ -114,18 +115,12 @@
                         {{-- <input type="radio" name="compose_type" checked> --}}
                         <span>Isi Konten Pesan Manual</span>
                     </label>
-                    @if ($isTargeted)
-                    <label class="campaign-radio campaign-radio--muted">
-                        <input type="radio" name="compose_type" disabled>
-                        <span>Buat Pesan Otomatis dengan GenAI</span>
-                    </label>
-                    @endif
                 </div>
 
                 <div class="field-group">
                     <label for="campaign_sender" class="field-label">Nama Pengirim</label>
                     <div class="campaign-inline-field">
-                        <select id="campaign_sender" class="text-input text-input--select">
+                        <select id="campaign_sender" name="sender_name" form="campaignGwSubmitForm" class="text-input text-input--select">
                             @if ($isTargeted)
                             <option selected>GRANDHIKA</option>
                             <option>IFTAR OFFER</option>
@@ -144,10 +139,10 @@
 
                 <div class="field-group">
                     <label for="campaign_message" class="field-label">{{ $isTargeted ? '' : 'Isi Konten' }}</label>
-                    <textarea id="campaign_message" class="text-input campaign-message-input">{{ $isTargeted ? 'asd' : 'Promosi outlet makin untung di MyAds! Top up MyAds Rp50k dapat BONUS SALDO Rp300k. Aktifkan di bit.ly/JoinMyAds' }}</textarea>
+                    <textarea id="campaign_message" name="message" form="campaignGwSubmitForm" class="text-input campaign-message-input"></textarea>
                     <div class="campaign-message-meta">
                         <span>Mohon pastikan pesan iklan Anda tidak mengandung unsur terlarang.</span>
-                        <strong id="campaignMessageCount">{{ $isTargeted ? '3/160 karakter (1 SMS)' : '117/160 karakter' }}</strong>
+                        <strong id="campaignMessageCount">{{ $isTargeted ? '0/160 karakter (1 SMS)' : '0/160 karakter' }}</strong>
                     </div>
                 </div>
 
@@ -198,7 +193,7 @@
                         <div class="field-group campaign-field-group--compact">
                             <label for="campaign_gender" class="field-label">Jenis Kelamin</label>
                             <select id="campaign_gender" class="campaign-search-multiselect" multiple data-placeholder="Cari jenis kelamin">
-                                <option value="male" selected>Laki-laki</option>
+                                <option value="male">Laki-laki</option>
                                 <option value="female">Perempuan</option>
                                 <option value="all">Semua</option>
                             </select>
@@ -207,7 +202,7 @@
                         <div class="field-group campaign-field-group--compact">
                             <label for="campaign_age" class="field-label">Rentang Umur</label>
                             <select id="campaign_age" class="campaign-search-multiselect" multiple data-placeholder="Cari rentang umur">
-                                <option value="under-15" selected>&lt; 15 tahun</option>
+                                <option value="under-15">&lt; 15 tahun</option>
                                 <option value="15-24">15 - 24 tahun</option>
                                 <option value="25-34">25 - 34 tahun</option>
                                 <option value="35-44">35 - 44 tahun</option>
@@ -266,9 +261,7 @@
                     @endif
                     <p class="campaign-phone__time">Hari ini 13:59</p>
                     <div class="campaign-phone__sheet">
-                        <div class="campaign-phone__bubble" id="campaignMessagePreview">
-                            Promosi outlet makin untung di MyAds! Top up MyAds Rp50k dapat BONUS SALDO Rp300k. Aktifkan di bit.ly/JoinMyAds
-                        </div>
+                        <div class="campaign-phone__bubble" id="campaignMessagePreview"></div>
                         <div class="campaign-phone__actions" id="campaignPhoneActions"></div>
                     </div>
                 </div>
@@ -287,36 +280,18 @@
                     </div>
                     <div class="campaign-targeted-profile-builder" id="campaignTargetedProfileBuilder" hidden>
                         <div class="campaign-targeted-step-two__saved">
-                            <h3>Gunakan Profil yang Tersimpan</h3>
-                            <div class="campaign-targeted-step-two__saved-row">
-                                <div class="field-group campaign-targeted-step-two__saved-field">
-                                    <label for="campaignRecipientProfile" class="field-label">Pilih Nama Profil</label>
-                                    <select id="campaignRecipientProfile" class="text-input text-input--select">
-                                        <option value="">Pilih Nama Profil</option>
-                                        <option value="muslim-family">Muslim Family</option>
-                                        <option value="young-professional">Young Professional</option>
-                                        <option value="urban-parent">Urban Parent</option>
-                                        <option value="budget-hunter">Budget Hunter</option>
-                                    </select>
-                                </div>
-                                <button type="button" class="campaign-outline-button campaign-targeted-step-two__apply" id="campaignApplyAudience">Terapkan</button>
-                            </div>
-                        </div>
-
-                        <div class="campaign-targeted-step-two__saved">
                             <h3>Buat Baru Profil Penerima</h3>
                             <div class="campaign-targeted-profile-grid">
                                 <div class="field-group campaign-field-group--compact">
                                     <label for="campaignTargetGender" class="field-label">Jenis Kelamin</label>
-                                    <select id="campaignTargetGender" class="campaign-search-multiselect" multiple data-placeholder="Cari jenis kelamin">
-                                        <option value="male">Laki-laki</option>
-                                        <option value="female">Perempuan</option>
-                                        <option value="all">Semua</option>
+                                    <select id="campaignTargetGender" name="profile_gender[]" form="campaignGwSubmitForm" class="campaign-search-multiselect" multiple data-placeholder="Cari jenis kelamin">
+                                        <option value="M">Laki-laki</option>
+                                        <option value="F">Perempuan</option>
                                     </select>
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
                                     <label for="campaignTargetAge" class="field-label">Rentang Umur</label>
-                                    <select id="campaignTargetAge" class="campaign-search-multiselect" multiple data-placeholder="Cari rentang umur">
+                                    <select id="campaignTargetAge" name="profile_age[]" form="campaignGwSubmitForm" class="campaign-search-multiselect" multiple data-placeholder="Cari rentang umur">
                                         <option value="under-15">&lt; 15 tahun</option>
                                         <option value="15-24">15 - 24 tahun</option>
                                         <option value="25-34">25 - 34 tahun</option>
@@ -326,23 +301,21 @@
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
                                     <label for="campaignTargetOs" class="field-label">Tipe OS Handphone</label>
-                                    <select id="campaignTargetOs" class="campaign-search-multiselect" multiple data-placeholder="Cari tipe OS handphone">
-                                        <option value="android">Android</option>
-                                        <option value="ios">iOS</option>
-                                        <option value="all">Semua</option>
+                                    <select id="campaignTargetOs" name="profile_os[]" form="campaignGwSubmitForm" class="campaign-search-multiselect" multiple data-placeholder="Cari tipe OS handphone">
+                                        <option value="Android">Android</option>
+                                        <option value="iOS">iOS</option>
                                     </select>
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
                                     <label for="campaignTargetDataPackage" class="field-label">Penerima dengan Paket Data</label>
-                                    <select id="campaignTargetDataPackage" class="campaign-search-multiselect" multiple data-placeholder="Cari status paket data">
-                                        <option value="active">Aktif</option>
-                                        <option value="inactive">Tidak Aktif</option>
-                                        <option value="all">Semua</option>
+                                    <select id="campaignTargetDataPackage" name="profile_data_package[]" form="campaignGwSubmitForm" class="campaign-search-multiselect" multiple data-placeholder="Cari status paket data">
+                                        <option value="Y">Aktif</option>
+                                        <option value="N">Tidak Aktif</option>
                                     </select>
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
                                     <label for="campaignTargetHouseholdSpend" class="field-label">Tingkat Pengeluaran Rumah Tangga (per Bulan)</label>
-                                    <select id="campaignTargetHouseholdSpend" class="campaign-search-multiselect" multiple data-placeholder="Cari tingkat pengeluaran rumah tangga">
+                                    <select id="campaignTargetHouseholdSpend" name="profile_household_spend[]" form="campaignGwSubmitForm" class="campaign-search-multiselect" multiple data-placeholder="Cari tingkat pengeluaran rumah tangga">
                                         <option value="lt-2m">&lt; Rp 2.000.000</option>
                                         <option value="2m-5m">Rp 2.000.000 - Rp 5.000.000</option>
                                         <option value="5m-10m">Rp 5.000.000 - Rp 10.000.000</option>
@@ -351,30 +324,28 @@
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
                                     <label for="campaignTargetMaritalStatus" class="field-label">Status Pernikahan</label>
-                                    <select id="campaignTargetMaritalStatus" class="campaign-search-multiselect" multiple data-placeholder="Cari status pernikahan">
-                                        <option value="single">Single</option>
-                                        <option value="married">Married</option>
-                                        <option value="all">Semua</option>
+                                    <select id="campaignTargetMaritalStatus" name="profile_marital_status[]" form="campaignGwSubmitForm" class="campaign-search-multiselect" multiple data-placeholder="Cari status pernikahan">
+                                        <option value="SINGLE">Single</option>
+                                        <option value="MARRIED">Married</option>
                                     </select>
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
                                     <label for="campaignTargetLifestyle" class="field-label">Lifestyle Segment</label>
-                                    <select id="campaignTargetLifestyle" class="campaign-search-multiselect" multiple data-placeholder="Cari lifestyle segment">
-                                        <option value="foodies">Foodies</option>
-                                        <option value="traveler">Traveler</option>
-                                        <option value="family">Family</option>
-                                        <option value="all">Semua</option>
+                                    <select id="campaignTargetLifestyle" name="profile_lifestyle[]" form="campaignGwSubmitForm" class="campaign-search-multiselect" multiple data-placeholder="Cari lifestyle segment">
+                                        <option value="FOODIES">Foodies</option>
+                                        <option value="TRAVELER">Traveler</option>
+                                        <option value="FAMILY">Family</option>
                                     </select>
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
                                     <label for="campaignTargetReligion" class="field-label">Agama</label>
-                                    <select id="campaignTargetReligion" class="campaign-search-multiselect" multiple data-placeholder="Cari agama">
-                                        <option value="islam">Islam</option>
-                                        <option value="kristen">Kristen</option>
-                                        <option value="katolik">Katolik</option>
-                                        <option value="hindu">Hindu</option>
-                                        <option value="budha">Budha</option>
-                                        <option value="konghucu">Konghucu</option>
+                                    <select id="campaignTargetReligion" name="profile_religion[]" form="campaignGwSubmitForm" class="campaign-search-multiselect" multiple data-placeholder="Cari agama">
+                                        <option value="ISLAM">Islam</option>
+                                        <option value="KRISTEN">Kristen</option>
+                                        <option value="KATOLIK">Katolik</option>
+                                        <option value="HINDU">Hindu</option>
+                                        <option value="BUDHA">Budha</option>
+                                        <option value="KONGHUCU">Konghucu</option>
                                     </select>
                                 </div>
                             </div>
@@ -410,19 +381,6 @@
                             <span>Simpan Pengaturan Profil Penerima</span>
                         </label>
 
-                        <div class="campaign-targeted-estimate">
-                            <div>
-                                <h3>Hitung Estimasi Penerima Potensial</h3>
-                                <p>Hitung estimasi penerima terlebih dahulu sebelum melanjutkan ke tahap berikutnya.</p>
-                            </div>
-                            <div class="campaign-targeted-estimate__actions">
-                                <button type="button" class="submit-btn lba-primary-btn campaign-targeted-estimate__button" id="campaignTargetedEstimateButton">Hitung Penerima Potensial</button>
-                                <div class="campaign-estimate-card campaign-estimate-card--inline">
-                                    <span class="campaign-estimate-card__label">Estimasi Penerima Potensial</span>
-                                    <strong id="campaignTargetedEstimateValue">0</strong>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -449,8 +407,8 @@
                     <div class="campaign-send-grid">
                         <div class="field-group campaign-field-group--compact">
                             <label for="campaignRecipientCount" class="field-label">Jumlah Penerima</label>
-                            <input id="campaignRecipientCount" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
-                            <p class="campaign-step-two__alert">Jumlah penerima minimal 5 perhari</p>
+                            <input id="campaignRecipientCount" name="recipient_total" form="campaignGwSubmitForm" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
+                            <p class="campaign-step-two__alert" data-recipient-count-alert>Jumlah penerima minimal 5 perhari</p>
                         </div>
                         <div class="campaign-estimate-card">
                             <span class="campaign-estimate-card__label">Estimasi Penerima Potensial</span>
@@ -471,7 +429,7 @@
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label" for="campaignScheduleDate1">Tgl Kirim</label>
                                     <div class="campaign-range-field">
-                                        <input id="campaignScheduleDate1Start" type="date" class="text-input" value="2026-04-24" data-schedule-date-start="1">
+                                        <input id="campaignScheduleDate1Start" name="delivery_date" form="campaignGwSubmitForm" type="date" class="text-input" value="2026-04-24" data-schedule-date-start="1">
                                         <span class="campaign-range-field__separator">-</span>
                                         <input id="campaignScheduleDate1End" type="date" class="text-input" value="2026-04-24" data-schedule-date-end="1">
                                     </div>
@@ -510,7 +468,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <p class="campaign-step-two__alert">Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal</p>
+                            <p class="campaign-step-two__alert" data-schedule-duration-alert>Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal</p>
                         </article>
                     </div>
                     <div class="campaign-schedule-actions">
@@ -538,22 +496,23 @@
 
                 <div class="campaign-step-two__section">
                     <h2 class="campaign-block__title">Tentukan Nomor Penerima Tes Iklan</h2>
-                    <div class="field-group">
-                        <label for="campaignTestRecipient" class="field-label">Nomor Penerima Tes Iklan</label>
-                        <select id="campaignTestRecipient" class="text-input text-input--select">
-                            <option>Nomor Penerima Tes Iklan</option>
-                            <option>081234567890</option>
-                            <option>082345678901</option>
-                        </select>
+                    <div class="campaign-test-recipient" id="campaignTestRecipientBuilder">
+                        <input type="hidden" id="campaignTestRecipient" name="control_number" form="campaignGwSubmitForm" value="">
+                        <fieldset class="campaign-test-recipient__box">
+                            <legend>Nomor Penerima Tes Iklan</legend>
+                            <div class="campaign-test-recipient__entry">
+                                <span class="campaign-test-recipient__prefix">+62</span>
+                                <input id="campaignTestRecipientInput" type="text" inputmode="numeric" class="campaign-test-recipient__input" placeholder="Nomor Penerima Tes Iklan">
+                                <button type="button" class="campaign-test-recipient__add" id="campaignTestRecipientAdd">Tambahkan</button>
+                            </div>
+                            <div class="campaign-test-recipient__list" id="campaignTestRecipientList"></div>
+                        </fieldset>
                     </div>
-                    <p class="campaign-block__copy">
-                        Nomor Penerima Tes Iklan digunakan untuk memastikan apakah pesan berhasil terkirim. Pesan akan dikirimkan 1 jam sebelum jadwal pengiriman.
-                    </p>
                 </div>
 
-                <div class="campaign-step-two__section">
+                {{-- <div class="campaign-step-two__section">
                     <a href="#" class="campaign-inline-link campaign-inline-link--strong campaign-inline-link--arrow">Gunakan Pengiriman Pesan Spesifik (Optional)</a>
-                </div>
+                </div> --}}
 
                 <div class="campaign-step-two__section">
                     <label class="campaign-terms">
@@ -714,7 +673,12 @@
                                     <strong id="campaignReviewPaymentMonetary">Rp 1.000</strong>
                                 </div>
                             </div>
-                            <button type="button" class="campaign-cost-card__cta">Bayar & Kirim Iklan</button>
+                            <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
+                            <form id="campaignGwSubmitForm" method="POST" action="{{ route('campaign.targeted.send', ['channel' => $channel]) }}" hidden>
+                                @csrf
+                                <input type="hidden" name="campaign_name" id="campaign_title" value="{{ $autoCampaignName }}">
+                                <input type="hidden" name="delivery_time" id="gwDeliveryTime">
+                            </form>
                             <p class="campaign-cost-card__footnote">
                                 Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim.
                             </p>
@@ -730,21 +694,6 @@
 @endsection
 
 @section('after_shell')
-    <div class="campaign-title-modal" id="campaignTitleModal" aria-hidden="false">
-        <div class="campaign-title-modal__backdrop"></div>
-        <div class="campaign-title-modal__card" role="dialog" aria-modal="true" aria-labelledby="campaignTitleHeading">
-            <h2 id="campaignTitleHeading">Buat Judul Iklan</h2>
-            <div class="field-group">
-                <label for="campaign_title" class="field-label">Judul Iklan</label>
-                <input id="campaign_title" type="text" class="text-input" value="{{ $campaignTitle }}" placeholder="Masukkan judul iklan">
-            </div>
-            <div class="campaign-title-modal__actions">
-                <a href="{{ route('dashboard') }}" class="campaign-modal-btn campaign-modal-btn--ghost">Batal</a>
-                <button type="button" class="campaign-modal-btn campaign-modal-btn--primary" id="campaignTitleSubmit" onclick="window.unlockCampaignTitleModal && window.unlockCampaignTitleModal()">Lanjutkan</button>
-            </div>
-        </div>
-    </div>
-
     <div class="campaign-map-modal" id="campaignMapModal" hidden aria-hidden="true">
         <div class="campaign-map-modal__backdrop" data-location-close onclick="window.closeCampaignLocationModal && window.closeCampaignLocationModal()"></div>
         <div class="campaign-map-modal__card" role="dialog" aria-modal="true" aria-labelledby="campaignMapHeading">
@@ -809,19 +758,6 @@
     </div>
 
     <script>
-        window.unlockCampaignTitleModal = function () {
-            const body = document.body;
-            const titleInput = document.getElementById('campaign_title');
-            const titlePreview = document.getElementById('campaignTitlePreview');
-
-            if (titlePreview) {
-                titlePreview.textContent = titleInput?.value?.trim() || 'Tanpa Judul';
-            }
-
-            body.classList.remove('campaign-title-locked');
-            body.classList.add('campaign-title-ready');
-        };
-
         window.openCampaignLocationModal = function () {
             const body = document.body;
             const modal = document.getElementById('campaignMapModal');
@@ -889,11 +825,10 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
-        (() => {
+        (async () => {
             const isTargeted = @json($isTargeted);
             const body = document.body;
             const titleInput = document.getElementById('campaign_title');
-            const titleSubmit = document.getElementById('campaignTitleSubmit');
             const titlePreview = document.getElementById('campaignTitlePreview');
             const senderInput = document.getElementById('campaign_sender');
             const senderPreview = document.getElementById('campaignSenderPreview');
@@ -916,18 +851,19 @@
             const stepFourBack = document.getElementById('campaignStepFourBack');
             const targetedRecipient = document.getElementById('campaignTargetRecipient');
             const targetedProfileBuilder = document.getElementById('campaignTargetedProfileBuilder');
-            const recipientProfile = document.getElementById('campaignRecipientProfile');
-            const applyAudienceButton = document.getElementById('campaignApplyAudience');
-            const targetedProfileFields = Array.from(document.querySelectorAll('#campaignTargetedProfileBuilder select')).filter((field) => field.id !== 'campaignRecipientProfile');
+            const targetedProfileFields = Array.from(document.querySelectorAll('#campaignTargetedProfileBuilder select'));
             const homeLocationList = document.getElementById('campaignHomeLocationList');
             const workLocationList = document.getElementById('campaignWorkLocationList');
             const addHomeLocationButton = document.getElementById('campaignAddHomeLocation');
             const addWorkLocationButton = document.getElementById('campaignAddWorkLocation');
-            const targetedEstimateButton = document.getElementById('campaignTargetedEstimateButton');
-            const targetedEstimateValue = document.getElementById('campaignTargetedEstimateValue');
             const scheduleList = document.getElementById('campaignScheduleList');
             const addScheduleButton = document.getElementById('campaignAddSchedule');
             const termsCheck = document.getElementById('campaignTermsCheck');
+            const recipientCountInput = document.getElementById('campaignRecipientCount');
+            const testRecipientField = document.getElementById('campaignTestRecipient');
+            const testRecipientInput = document.getElementById('campaignTestRecipientInput');
+            const testRecipientAdd = document.getElementById('campaignTestRecipientAdd');
+            const testRecipientList = document.getElementById('campaignTestRecipientList');
             const locationModal = document.getElementById('campaignMapModal');
             const openLocationModalButton = document.getElementById('campaignOpenLocationModal');
             const locationCloseButtons = document.querySelectorAll('[data-location-close]');
@@ -939,6 +875,7 @@
             const audienceEstimate = document.getElementById('campaignAudienceEstimate');
             const applyLocationButton = document.getElementById('campaignApplyLocation');
             const reviewSchedules = document.getElementById('campaignReviewSchedules');
+            const profileDropdownUrl = "{{ route('campaign.targeted.profile-dropdown-list', ['channel' => $channel]) }}";
 
             let buttonIndex = 0;
             const locationState = {
@@ -953,6 +890,7 @@
             let liveCircle = null;
             let geocoderControl = null;
             let scheduleIndex = 1;
+            let profileDropdownSource = null;
 
             const initCampaignMultiselects = () => {
                 document.querySelectorAll('.campaign-search-multiselect').forEach((select) => {
@@ -1192,59 +1130,173 @@
 
             const hasTargetedProfileFilters = () => targetedProfileFields.some((field) => field?.value?.trim());
 
-            const profileTemplates = {
-                'muslim-family': {
-                    gender: ['all'],
-                    age: ['25-34'],
-                    os: ['android'],
-                    dataPackage: ['active'],
-                    householdSpend: ['5m-10m'],
-                    maritalStatus: ['married'],
-                    lifestyle: ['family'],
-                    religion: ['islam'],
-                },
-                'young-professional': {
-                    gender: ['all'],
-                    age: ['25-34'],
-                    os: ['ios'],
-                    dataPackage: ['active'],
-                    householdSpend: ['gt-10m'],
-                    maritalStatus: ['single'],
-                    lifestyle: ['traveler'],
-                    religion: [],
-                },
-                'urban-parent': {
-                    gender: ['all'],
-                    age: ['35-44'],
-                    os: ['android'],
-                    dataPackage: ['active'],
-                    householdSpend: ['5m-10m'],
-                    maritalStatus: ['married'],
-                    lifestyle: ['family'],
-                    religion: [],
-                },
-                'budget-hunter': {
-                    gender: ['all'],
-                    age: ['15-24'],
-                    os: ['android'],
-                    dataPackage: ['inactive'],
-                    householdSpend: ['lt-2m'],
-                    maritalStatus: ['single'],
-                    lifestyle: ['foodies'],
-                    religion: [],
-                },
+            const escapeHtml = (value) => String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+
+            const normalizeProfileDropdownOptions = (items) => {
+                if (!Array.isArray(items)) {
+                    return [];
+                }
+
+                return items.map((item) => {
+                    if (item === null || item === undefined) {
+                        return null;
+                    }
+
+                    if (typeof item !== 'object') {
+                        const label = String(item);
+                        return { value: label, label };
+                    }
+
+                    const value = item.value ?? item.id ?? item.code ?? item.key ?? item.name ?? item.label ?? item.text;
+                    const label = item.label ?? item.name ?? item.text ?? item.desc ?? item.description ?? value;
+
+                    if (value === null || value === undefined || label === null || label === undefined) {
+                        return null;
+                    }
+
+                    return {
+                        value: String(value),
+                        label: String(label),
+                    };
+                }).filter(Boolean);
             };
 
-            const locationOptionsTemplate = () => `
+            const findProfileDropdownOptions = (source, keys) => {
+                const normalizedKeys = keys.map((key) => key.toLowerCase());
+                const matchesProfileKey = (item) => {
+                    if (!item || typeof item !== 'object') {
+                        return false;
+                    }
+
+                    const tokens = [item.profile, item.profileType, item.type, item.category, item.group, item.field, item.key]
+                        .filter((token) => token !== null && token !== undefined)
+                        .map((token) => String(token).toLowerCase());
+
+                    return tokens.some((token) => normalizedKeys.some((key) => token.includes(key) || key.includes(token)));
+                };
+                const queue = [source];
+
+                while (queue.length > 0) {
+                    const current = queue.shift();
+
+                    if (!current || typeof current !== 'object') {
+                        continue;
+                    }
+
+                    if (Array.isArray(current)) {
+                        const groupedOptions = normalizeProfileDropdownOptions(current.filter(matchesProfileKey));
+                        if (groupedOptions.length > 0) {
+                            return groupedOptions;
+                        }
+
+                        queue.push(...current);
+                        continue;
+                    }
+
+                    for (const [key, value] of Object.entries(current)) {
+                        if (normalizedKeys.includes(key.toLowerCase())) {
+                            const options = normalizeProfileDropdownOptions(Array.isArray(value) ? value : Object.values(value || {}));
+                            if (options.length > 0) {
+                                return options;
+                            }
+                        }
+
+                        if (value && typeof value === 'object') {
+                            queue.push(value);
+                        }
+                    }
+                }
+
+                return [];
+            };
+
+            const setProfileDropdownOptions = (fieldId, options) => {
+                const field = document.getElementById(fieldId);
+                if (!field || options.length === 0) {
+                    return;
+                }
+
+                const multiselectWrapper = field.nextElementSibling?.classList?.contains('campaign-multiselect')
+                    ? field.nextElementSibling
+                    : null;
+                multiselectWrapper?.remove();
+                delete field.dataset.enhanced;
+                field.classList.remove('campaign-multiselect__native');
+
+                field.innerHTML = '';
+                options.forEach((item) => {
+                    const option = document.createElement('option');
+                    option.value = item.value;
+                    option.textContent = item.label;
+                    field.appendChild(option);
+                });
+            };
+
+            const loadProfileDropdownOptions = async () => {
+                if (!profileDropdownUrl) {
+                    return;
+                }
+
+                const dropdownMap = {
+                    campaignTargetGender: ['gender', 'profileGender', 'jenisKelamin'],
+                    campaign_gender: ['gender', 'profileGender', 'jenisKelamin'],
+                    campaignTargetAge: ['age', 'profileAge', 'rentangUmur'],
+                    campaign_age: ['age', 'profileAge', 'rentangUmur'],
+                    campaignTargetOs: ['os', 'profileOs', 'operatingSystem'],
+                    campaignTargetDataPackage: ['dataPackage', 'packageData', 'paketData'],
+                    campaignTargetHouseholdSpend: ['householdSpend', 'householdExpense', 'pengeluaranRumahTangga'],
+                    campaignTargetMaritalStatus: ['maritalStatus', 'marriage', 'statusPernikahan'],
+                    campaignTargetLifestyle: ['lifestyleseg', 'lifestyle', 'lifestyleSegment', 'profileLifestyle', 'profileLifestyleSegment'],
+                    campaignTargetReligion: ['religion', 'religions', 'profileReligion', 'agama'],
+                    campaign_religion: ['religion', 'religions', 'profileReligion', 'agama'],
+                };
+
+                try {
+                    const response = await fetch(profileDropdownUrl, {
+                        headers: {
+                            Accept: 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        return;
+                    }
+
+                    const payload = await response.json();
+                    const source = payload?.data?.data ?? payload?.data ?? payload;
+                    profileDropdownSource = source;
+
+                    Object.entries(dropdownMap).forEach(([fieldId, keys]) => {
+                        setProfileDropdownOptions(fieldId, findProfileDropdownOptions(source, keys));
+                    });
+                } catch (error) {
+                    console.warn('Profile dropdown API gagal dimuat', error);
+                }
+            };
+
+            const buildGatewaySelectOptions = (keys, placeholder, fallbackOptions = []) => {
+                const options = findProfileDropdownOptions(profileDropdownSource, keys);
+                const sourceOptions = options.length > 0
+                    ? options
+                    : fallbackOptions.map((item) => ({ value: item, label: item }));
+
+                return [
+                    `<option value="">${escapeHtml(placeholder)}</option>`,
+                    ...sourceOptions.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`),
+                ].join('');
+            };
+
+            const locationOptionsTemplate = (type = 'home') => `
                 <div class="campaign-targeted-location-grid">
                     <div class="field-group campaign-field-group--compact">
                         <label class="field-label">Provinsi</label>
                         <select class="text-input text-input--select" data-location-select="province">
-                            <option value="">Provinsi</option>
-                            <option>DKI Jakarta</option>
-                            <option>Jawa Barat</option>
-                            <option>Banten</option>
-                            <option>Jawa Tengah</option>
+                            ${buildGatewaySelectOptions(type === 'work' ? ['work_province', 'workProvince', 'profileWorkProvince'] : ['province', 'home_province', 'homeProvince', 'profileProvince'], 'Provinsi', ['DKI Jakarta', 'Jawa Barat', 'Banten', 'Jawa Tengah'])}
                         </select>
                     </div>
                     <div class="field-group campaign-field-group--compact">
@@ -1310,21 +1362,9 @@
                 const card = document.createElement('article');
                 card.className = 'campaign-targeted-location-card';
                 card.dataset.locationRow = type;
-                card.innerHTML = locationOptionsTemplate();
+                card.innerHTML = locationOptionsTemplate(type);
                 list.appendChild(card);
                 syncTargetedLocationRemoveState(list);
-            };
-
-            const calculateTargetedEstimate = () => {
-                const profileScore = targetedProfileFields.reduce((total, field) => total + Array.from(field.options).filter((option) => option.selected).length, 0);
-                const homeScore = Array.from(homeLocationList?.querySelectorAll('[data-location-row] [data-location-select]') || []).filter((field) => field.value).length;
-                const workScore = Array.from(workLocationList?.querySelectorAll('[data-location-row] [data-location-select]') || []).filter((field) => field.value).length;
-                const base = 125000;
-                const computed = Math.max(0, base + (profileScore * 4500) + (homeScore * 3800) + (workScore * 4200));
-
-                if (targetedEstimateValue) {
-                    targetedEstimateValue.textContent = normalizeAudience(computed);
-                }
             };
 
             const syncReviewSummary = () => {
@@ -1352,7 +1392,7 @@
                 setText('campaignReviewAge', getSelectedTexts('campaign_age'));
                 setText('campaignReviewReligion', getSelectedTexts('campaign_religion'));
                 if (isTargeted) {
-                    const genderValue = getSelectedTexts('campaignTargetGender') || recipientProfile?.selectedOptions?.[0]?.text || 'Semua';
+                    const genderValue = getSelectedTexts('campaignTargetGender') || 'Semua';
                     const ageValue = getSelectedTexts('campaignTargetAge');
                     const religionValue = getSelectedTexts('campaignTargetReligion');
 
@@ -1426,13 +1466,51 @@
 
             const syncStepTwoValidity = () => {
                 if (stepTwoNext) {
-                    stepTwoNext.disabled = !targetedRecipient?.value || (targetedRecipient.value === 'profile-recipient' && !recipientProfile?.value && !hasTargetedProfileFilters());
+                    stepTwoNext.disabled = !targetedRecipient?.value || (targetedRecipient.value === 'profile-recipient' && !hasTargetedProfileFilters());
                 }
+            };
+
+            const getScheduleDurationMinutes = (scheduleId) => {
+                const startHour = Number(document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
+                const startMinute = Number(document.querySelector(`[data-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
+                const endHour = Number(document.querySelector(`[data-schedule-time-end-hour="${scheduleId}"]`)?.value || NaN);
+                const endMinute = Number(document.querySelector(`[data-schedule-time-end-minute="${scheduleId}"]`)?.value || NaN);
+
+                if ([startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
+                    return 0;
+                }
+
+                return (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+            };
+
+            const syncRecipientScheduleValidity = () => {
+                const recipientCount = Number(recipientCountInput?.value || 0);
+                const isRecipientValid = recipientCount >= 5;
+                const recipientAlert = document.querySelector('[data-recipient-count-alert]');
+                if (recipientAlert) {
+                    recipientAlert.hidden = isRecipientValid;
+                }
+
+                let isScheduleValid = true;
+                document.querySelectorAll('[data-schedule-item]').forEach((item) => {
+                    const scheduleId = item.dataset.scheduleItem;
+                    const alert = item.querySelector('[data-schedule-duration-alert]');
+                    const isItemValid = getScheduleDurationMinutes(scheduleId) >= 240;
+
+                    if (alert) {
+                        alert.hidden = isItemValid;
+                    }
+
+                    isScheduleValid = isScheduleValid && isItemValid;
+                });
+
+                return isRecipientValid && isScheduleValid;
             };
 
             const syncStepThreeValidity = () => {
                 if (stepThreeNext) {
-                    stepThreeNext.disabled = !termsCheck?.checked;
+                    const isRecipientScheduleValid = syncRecipientScheduleValidity();
+                    stepThreeNext.disabled = !termsCheck?.checked || !isRecipientScheduleValid;
                 }
             };
 
@@ -1508,13 +1586,14 @@
                             </div>
                         </div>
                     </div>
-                    <p class="campaign-step-two__alert">Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal</p>
+                    <p class="campaign-step-two__alert" data-schedule-duration-alert>Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal</p>
                 `;
 
                 scheduleList.appendChild(item);
                 initScheduleTimeSelects(scheduleIndex, '09:30', '10:00');
                 syncScheduleRemoveState();
                 syncSchedulePreview(scheduleIndex);
+                syncStepThreeValidity();
             };
 
             const renderPhoneActions = () => {
@@ -1522,29 +1601,45 @@
                     return;
                 }
 
-                const cards = Array.from(buttonBuilder.querySelectorAll('[data-button-card]'));
+                phoneActions.innerHTML = '';
+            };
 
-                if (!cards.length) {
-                    phoneActions.innerHTML = '';
+            const escapeRegExp = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+            const linkifyMessage = (value) => escapeHtml(value).replace(
+                /(https?:\/\/[^\s<]+|www\.[^\s<]+)/g,
+                '<span class="campaign-phone__url">$1</span>'
+            );
+
+            const syncUrlIntoMessage = (card) => {
+                if (!messageInput) {
                     return;
                 }
 
-                phoneActions.innerHTML = cards.map((card) => {
-                    const buttonText = card.querySelector('[data-button-text]').value.trim();
-                    const previewLabel = buttonText || 'Visit website';
+                const websiteInput = card.querySelector('[data-action-url]');
+                const previousUrl = card.dataset.syncedUrl || '';
+                const nextUrl = websiteInput?.value?.trim() || '';
+                let message = messageInput.value;
 
-                    return `<div class="campaign-phone__action">${previewLabel}</div>`;
-                }).join('');
+                if (previousUrl !== '') {
+                    message = message.replace(new RegExp(`\\n?${escapeRegExp(previousUrl)}`, 'g'), '');
+                }
+
+                if (nextUrl !== '') {
+                    message = `${message.trimEnd()}${message.trim() === '' ? '' : '\n'}${nextUrl}`;
+                }
+
+                card.dataset.syncedUrl = nextUrl;
+                messageInput.value = message;
+                syncMessagePreview();
             };
 
             const updateButtonCardMeta = (card) => {
-                const buttonText = card.querySelector('[data-button-text]');
                 const websiteInput = card.querySelector('[data-action-url]');
-                const buttonMeta = card.querySelector('[data-button-meta]');
                 const urlMeta = card.querySelector('[data-url-meta]');
 
-                buttonMeta.innerHTML = `${buttonText.value.length} / 25`;
                 urlMeta.innerHTML = `${websiteInput.value.length} / 2000`;
+                syncUrlIntoMessage(card);
                 renderPhoneActions();
             };
 
@@ -1572,17 +1667,6 @@
                     </div>
                     <div class="campaign-button-card__fields">
                         <div class="campaign-button-card__field">
-                            <label>Type of action</label>
-                            <select class="text-input text-input--select" data-action-type>
-                                <option value="visit_website">Visit website</option>
-                            </select>
-                        </div>
-                        <div class="campaign-button-card__field">
-                            <label>Button Text</label>
-                            <input type="text" class="text-input" data-button-text maxlength="25" value="tes">
-                            <div class="campaign-button-card__meta" data-button-meta>3 / 25</div>
-                        </div>
-                        <div class="campaign-button-card__field">
                             <label>Url Type</label>
                             <select class="text-input text-input--select" data-url-type>
                                 <option value="static">static</option>
@@ -1590,8 +1674,8 @@
                         </div>
                         <div class="campaign-button-card__field">
                             <label>Website URL</label>
-                            <input type="text" class="text-input" data-action-url maxlength="2000" value="https://asd.com">
-                            <div class="campaign-button-card__meta" data-url-meta>15 / 2000</div>
+                            <input type="text" class="text-input" data-action-url maxlength="2000" value="">
+                            <div class="campaign-button-card__meta" data-url-meta>0 / 2000</div>
                         </div>
                     </div>
                 `;
@@ -1599,14 +1683,14 @@
                 buttonBuilder.appendChild(card);
 
                 const removeButton = card.querySelector('[data-remove-button]');
-                const buttonText = card.querySelector('[data-button-text]');
                 const websiteInput = card.querySelector('[data-action-url]');
 
                 const syncCard = () => updateButtonCardMeta(card);
 
-                buttonText.addEventListener('input', syncCard);
                 websiteInput.addEventListener('input', syncCard);
                 removeButton.addEventListener('click', () => {
+                    card.querySelector('[data-action-url]').value = '';
+                    syncUrlIntoMessage(card);
                     card.remove();
                     renderPhoneActions();
                     syncButtonLimitState();
@@ -1616,15 +1700,9 @@
                 syncButtonLimitState();
             };
 
-            const unlockCampaign = window.unlockCampaignTitleModal || (() => {
-                titlePreview.textContent = titleInput.value.trim() || 'Tanpa Judul';
-                body.classList.remove('campaign-title-locked');
-                body.classList.add('campaign-title-ready');
-            });
-
             const syncMessagePreview = () => {
                 const message = messageInput.value.trim();
-                messagePreview.textContent = message || 'Preview pesan akan muncul di sini.';
+                messagePreview.innerHTML = message ? linkifyMessage(message) : 'Preview pesan akan muncul di sini.';
                 messageCount.textContent = isTargeted
                     ? `${messageInput.value.length}/160 karakter (1 SMS)`
                     : `${messageInput.value.length}/160 karakter`;
@@ -1638,6 +1716,85 @@
 
             const normalizeAudience = (value) => new Intl.NumberFormat('id-ID').format(value);
             const formatCoordinate = (value) => Number(value).toFixed(6);
+
+            const normalizeTestRecipient = (value) => {
+                const digits = String(value || '').replace(/\D/g, '');
+                if (digits === '') {
+                    return '';
+                }
+
+                if (digits.startsWith('62')) {
+                    return digits;
+                }
+
+                if (digits.startsWith('0')) {
+                    return `62${digits.slice(1)}`;
+                }
+
+                return `62${digits}`;
+            };
+
+            const renderTestRecipientItem = (number) => {
+                if (!testRecipientList || !testRecipientField) {
+                    return;
+                }
+
+                const existing = testRecipientList.querySelector(`[data-test-recipient="${number}"]`);
+                if (existing) {
+                    testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
+                        other.checked = false;
+                    });
+                    existing.querySelector('input[type="checkbox"]').checked = true;
+                    testRecipientField.value = number;
+                    return;
+                }
+
+                const item = document.createElement('label');
+                item.className = 'campaign-test-recipient__item';
+                item.dataset.testRecipient = number;
+                item.innerHTML = `
+                    <input type="checkbox" checked>
+                    <span>${number}</span>
+                    <button type="button" class="campaign-test-recipient__remove" aria-label="Hapus nomor" title="Hapus nomor">&times;</button>
+                `;
+
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                const removeButton = item.querySelector('button');
+
+                checkbox.addEventListener('change', () => {
+                    testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
+                        if (other !== checkbox) {
+                            other.checked = false;
+                        }
+                    });
+
+                    testRecipientField.value = checkbox.checked ? number : '';
+                });
+
+                removeButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    if (testRecipientField.value === number) {
+                        testRecipientField.value = '';
+                    }
+                    item.remove();
+                });
+
+                testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
+                    other.checked = false;
+                });
+                testRecipientList.appendChild(item);
+                testRecipientField.value = number;
+            };
+
+            const addTestRecipient = () => {
+                const number = normalizeTestRecipient(testRecipientInput?.value);
+                if (number === '') {
+                    return;
+                }
+
+                renderTestRecipientItem(number);
+                testRecipientInput.value = '';
+            };
 
             const syncLocationButtonSummary = () => {
                 window.campaignLocationState = locationState;
@@ -1763,8 +1920,16 @@
 
             syncMessagePreview();
             syncSenderPreview();
+            senderInput?.addEventListener('change', syncSenderPreview);
+            messageInput?.addEventListener('input', syncMessagePreview);
+            addButton?.addEventListener('click', createButtonCard);
             initCampaignMultiselects();
-            createButtonCard();
+            loadProfileDropdownOptions().then(() => {
+                initCampaignMultiselects();
+                syncTargetedProfileBuilder();
+                syncStepTwoValidity();
+            });
+            syncButtonLimitState();
             calculateAudience();
             closeLocationModal();
             syncCampaignStep(1);
@@ -1776,7 +1941,6 @@
             syncStepThreeValidity();
             syncTargetedLocationRemoveState(homeLocationList);
             syncTargetedLocationRemoveState(workLocationList);
-            calculateTargetedEstimate();
 
             openLocationModalButton?.addEventListener('click', openLocationModal);
             stepOneNext?.addEventListener('click', () => {
@@ -1795,51 +1959,25 @@
             stepFourBack?.addEventListener('click', () => syncCampaignStep(3));
             addScheduleButton?.addEventListener('click', addScheduleItem);
             termsCheck?.addEventListener('change', syncStepThreeValidity);
+            recipientCountInput?.addEventListener('input', syncStepThreeValidity);
+            testRecipientAdd?.addEventListener('click', addTestRecipient);
+            testRecipientInput?.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addTestRecipient();
+                }
+            });
             targetedRecipient?.addEventListener('change', () => {
                 syncTargetedProfileBuilder();
-                syncStepTwoValidity();
-            });
-            recipientProfile?.addEventListener('change', syncStepTwoValidity);
-            applyAudienceButton?.addEventListener('click', () => {
-                const selectedTemplate = profileTemplates[recipientProfile?.value];
-
-                if (!selectedTemplate) {
-                    syncStepTwoValidity();
-                    return;
-                }
-
-                const fieldMap = {
-                    campaignTargetGender: selectedTemplate.gender,
-                    campaignTargetAge: selectedTemplate.age,
-                    campaignTargetOs: selectedTemplate.os,
-                    campaignTargetDataPackage: selectedTemplate.dataPackage,
-                    campaignTargetHouseholdSpend: selectedTemplate.householdSpend,
-                    campaignTargetMaritalStatus: selectedTemplate.maritalStatus,
-                    campaignTargetLifestyle: selectedTemplate.lifestyle,
-                    campaignTargetReligion: selectedTemplate.religion,
-                };
-
-                Object.entries(fieldMap).forEach(([fieldId, fieldValue]) => {
-                    const field = document.getElementById(fieldId);
-                    if (field) {
-                        Array.from(field.options).forEach((option) => {
-                            option.selected = Array.isArray(fieldValue) ? fieldValue.includes(option.value) : option.value === fieldValue;
-                        });
-                        field.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                });
-
                 syncStepTwoValidity();
             });
             targetedProfileFields.forEach((field) => {
                 field.addEventListener('change', () => {
                     syncStepTwoValidity();
-                    calculateTargetedEstimate();
                 });
             });
             addHomeLocationButton?.addEventListener('click', () => addTargetedLocationRow('home'));
             addWorkLocationButton?.addEventListener('click', () => addTargetedLocationRow('work'));
-            targetedEstimateButton?.addEventListener('click', calculateTargetedEstimate);
             [homeLocationList, workLocationList].forEach((list) => {
                 list?.addEventListener('click', (event) => {
                     const removeButton = event.target.closest('[data-remove-location]');
@@ -1851,15 +1989,9 @@
                     if (row) {
                         row.remove();
                         syncTargetedLocationRemoveState(list);
-                        calculateTargetedEstimate();
                     }
                 });
 
-                list?.addEventListener('change', (event) => {
-                    if (event.target.closest('[data-location-select]')) {
-                        calculateTargetedEstimate();
-                    }
-                });
             });
             scheduleList?.addEventListener('click', (event) => {
                 const trigger = event.target.closest('[data-time-trigger]');
@@ -1875,6 +2007,7 @@
 
                 removeButton.closest('[data-schedule-item]')?.remove();
                 syncScheduleRemoveState();
+                syncStepThreeValidity();
             });
             document.addEventListener('click', (event) => {
                 const editButton = event.target.closest('[data-review-edit]');
@@ -1914,6 +2047,26 @@
 
                 if (scheduleId) {
                     syncSchedulePreview(scheduleId);
+                    syncStepThreeValidity();
+                }
+            });
+            scheduleList?.addEventListener('change', (event) => {
+                const field = event.target.closest('[data-schedule-date-start], [data-schedule-date-end], [data-schedule-time-start-hour], [data-schedule-time-start-minute], [data-schedule-time-end-hour], [data-schedule-time-end-minute]');
+                if (!field) {
+                    return;
+                }
+
+                const scheduleId =
+                    field.dataset.scheduleDateStart ||
+                    field.dataset.scheduleDateEnd ||
+                    field.dataset.scheduleTimeStartHour ||
+                    field.dataset.scheduleTimeStartMinute ||
+                    field.dataset.scheduleTimeEndHour ||
+                    field.dataset.scheduleTimeEndMinute;
+
+                if (scheduleId) {
+                    syncSchedulePreview(scheduleId);
+                    syncStepThreeValidity();
                 }
             });
             document.addEventListener('click', (event) => {
@@ -1942,25 +2095,37 @@
             });
 
             document.addEventListener('keydown', (event) => {
-                if (event.key === 'Enter' && body.classList.contains('campaign-title-locked')) {
-                    event.preventDefault();
-                    unlockCampaign();
-                }
-
                 if (event.key === 'Escape' && !locationModal.hidden) {
                     closeLocationModal();
                 }
             });
 
-            titleSubmit?.addEventListener('click', unlockCampaign);
-            document.addEventListener('click', (event) => {
-                if (event.target.closest('#campaignTitleSubmit')) {
-                    unlockCampaign();
+            const gwSubmitButton = document.getElementById('campaignGwSubmitButton');
+            const gwSubmitForm = document.getElementById('campaignGwSubmitForm');
+            const gwDeliveryTime = document.getElementById('gwDeliveryTime');
+
+            const pickScheduleValue = (selector) => {
+                const el = document.querySelector(selector);
+                return el && typeof el.value === 'string' ? el.value : '';
+            };
+
+            gwSubmitButton?.addEventListener('click', () => {
+                if (!gwSubmitForm || !gwDeliveryTime) {
+                    return;
                 }
+
+                if (!testRecipientField?.value && testRecipientInput?.value?.trim()) {
+                    addTestRecipient();
+                }
+
+                const scheduleId = '1';
+                const hourValue = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
+                const minuteValue = pickScheduleValue(`[data-schedule-time-start-minute="${scheduleId}"]`);
+
+                gwDeliveryTime.value = hourValue && minuteValue ? `${hourValue}:${minuteValue}` : '';
+
+                gwSubmitForm.submit();
             });
-            senderInput?.addEventListener('change', syncSenderPreview);
-            messageInput?.addEventListener('input', syncMessagePreview);
-            addButton?.addEventListener('click', createButtonCard);
         })();
     </script>
 @endpush

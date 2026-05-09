@@ -1138,10 +1138,196 @@ a {
     color: #0a5a55;
     font-weight: 700;
     border: 1px solid rgba(0, 89, 83, 0.08);
+    text-decoration: none;
 }
 
 .portal-service-list__item:hover {
     background: linear-gradient(135deg, #ebfff8 0%, #e8f8f0 100%);
+}
+
+.portal-service-list__item--campaign {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.portal-service-list__item--campaign strong {
+    color: #0a8c84;
+    font-size: 0.92rem;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.portal-category-open {
+    overflow: hidden;
+}
+
+.portal-category-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.portal-category-modal[hidden] {
+    display: none;
+}
+
+.portal-category-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(6, 20, 35, 0.58);
+    backdrop-filter: blur(5px);
+}
+
+.portal-category-modal__card {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 980px);
+    max-height: min(86vh, 760px);
+    overflow: auto;
+    padding: 34px;
+    border-radius: 18px;
+    background: #ffffff;
+    box-shadow: 0 32px 90px rgba(6, 20, 35, 0.28);
+}
+
+.portal-category-modal__head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.portal-category-modal__eyebrow {
+    margin: 0 0 6px;
+    color: #008f86;
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.portal-category-modal__head h2 {
+    margin: 0;
+    color: #061b3a;
+    font-family: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+    font-size: 2rem;
+    line-height: 1.15;
+}
+
+.portal-category-modal__close {
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 50%;
+    background: #eef7f5;
+    color: #0a4f4b;
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.portal-category-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.portal-category-card {
+    min-height: 196px;
+    padding: 20px;
+    border: 1px solid rgba(0, 89, 83, 0.14);
+    border-radius: 14px;
+    background: linear-gradient(180deg, #ffffff 0%, #f6fffc 100%);
+    color: #061b3a;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    transition: transform 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.portal-category-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(0, 143, 134, 0.42);
+    box-shadow: 0 18px 36px rgba(0, 89, 83, 0.12);
+}
+
+.portal-category-card__icon {
+    width: 52px;
+    height: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    background: #fff2f3;
+    color: #ff314d;
+    font-size: 0.95rem;
+    font-weight: 900;
+}
+
+.portal-category-card__icon--wa {
+    background: #eafbf2;
+    color: #008f5a;
+}
+
+.portal-category-card__channel {
+    margin-top: 22px;
+    color: #008f86;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.portal-category-card strong {
+    margin-top: 7px;
+    color: #061b3a;
+    font-size: 1.08rem;
+    line-height: 1.35;
+}
+
+.portal-category-card small {
+    margin-top: auto;
+    color: #0a746d;
+    font-size: 0.92rem;
+    font-weight: 800;
+}
+
+@media (max-width: 980px) {
+    .portal-category-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .portal-category-modal {
+        align-items: flex-start;
+        padding: 14px;
+    }
+
+    .portal-category-modal__card {
+        padding: 22px;
+        border-radius: 16px;
+    }
+
+    .portal-category-modal__head h2 {
+        font-size: 1.55rem;
+    }
+
+    .portal-category-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .portal-category-card {
+        min-height: 156px;
+    }
 }
 
 .flow-hero {
@@ -3599,6 +3785,11 @@ a {
     word-break: break-word;
 }
 
+.campaign-phone__url {
+    color: #0b82df;
+    font-weight: 700;
+}
+
 .campaign-phone__actions {
     display: grid;
 }
@@ -3613,6 +3804,103 @@ a {
     font-size: 0.84rem;
     font-weight: 800;
     text-align: center;
+}
+
+.campaign-test-recipient {
+    width: 100%;
+}
+
+.campaign-test-recipient__box {
+    min-width: 0;
+    margin: 0;
+    padding: 14px 18px 16px;
+    border: 1px solid #8b95a3;
+    border-radius: 4px;
+}
+
+.campaign-test-recipient__box legend {
+    padding: 0 8px;
+    color: #142b4a;
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+.campaign-test-recipient__entry {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #d6dde3;
+}
+
+.campaign-test-recipient__prefix {
+    color: #7c8797;
+    font-weight: 600;
+}
+
+.campaign-test-recipient__input {
+    width: 100%;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    color: #142b4a;
+    font: inherit;
+}
+
+.campaign-test-recipient__input::placeholder {
+    color: #95a0ad;
+}
+
+.campaign-test-recipient__add,
+.campaign-test-recipient__remove {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+
+.campaign-test-recipient__add {
+    color: #ff1648;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.campaign-test-recipient__list {
+    display: grid;
+    gap: 10px;
+    padding-top: 14px;
+}
+
+.campaign-test-recipient__list:empty {
+    display: none;
+}
+
+.campaign-test-recipient__item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    color: #142b4a;
+    font-size: 0.92rem;
+}
+
+.campaign-test-recipient__item input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+}
+
+.campaign-test-recipient__item span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.campaign-test-recipient__remove {
+    width: 28px;
+    height: 28px;
+    color: #8b95a3;
+    font-size: 1.3rem;
+    line-height: 1;
 }
 
 .campaign-title-modal {

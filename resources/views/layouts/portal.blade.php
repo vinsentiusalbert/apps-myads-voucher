@@ -35,6 +35,7 @@
 
         @yield('after_shell')
 
+        @include('partials.portal-campaign-category-modal')
         @include('partials.portal-menu-script')
         @stack('scripts')
     </body>

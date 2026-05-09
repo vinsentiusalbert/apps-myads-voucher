@@ -18,7 +18,7 @@
         @if (! empty($createButtonHref))
             <a href="{{ $createButtonHref }}" class="portal-create-btn portal-create-btn--link">{{ $createButtonLabel }}</a>
         @else
-            <button type="button" class="portal-create-btn">{{ $createButtonLabel }}</button>
+            <button type="button" class="portal-create-btn" data-campaign-category-open>{{ $createButtonLabel }}</button>
         @endif
 
         <nav class="portal-nav" aria-label="Main navigation">
