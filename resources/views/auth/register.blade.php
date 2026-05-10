@@ -25,6 +25,22 @@
                     @csrf
 
                     <div class="field-group">
+                        <label for="merchant_id" class="field-label">Merchant ID</label>
+                        <input id="merchant_id" name="merchant_id" type="text" value="{{ old('merchant_id', $merchantId) }}" readonly required class="text-input">
+                        @error('merchant_id')
+                            <p class="error-text">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="field-group">
+                        <label for="partner_id" class="field-label">Partner ID</label>
+                        <input id="partner_id" name="partner_id" type="text" value="{{ old('partner_id', $partnerId) }}" readonly required class="text-input">
+                        @error('partner_id')
+                            <p class="error-text">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="field-group">
                         <label for="name" class="field-label">Nama Lengkap</label>
                         <input id="name" name="name" type="text" value="{{ old('name') }}" required autofocus class="text-input">
                         @error('name')

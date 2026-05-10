@@ -109,13 +109,36 @@ class MyadsApiClient
     /**
      * @return array{success:bool, message?:string, data?:array}
      */
-    public function register(string $email, string $password, string $name): array
+    public function registrationContext(string $merchantId, string $partnerId): array
+    {
+        try {
+            $response = $this->client()->get('/api/sso/register', [
+                'merchant_id' => $merchantId,
+                'partner_id' => $partnerId,
+            ]);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API SSO register: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Konteks register tidak valid'));
+        }
+
+        return (array) $response->json();
+    }
+
+    /**
+     * @return array{success:bool, message?:string, data?:array}
+     */
+    public function register(string $email, string $password, string $name, string $merchantId, string $partnerId): array
     {
         try {
             $response = $this->client()->post('/api/auth/register', [
                 'email' => $email,
                 'password' => $password,
                 'name' => $name,
+                'merchant_id' => $merchantId,
+                'partner_id' => $partnerId,
             ]);
         } catch (ConnectionException $e) {
             throw new RuntimeException('Tidak bisa konek ke API register: ' . $e->getMessage(), previous: $e);

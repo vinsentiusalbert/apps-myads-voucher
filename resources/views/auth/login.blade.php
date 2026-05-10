@@ -46,7 +46,7 @@
                 <div class="auth-panel">
                     <div class="panel-card">
                         <div class="panel-topbar">
-                            <p class="panel-register">Belum memiliki akun? <a href="{{ route('register') }}" class="field-link">Daftar</a></p>
+                            <p class="panel-register">Belum memiliki akun? Daftar melalui tautan partner.</p>
                         </div>
                         <h2 class="panel-title">Masuk ke MyAds</h2>
                         <p class="panel-copy">Isi form di bawah untuk masuk ke akun Anda</p>

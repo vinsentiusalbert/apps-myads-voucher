@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class AuthLoginTest extends TestCase
@@ -13,16 +14,35 @@ class AuthLoginTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Masuk ke MyAds');
-        $response->assertSee(route('register'));
+        $response->assertSee('Daftar melalui tautan partner');
         $response->assertSee(route('password.request'));
     }
 
-    public function test_register_page_is_accessible(): void
+    public function test_register_page_requires_merchant_and_partner_context(): void
     {
         $response = $this->get('/register');
 
+        $response->assertForbidden();
+    }
+
+    public function test_register_page_is_accessible_with_merchant_and_partner_context(): void
+    {
+        Http::fake([
+            '*' => Http::response([
+                'success' => true,
+                'data' => [
+                    'merchant_id' => 'merchant-001',
+                    'partner_id' => 'partner-001',
+                ],
+            ]),
+        ]);
+
+        $response = $this->get('/register?merchant_id=merchant-001&partner_id=partner-001');
+
         $response->assertOk();
         $response->assertSee('Daftar akun MyAds');
+        $response->assertSee('merchant-001');
+        $response->assertSee('partner-001');
     }
 
     public function test_forgot_password_page_is_accessible(): void

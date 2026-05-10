@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('merchant_id', 128)->nullable()->index();
+            $table->string('partner_id', 128)->nullable()->index();
             $table->rememberToken();
             $table->timestamps();
         });
