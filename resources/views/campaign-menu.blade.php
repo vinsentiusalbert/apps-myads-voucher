@@ -59,7 +59,7 @@
                         @php
                             $menus = [
                                 'sms' => ['label' => 'SMS', 'items' => ['location-based-area' => 'Location Based Area', 'targeted' => 'Targeted']],
-                                'wa-business' => ['label' => 'WA Business', 'items' => ['location-based-area' => 'Location Based Area', 'campaign-template' => 'Campaign Template', 'targeted' => 'Targeted']],
+                                'wa-business' => ['label' => 'WA Business', 'items' => ['campaign-template' => 'Campaign Template', 'location-based-area' => 'Location Based Area', 'targeted' => 'Targeted']],
                             ];
                         @endphp
 
