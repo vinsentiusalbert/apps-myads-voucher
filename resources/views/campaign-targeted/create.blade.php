@@ -296,6 +296,13 @@
                                     </select>
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
+                                    <label for="campaignTargetCardType" class="field-label">Tipe Kartu</label>
+                                    <select id="campaignTargetCardType" name="profile_card_type[]" form="campaignGwSubmitForm" class="campaign-search-multiselect" multiple data-placeholder="Cari tipe kartu">
+                                        <option value="Telkomsel Halo">Telkomsel Halo</option>
+                                        <option value="Telkomsel PraBayar">Telkomsel PraBayar</option>
+                                    </select>
+                                </div>
+                                <div class="field-group campaign-field-group--compact">
                                     <label for="campaignTargetAge" class="field-label">Rentang Umur</label>
                                     <select id="campaignTargetAge" name="profile_age[]" form="campaignGwSubmitForm" class="campaign-search-multiselect" multiple data-placeholder="Cari rentang umur">
                                         <option value="under-15">&lt; 15 tahun</option>
@@ -680,10 +687,26 @@
                                 </div>
                             </div>
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
+                            <div class="campaign-cost-card__section" id="campaignPaymentPanel" hidden>
+                                <span class="campaign-cost-card__section-title">Pembayaran QRIS</span>
+                                <div class="campaign-cost-card__row">
+                                    <span>Status</span>
+                                    <strong id="campaignPaymentStatus">-</strong>
+                                </div>
+                                <div class="campaign-cost-card__row">
+                                    <span>Transaction ID</span>
+                                    <strong id="campaignPaymentTransaction">-</strong>
+                                </div>
+                                <div class="campaign-cost-card__row" style="display:block">
+                                    <img id="campaignPaymentQr" alt="QRIS" style="max-width: 100%; height: auto; display: block; margin-top: 10px;" />
+                                    <a id="campaignPaymentQrLink" class="campaign-inline-link campaign-inline-link--fit" href="#" target="_blank" rel="noreferrer" style="margin-top: 8px; display: inline-block">Buka QRIS</a>
+                                </div>
+                            </div>
                             <form id="campaignGwSubmitForm" method="POST" action="{{ route('campaign.targeted.send', ['channel' => $channel]) }}" hidden>
                                 @csrf
                                 <input type="hidden" name="campaign_name" id="campaign_title" value="{{ $autoCampaignName }}">
                                 <input type="hidden" name="delivery_time" id="gwDeliveryTime">
+                                <input type="hidden" name="payment_transaction_id" id="gwPaymentTransactionId" value="">
                             </form>
                             <p class="campaign-cost-card__footnote">
                                 Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim.
@@ -1259,6 +1282,7 @@
                     campaignTargetOs: ['os', 'profileOs', 'operatingSystem'],
                     campaignTargetDataPackage: ['dataPackage', 'packageData', 'paketData'],
                     campaignTargetHouseholdSpend: ['householdSpend', 'householdExpense', 'pengeluaranRumahTangga'],
+                    campaignTargetCardType: ['cardType', 'profileCardType', 'card_type'],
                     campaignTargetMaritalStatus: ['maritalStatus', 'marriage', 'statusPernikahan'],
                     campaignTargetLifestyle: ['lifestyleseg', 'lifestyle', 'lifestyleSegment', 'profileLifestyle', 'profileLifestyleSegment'],
                     campaignTargetReligion: ['religion', 'religions', 'profileReligion', 'agama'],
@@ -1304,7 +1328,7 @@
                 <div class="campaign-targeted-location-grid">
                     <div class="field-group campaign-field-group--compact">
                         <label class="field-label">Provinsi</label>
-                        <select class="text-input text-input--select" data-location-select="province">
+                        <select class="text-input text-input--select" data-location-select="province" name="${type === 'work' ? 'profile_work[]' : 'profile_hometown[]'}" form="campaignGwSubmitForm">
                             ${buildGatewaySelectOptions(type === 'work' ? ['work_province', 'workProvince', 'profileWorkProvince'] : ['province', 'home_province', 'homeProvince', 'profileProvince'], 'Provinsi', ['DKI Jakarta', 'Jawa Barat', 'Banten', 'Jawa Tengah'])}
                         </select>
                     </div>
@@ -1312,30 +1336,18 @@
                         <label class="field-label">Kota</label>
                         <select class="text-input text-input--select" data-location-select="city">
                             <option value="">Kota</option>
-                            <option>Jakarta Pusat</option>
-                            <option>Jakarta Selatan</option>
-                            <option>Bandung</option>
-                            <option>Tangerang</option>
                         </select>
                     </div>
                     <div class="field-group campaign-field-group--compact">
                         <label class="field-label">Kecamatan</label>
                         <select class="text-input text-input--select" data-location-select="district">
                             <option value="">Kecamatan</option>
-                            <option>Tanah Abang</option>
-                            <option>Setiabudi</option>
-                            <option>Coblong</option>
-                            <option>Ciledug</option>
                         </select>
                     </div>
                     <div class="field-group campaign-field-group--compact">
                         <label class="field-label">Kelurahan</label>
                         <select class="text-input text-input--select" data-location-select="subdistrict">
                             <option value="">Kelurahan</option>
-                            <option>Kebon Melati</option>
-                            <option>Karet</option>
-                            <option>Dago</option>
-                            <option>Paninggilan</option>
                         </select>
                     </div>
                 </div>
@@ -2118,14 +2130,109 @@
             const gwSubmitButton = document.getElementById('campaignGwSubmitButton');
             const gwSubmitForm = document.getElementById('campaignGwSubmitForm');
             const gwDeliveryTime = document.getElementById('gwDeliveryTime');
+            const gwPaymentTransactionId = document.getElementById('gwPaymentTransactionId');
+
+            const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
+            const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
+            const csrfToken = "{{ csrf_token() }}";
+
+            const paymentPanel = document.getElementById('campaignPaymentPanel');
+            const paymentStatusLabel = document.getElementById('campaignPaymentStatus');
+            const paymentTransactionLabel = document.getElementById('campaignPaymentTransaction');
+            const paymentQr = document.getElementById('campaignPaymentQr');
+            const paymentQrLink = document.getElementById('campaignPaymentQrLink');
 
             const pickScheduleValue = (selector) => {
                 const el = document.querySelector(selector);
                 return el && typeof el.value === 'string' ? el.value : '';
             };
 
-            gwSubmitButton?.addEventListener('click', () => {
-                if (!gwSubmitForm || !gwDeliveryTime) {
+            const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+            const setPaymentUi = ({ status, transactionId, qrisUrl } = {}) => {
+                if (paymentPanel) {
+                    paymentPanel.hidden = false;
+                }
+                if (paymentStatusLabel) {
+                    paymentStatusLabel.textContent = status || '-';
+                }
+                if (paymentTransactionLabel) {
+                    paymentTransactionLabel.textContent = transactionId || '-';
+                }
+                if (paymentQr && qrisUrl) {
+                    paymentQr.src = qrisUrl;
+                }
+                if (paymentQrLink) {
+                    paymentQrLink.href = qrisUrl || '#';
+                    paymentQrLink.hidden = !qrisUrl;
+                }
+            };
+
+            const pollPaymentUntilSuccess = async (transactionId) => {
+                const statusUrl = paymentStatusUrlTemplate.replace('__TRANSACTION_ID__', encodeURIComponent(transactionId));
+                const startedAt = Date.now();
+                const timeoutMs = 10 * 60 * 1000;
+
+                while ((Date.now() - startedAt) < timeoutMs) {
+                    let status = '';
+
+                    try {
+                        const response = await fetch(statusUrl, {
+                            headers: { Accept: 'application/json' },
+                        });
+                        const payload = await response.json().catch(() => null);
+                        status = String(payload?.data?.status || '').toUpperCase();
+                    } catch (error) {
+                        // keep polling (network blips)
+                    }
+
+                    if (status) {
+                        setPaymentUi({ status, transactionId });
+                    }
+
+                    if (status === 'SUCCESS') {
+                        return;
+                    }
+
+                    if (status === 'FAILED' || status === 'EXPIRED') {
+                        throw new Error('Pembayaran gagal. Status: ' + status);
+                    }
+
+                    await sleep(3000);
+                }
+
+                throw new Error('Timeout menunggu pembayaran. Silakan coba lagi.');
+            };
+
+            const initiatePayment = async (amount, phone, detail) => {
+                const response = await fetch(paymentInitiateUrl, {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify({
+                        transaction_amount: amount,
+                        customer_phone: phone,
+                        product_category: 'MYADS',
+                        product_type: 'ADVERTISEMENT',
+                        product_detail: detail,
+                    }),
+                });
+
+                const payload = await response.json().catch(() => null);
+
+                if (!response.ok || !payload || payload.success !== true) {
+                    const message = payload?.message || 'Gagal initiate pembayaran.';
+                    throw new Error(message);
+                }
+
+                return payload;
+            };
+
+            const submitCampaignAfterPayment = async () => {
+                if (!gwSubmitForm || !gwDeliveryTime || !gwPaymentTransactionId) {
                     return;
                 }
 
@@ -2133,13 +2240,56 @@
                     addTestRecipient();
                 }
 
+                const recipientCount = Number(document.getElementById('campaignRecipientCount')?.value || 0);
+                const totalCost = unitPrice > 0 ? recipientCount * unitPrice : 0;
+                const phone = String(document.getElementById('campaignTestRecipient')?.value || '').trim();
+                const title = String(titleInput?.value || '').trim() || 'Tanpa Judul';
+
+                if (!phone) {
+                    throw new Error('Nomor penerima tes belum diisi.');
+                }
+                if (!totalCost || totalCost <= 0) {
+                    throw new Error('Total biaya tidak valid.');
+                }
+
+                gwSubmitButton.disabled = true;
+                gwSubmitButton.textContent = 'Menyiapkan pembayaran...';
+
+                const initiateResp = await initiatePayment(totalCost, phone, `SMS TARGETED - ${title}`);
+                const transactionId = String(initiateResp?.data?.transaction_id || '').trim();
+                const qrisUrl = String(initiateResp?.data?.qris_url || '').trim();
+
+                if (!transactionId) {
+                    throw new Error('Transaction ID tidak ditemukan dari response pembayaran.');
+                }
+
+                gwPaymentTransactionId.value = transactionId;
+                setPaymentUi({ status: 'PENDING', transactionId, qrisUrl });
+
+                gwSubmitButton.textContent = 'Menunggu pembayaran...';
+
+                await pollPaymentUntilSuccess(transactionId);
+
+                gwSubmitButton.textContent = 'Pembayaran sukses. Mengirim campaign...';
+
                 const scheduleId = '1';
                 const hourValue = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
                 const minuteValue = pickScheduleValue(`[data-schedule-time-start-minute="${scheduleId}"]`);
-
                 gwDeliveryTime.value = hourValue && minuteValue ? `${hourValue}:${minuteValue}` : '';
 
                 gwSubmitForm.submit();
+            };
+
+            gwSubmitButton?.addEventListener('click', async () => {
+                try {
+                    await submitCampaignAfterPayment();
+                } catch (error) {
+                    const message = error?.message ? String(error.message) : 'Gagal memproses pembayaran.';
+                    setPaymentUi({ status: 'FAILED' });
+                    gwSubmitButton.disabled = false;
+                    gwSubmitButton.textContent = 'Bayar & Kirim Iklan';
+                    window.alert(message);
+                }
             });
         })();
     </script>

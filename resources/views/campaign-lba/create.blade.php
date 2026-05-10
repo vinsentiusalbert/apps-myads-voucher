@@ -296,14 +296,10 @@
                             <div class="field-group campaign-targeted-step-two__saved-field">
                                 <label for="campaignRecipientProfile" class="field-label">Pilih Nama Profil</label>
                                 <select id="campaignRecipientProfile" class="text-input text-input--select">
-                                    <option value="">Pilih Nama Profil</option>
-                                    <option value="muslim-family">Muslim Family</option>
-                                    <option value="young-professional">Young Professional</option>
-                                    <option value="urban-parent">Urban Parent</option>
-                                    <option value="budget-hunter">Budget Hunter</option>
+                                    <option value="">Belum ada profil tersimpan</option>
                                 </select>
                             </div>
-                            <button type="button" class="campaign-outline-button campaign-targeted-step-two__apply" id="campaignApplyAudience">Terapkan</button>
+                            <button type="button" class="campaign-outline-button campaign-targeted-step-two__apply" id="campaignApplyAudience" disabled>Terapkan</button>
                         </div>
                     </div>
 
@@ -423,7 +419,7 @@
                         </div>
                         <div class="campaign-estimate-card">
                             <span class="campaign-estimate-card__label">Estimasi Penerima Potensial</span>
-                            <strong id="campaignStepTwoEstimate">131.409-160.609</strong>
+                            <strong id="campaignStepTwoEstimate">-</strong>
                         </div>
                     </div>
                 </div>
@@ -597,7 +593,7 @@
                             </div>
                             <div>
                                 <span class="campaign-review-grid__label">Estimasi Penerima Potensial</span>
-                                <strong id="campaignReviewAudience">0</strong>
+                                <strong id="campaignReviewAudience">-</strong>
                             </div>
                             <div>
                                 <span class="campaign-review-grid__label">Jenis Kelamin</span>
@@ -642,7 +638,7 @@
                             <span>Total Pesan yang akan dikirim</span>
                             <strong id="campaignReviewRecipientCount">5 Pesan</strong>
                         </div>
-                        <p class="campaign-review-note">dari estimasi <span id="campaignReviewPotentialRange">0</span> penerima potensial</p>
+                        <p class="campaign-review-note">dari estimasi <span id="campaignReviewPotentialRange">-</span> penerima potensial</p>
                     </div>
                 </article>
 
@@ -665,13 +661,13 @@
                                 </div>
                                 <div class="campaign-cost-card__row">
                                     <span>Harga Satuan</span>
-                                    <strong>Rp 200</strong>
+                                    <strong id="campaignReviewUnitPrice">-</strong>
                                 </div>
                             </div>
                             <div class="campaign-cost-card__section">
                                 <div class="campaign-cost-card__row campaign-cost-card__row--total">
                                     <span>Grand Total</span>
-                                    <strong id="campaignReviewGrandTotal">Rp 1.000</strong>
+                                    <strong id="campaignReviewGrandTotal">-</strong>
                                 </div>
                             </div>
                             <div class="campaign-cost-card__section">
@@ -682,10 +678,25 @@
                                 </div>
                                 <div class="campaign-cost-card__row">
                                     <span>Saldo Monetary</span>
-                                    <strong id="campaignReviewPaymentMonetary">Rp 1.000</strong>
+                                    <strong id="campaignReviewPaymentMonetary">-</strong>
                                 </div>
                             </div>
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
+                            <div class="campaign-cost-card__section" id="campaignPaymentPanel" hidden>
+                                <span class="campaign-cost-card__section-title">Pembayaran QRIS</span>
+                                <div class="campaign-cost-card__row">
+                                    <span>Status</span>
+                                    <strong id="campaignPaymentStatus">-</strong>
+                                </div>
+                                <div class="campaign-cost-card__row">
+                                    <span>Transaction ID</span>
+                                    <strong id="campaignPaymentTransaction">-</strong>
+                                </div>
+                                <div class="campaign-cost-card__row" style="display:block">
+                                    <img id="campaignPaymentQr" alt="QRIS" style="max-width: 100%; height: auto; display: block; margin-top: 10px;" />
+                                    <a id="campaignPaymentQrLink" class="campaign-inline-link campaign-inline-link--fit" href="#" target="_blank" rel="noreferrer" style="margin-top: 8px; display: inline-block">Buka QRIS</a>
+                                </div>
+                            </div>
                             <form id="campaignGwSubmitForm" method="POST" action="{{ route('campaign.lba.send', ['channel' => $channel]) }}" hidden>
                                 @csrf
                                 <input type="hidden" name="campaign_name" id="campaign_title" value="{{ $autoCampaignName }}">
@@ -696,6 +707,7 @@
                                 <input type="hidden" name="location_name" id="gwLocationName">
                                 <input type="hidden" name="location_lat" id="gwLocationLat">
                                 <input type="hidden" name="location_lng" id="gwLocationLng">
+                                <input type="hidden" name="payment_transaction_id" id="gwPaymentTransactionId" value="">
                             </form>
                             <p class="campaign-cost-card__footnote">
                                 Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim.
@@ -843,7 +855,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 <script>
-    (() => {
+    (async () => {
         const isTargeted = "{{ $isTargeted ? 'true' : 'false' }}" === 'true';
         const body = document.body;
         const titleInput = document.getElementById('campaign_title');
@@ -890,10 +902,120 @@
         const applyLocationButton = document.getElementById('campaignApplyLocation');
         const reviewSchedules = document.getElementById('campaignReviewSchedules');
 
+        const profileDropdownUrl = "{{ route('campaign.targeted.profile-dropdown-list', ['channel' => $channel]) }}";
+        let profileDropdownSource = null;
+
+        const getGatewayOptionValue = (option) => {
+            if (option && typeof option === 'object') {
+                const value = option.value ?? option.code ?? option.id;
+                return value === null || value === undefined ? '' : String(value);
+            }
+            return option === null || option === undefined ? '' : String(option);
+        };
+
+        const getGatewayOptionLabel = (option) => {
+            if (option && typeof option === 'object') {
+                const label = option.label ?? option.name ?? option.text;
+                const value = option.value ?? option.code ?? option.id;
+                if (label !== null && label !== undefined && String(label).trim() !== '') {
+                    return String(label);
+                }
+                return value === null || value === undefined ? '' : String(value);
+            }
+            return option === null || option === undefined ? '' : String(option);
+        };
+
+        const findProfileDropdownOptions = (source, keys = []) => {
+            if (!source || typeof source !== 'object') {
+                return [];
+            }
+
+            for (const key of keys) {
+                const raw = source?.[key];
+                if (Array.isArray(raw) && raw.length > 0) {
+                    return raw
+                        .map((item) => ({
+                            value: getGatewayOptionValue(item),
+                            label: getGatewayOptionLabel(item),
+                        }))
+                        .filter((item) => item.value !== '' || item.label !== '');
+                }
+            }
+
+            return [];
+        };
+
+        const setSelectOptions = (selectId, options, { keepFirstEmpty = false } = {}) => {
+            const select = document.getElementById(selectId);
+            if (!select || !Array.isArray(options) || options.length === 0) {
+                return;
+            }
+
+            const selectedValues = new Set(Array.from(select.selectedOptions || []).map((opt) => opt.value));
+            const placeholder = keepFirstEmpty && select.options?.length && select.options[0].value === ''
+                ? { value: '', label: select.options[0].textContent || '' }
+                : null;
+
+            select.innerHTML = '';
+            if (placeholder) {
+                const opt = document.createElement('option');
+                opt.value = '';
+                opt.textContent = placeholder.label;
+                select.appendChild(opt);
+            }
+
+            options.forEach((item) => {
+                const opt = document.createElement('option');
+                opt.value = item.value;
+                opt.textContent = item.label;
+                if (selectedValues.has(item.value)) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            });
+        };
+
+        const loadProfileDropdownOptions = async () => {
+            if (!profileDropdownUrl) {
+                return;
+            }
+
+            try {
+                const response = await fetch(profileDropdownUrl, {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const payload = await response.json();
+                const source = payload?.data?.data ?? payload?.data ?? payload;
+                profileDropdownSource = source;
+
+                setSelectOptions('campaign_gender', findProfileDropdownOptions(source, ['gender', 'profileGender', 'jenisKelamin']));
+                setSelectOptions('campaign_age', findProfileDropdownOptions(source, ['age', 'profileAge', 'rentangUmur']));
+                setSelectOptions('campaign_religion', findProfileDropdownOptions(source, ['religion', 'religions', 'profileReligion', 'agama']));
+
+                setSelectOptions('campaignTargetGender', findProfileDropdownOptions(source, ['gender', 'profileGender', 'jenisKelamin']), { keepFirstEmpty: true });
+                setSelectOptions('campaignTargetAge', findProfileDropdownOptions(source, ['age', 'profileAge', 'rentangUmur']), { keepFirstEmpty: true });
+                setSelectOptions('campaignTargetOs', findProfileDropdownOptions(source, ['os', 'profileOs', 'operatingSystem']), { keepFirstEmpty: true });
+                setSelectOptions('campaignTargetDataPackage', findProfileDropdownOptions(source, ['dataPackage', 'packageData', 'paketData']), { keepFirstEmpty: true });
+                setSelectOptions('campaignTargetHouseholdSpend', findProfileDropdownOptions(source, ['householdSpend', 'householdExpense', 'pengeluaranRumahTangga']), { keepFirstEmpty: true });
+                setSelectOptions('campaignTargetMaritalStatus', findProfileDropdownOptions(source, ['maritalStatus', 'marriage', 'statusPernikahan']), { keepFirstEmpty: true });
+                setSelectOptions('campaignTargetLifestyle', findProfileDropdownOptions(source, ['lifestyleseg', 'lifestyle', 'lifestyleSegment', 'profileLifestyle', 'profileLifestyleSegment']), { keepFirstEmpty: true });
+                setSelectOptions('campaignTargetReligion', findProfileDropdownOptions(source, ['religion', 'religions', 'profileReligion', 'agama']), { keepFirstEmpty: true });
+            } catch (error) {
+                console.warn('Profile dropdown API gagal dimuat', error);
+            }
+        };
+
         let buttonIndex = 0;
         const locationState = {
             name: '',
-            audience: 0,
+            audience: null,
             lat: -6.1944491,
             lng: 106.8229198,
         };
@@ -1144,48 +1266,9 @@
 
         const hasTargetedProfileFilters = () => targetedProfileFields.some((field) => field?.value?.trim());
 
-        const profileTemplates = {
-            'muslim-family': {
-                gender: 'Semua',
-                age: '25 - 34 tahun',
-                os: 'Android',
-                dataPackage: 'Aktif',
-                householdSpend: 'Rp 5.000.000 - Rp 10.000.000',
-                maritalStatus: 'Married',
-                lifestyle: 'Family',
-                religion: 'Islam',
-            },
-            'young-professional': {
-                gender: 'Semua',
-                age: '25 - 34 tahun',
-                os: 'iOS',
-                dataPackage: 'Aktif',
-                householdSpend: '> Rp 10.000.000',
-                maritalStatus: 'Single',
-                lifestyle: 'Traveler',
-                religion: 'Semua',
-            },
-            'urban-parent': {
-                gender: 'Semua',
-                age: '35 - 44 tahun',
-                os: 'Android',
-                dataPackage: 'Aktif',
-                householdSpend: 'Rp 5.000.000 - Rp 10.000.000',
-                maritalStatus: 'Married',
-                lifestyle: 'Family',
-                religion: 'Semua',
-            },
-            'budget-hunter': {
-                gender: 'Semua',
-                age: '15 - 24 tahun',
-                os: 'Android',
-                dataPackage: 'Tidak Aktif',
-                householdSpend: '< Rp 2.000.000',
-                maritalStatus: 'Single',
-                lifestyle: 'Foodies',
-                religion: 'Semua',
-            },
-        };
+        // NOTE: Saved profile presets are not wired to an API yet.
+        // Keep empty to avoid showing/applying dummy preset data.
+        const profileTemplates = {};
 
         const syncTargetedProfileBuilder = () => {
             if (!targetedProfileBuilder || !targetedRecipient) {
@@ -1553,7 +1636,14 @@
             }
         };
 
-        const normalizeAudience = (value) => new Intl.NumberFormat('id-ID').format(value);
+        const normalizeAudience = (value) => {
+            if (value === null || value === undefined || value === '') {
+                return '-';
+            }
+
+            const amount = Number(value);
+            return Number.isFinite(amount) ? new Intl.NumberFormat('id-ID').format(amount) : '-';
+        };
         const formatCoordinate = (value) => Number(value).toFixed(6);
 
         const normalizeTestRecipient = (value) => {
@@ -1641,11 +1731,10 @@
         };
 
         const calculateAudience = () => {
-            const radius = Number(locationRadiusInput.value || 0);
-            const base = Math.max(0, radius) * 6;
-            locationState.audience = Math.max(0, base);
+            // Audience estimation API is not available; avoid showing dummy numbers.
+            locationState.audience = null;
             if (audienceEstimate) {
-                audienceEstimate.textContent = normalizeAudience(locationState.audience);
+                audienceEstimate.textContent = '-';
             }
         };
 
@@ -1757,6 +1846,7 @@
         window.openCampaignLocationModal = openLocationModal;
         window.closeCampaignLocationModal = closeLocationModal;
 
+        await loadProfileDropdownOptions();
         syncMessagePreview();
         syncSenderPreview();
         initCampaignMultiselects();
@@ -1950,6 +2040,17 @@
             const gwLocationName = document.getElementById('gwLocationName');
             const gwLocationLat = document.getElementById('gwLocationLat');
             const gwLocationLng = document.getElementById('gwLocationLng');
+            const gwPaymentTransactionId = document.getElementById('gwPaymentTransactionId');
+
+            const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
+            const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
+            const csrfToken = "{{ csrf_token() }}";
+
+            const paymentPanel = document.getElementById('campaignPaymentPanel');
+            const paymentStatusLabel = document.getElementById('campaignPaymentStatus');
+            const paymentTransactionLabel = document.getElementById('campaignPaymentTransaction');
+            const paymentQr = document.getElementById('campaignPaymentQr');
+            const paymentQrLink = document.getElementById('campaignPaymentQrLink');
 
             const toIsoStamp = () => {
                 const d = new Date();
@@ -1962,36 +2063,162 @@
             return el && typeof el.value === 'string' ? el.value : '';
         };
 
-            gwSubmitButton?.addEventListener('click', () => {
-                if (!gwSubmitForm || !gwDeliveryStartTime || !gwDeliveryEndTime || !gwLocationName || !gwLocationLat || !gwLocationLng) {
+        const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+        const setPaymentUi = ({ status, transactionId, qrisUrl } = {}) => {
+            if (paymentPanel) {
+                paymentPanel.hidden = false;
+            }
+            if (paymentStatusLabel) {
+                paymentStatusLabel.textContent = status || '-';
+            }
+            if (paymentTransactionLabel) {
+                paymentTransactionLabel.textContent = transactionId || '-';
+            }
+            if (paymentQr && qrisUrl) {
+                paymentQr.src = qrisUrl;
+            }
+            if (paymentQrLink) {
+                paymentQrLink.href = qrisUrl || '#';
+                paymentQrLink.hidden = !qrisUrl;
+            }
+        };
+
+        const pollPaymentUntilSuccess = async (transactionId) => {
+            const statusUrl = paymentStatusUrlTemplate.replace('__TRANSACTION_ID__', encodeURIComponent(transactionId));
+            const startedAt = Date.now();
+            const timeoutMs = 10 * 60 * 1000;
+
+            while ((Date.now() - startedAt) < timeoutMs) {
+                let status = '';
+
+                try {
+                    const response = await fetch(statusUrl, {
+                        headers: { Accept: 'application/json' },
+                    });
+                    const payload = await response.json().catch(() => null);
+                    status = String(payload?.data?.status || '').toUpperCase();
+                } catch (error) {
+                    // keep polling
+                }
+
+                if (status) {
+                    setPaymentUi({ status, transactionId });
+                }
+
+                if (status === 'SUCCESS') {
                     return;
                 }
+
+                if (status === 'FAILED' || status === 'EXPIRED') {
+                    throw new Error('Pembayaran gagal. Status: ' + status);
+                }
+
+                await sleep(3000);
+            }
+
+            throw new Error('Timeout menunggu pembayaran. Silakan coba lagi.');
+        };
+
+        const initiatePayment = async (amount, phone, detail) => {
+            const response = await fetch(paymentInitiateUrl, {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({
+                    transaction_amount: amount,
+                    customer_phone: phone,
+                    product_category: 'MYADS',
+                    product_type: 'ADVERTISEMENT',
+                    product_detail: detail,
+                }),
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok || !payload || payload.success !== true) {
+                const message = payload?.message || 'Gagal initiate pembayaran.';
+                throw new Error(message);
+            }
+
+            return payload;
+        };
+
+        const submitCampaignAfterPayment = async () => {
+            if (!gwSubmitForm || !gwDeliveryStartTime || !gwDeliveryEndTime || !gwLocationName || !gwLocationLat || !gwLocationLng || !gwPaymentTransactionId) {
+                return;
+            }
 
             if (!testRecipientField?.value && testRecipientInput?.value?.trim()) {
                 addTestRecipient();
             }
 
+            const recipientCount = Number(document.getElementById('campaignRecipientCount')?.value || 0);
+            const totalCost = unitPrice > 0 ? recipientCount * unitPrice : 0;
+            const phone = String(document.getElementById('campaignTestRecipient')?.value || '').trim();
+            const title = String(titleInput?.value || '').trim() || 'Tanpa Judul';
+
+            if (!phone) {
+                throw new Error('Nomor penerima tes belum diisi.');
+            }
+            if (!totalCost || totalCost <= 0) {
+                throw new Error('Total biaya tidak valid.');
+            }
+
+            gwSubmitButton.disabled = true;
+            gwSubmitButton.textContent = 'Menyiapkan pembayaran...';
+
+            const initiateResp = await initiatePayment(totalCost, phone, `SMS LBA - ${title}`);
+            const transactionId = String(initiateResp?.data?.transaction_id || '').trim();
+            const qrisUrl = String(initiateResp?.data?.qris_url || '').trim();
+
+            if (!transactionId) {
+                throw new Error('Transaction ID tidak ditemukan dari response pembayaran.');
+            }
+
+            gwPaymentTransactionId.value = transactionId;
+            setPaymentUi({ status: 'PENDING', transactionId, qrisUrl });
+
+            gwSubmitButton.textContent = 'Menunggu pembayaran...';
+
+            await pollPaymentUntilSuccess(transactionId);
+
+            gwSubmitButton.textContent = 'Pembayaran sukses. Mengirim campaign...';
+
             const scheduleId = '1';
-            const startDate = pickScheduleValue(`[data-schedule-date-start="${scheduleId}"]`);
-            const endDate = pickScheduleValue(`[data-schedule-date-end="${scheduleId}"]`);
             const startHour = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
             const startMinute = pickScheduleValue(`[data-schedule-time-start-minute="${scheduleId}"]`);
             const endHour = pickScheduleValue(`[data-schedule-time-end-hour="${scheduleId}"]`);
             const endMinute = pickScheduleValue(`[data-schedule-time-end-minute="${scheduleId}"]`);
 
-                if (titleInput && titleInput.value.trim() === '') {
-                    titleInput.value = `UAT SMS LBA ${toIsoStamp()}`;
-                }
+            if (titleInput && titleInput.value.trim() === '') {
+                titleInput.value = `UAT SMS LBA ${toIsoStamp()}`;
+            }
 
-                gwDeliveryStartTime.value = startHour && startMinute ? `${startHour}:${startMinute}` : '';
-                gwDeliveryEndTime.value = endHour && endMinute ? `${endHour}:${endMinute}` : '';
+            gwDeliveryStartTime.value = startHour && startMinute ? `${startHour}:${startMinute}` : '';
+            gwDeliveryEndTime.value = endHour && endMinute ? `${endHour}:${endMinute}` : '';
 
-                const state = window.campaignLocationState || {};
-                gwLocationName.value = String(state.name || 'Lokasi dipilih');
-                gwLocationLat.value = String(state.lat ?? '');
-                gwLocationLng.value = String(state.lng ?? '');
+            const state = window.campaignLocationState || {};
+            gwLocationName.value = String(state.name || 'Lokasi dipilih');
+            gwLocationLat.value = String(state.lat ?? '');
+            gwLocationLng.value = String(state.lng ?? '');
 
             gwSubmitForm.submit();
+        };
+
+        gwSubmitButton?.addEventListener('click', async () => {
+            try {
+                await submitCampaignAfterPayment();
+            } catch (error) {
+                const message = error?.message ? String(error.message) : 'Gagal memproses pembayaran.';
+                setPaymentUi({ status: 'FAILED' });
+                gwSubmitButton.disabled = false;
+                gwSubmitButton.textContent = 'Bayar & Kirim Iklan';
+                window.alert(message);
+            }
         });
     })();
 </script>

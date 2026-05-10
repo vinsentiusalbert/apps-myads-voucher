@@ -15,6 +15,65 @@ use Throwable;
 
 class ApiGatewayController extends Controller
 {
+	public function paymentInitiate(Request $request, MyadsApiClient $client): JsonResponse
+	{
+		$validated = $request->validate([
+			'transaction_amount' => ['required', 'numeric', 'min:1'],
+			'customer_phone' => ['required', 'string', 'max:32'],
+			'product_category' => ['nullable', 'string', 'max:255'],
+			'product_type' => ['nullable', 'string', 'max:255'],
+			'product_detail' => ['nullable', 'string', 'max:500'],
+		]);
+
+		try {
+			$accessToken = $this->requireAccessToken($request);
+			$user = $request->user();
+			$email = is_object($user) ? (string) ($user->email ?? '') : '';
+			$name = is_object($user) ? (string) ($user->name ?? '') : '';
+
+			$phone = $this->normalizeMsisdn((string) ($validated['customer_phone'] ?? ''));
+			if ($phone === null) {
+				throw new RuntimeException('Nomor telepon tidak valid.');
+			}
+
+			if (trim($email) === '') {
+				throw new RuntimeException('Email user tidak tersedia. Silakan login ulang.');
+			}
+
+			$payload = [
+				'customer_phone' => $phone,
+				'customer_email' => $email,
+				'customer_name' => trim($name) !== '' ? $name : $email,
+				'transaction_amount' => (float) $validated['transaction_amount'],
+				'product_category' => $validated['product_category'] ?? 'MYADS',
+				'product_type' => $validated['product_type'] ?? 'ADVERTISEMENT',
+				'product_detail' => $validated['product_detail'] ?? 'Advertisement Payment',
+			];
+
+			$resp = $client->paymentInitiate($accessToken, $payload);
+			return response()->json($resp);
+		} catch (Throwable $e) {
+			return response()->json([
+				'success' => false,
+				'message' => $e->getMessage(),
+			], 500);
+		}
+	}
+
+	public function paymentStatus(Request $request, MyadsApiClient $client, string $transactionId): JsonResponse
+	{
+		try {
+			$accessToken = $this->requireAccessToken($request);
+			$resp = $client->paymentStatus($accessToken, $transactionId);
+			return response()->json($resp);
+		} catch (Throwable $e) {
+			return response()->json([
+				'success' => false,
+				'message' => $e->getMessage(),
+			], 500);
+		}
+	}
+
 	public function priceView(Request $request, MyadsApiClient $client): JsonResponse
 	{
 		try {
@@ -113,6 +172,7 @@ class ApiGatewayController extends Controller
 		abort_unless($channel === 'sms', 404);
 
 		$validated = $request->validate([
+			'payment_transaction_id' => ['required', 'string', 'max:128'],
 			'campaign_name' => ['nullable', 'string', 'max:255'],
 			'sender_name' => ['required', 'string', 'max:255'],
 			'message' => ['required', 'string', 'max:1024'],
@@ -137,11 +197,28 @@ class ApiGatewayController extends Controller
 			'profile_lifestyle.*' => ['nullable', 'string', 'max:255'],
 			'profile_religion' => ['nullable', 'array'],
 			'profile_religion.*' => ['nullable', 'string', 'max:255'],
+			'profile_card_type' => ['nullable', 'array'],
+			'profile_card_type.*' => ['nullable', 'string', 'max:255'],
+			'profile_hometown' => ['nullable', 'array'],
+			'profile_hometown.*' => ['nullable', 'string', 'max:255'],
+			'profile_work' => ['nullable', 'array'],
+			'profile_work.*' => ['nullable', 'string', 'max:255'],
 		]);
 
 		$smsTargetedCampaign = null;
 
 		try {
+			$paymentTransactionId = trim((string) ($validated['payment_transaction_id'] ?? ''));
+			if ($paymentTransactionId === '') {
+				throw new RuntimeException('Pembayaran belum diinisiasi.');
+			}
+			$paymentResp = $client->paymentStatus($this->requireAccessToken($request), $paymentTransactionId);
+			$paymentStatus = strtoupper(trim((string) data_get($paymentResp, 'data.status')));
+			if ($paymentStatus !== 'SUCCESS') {
+				$label = $paymentStatus !== '' ? $paymentStatus : 'PENDING';
+				throw new RuntimeException('Pembayaran belum berhasil. Status: ' . $label);
+			}
+
 			$gwToken = $this->requireGatewayToken($request);
 
 			$campaignName = $this->generateSmsTargetedCampaignName();
@@ -201,9 +278,9 @@ class ApiGatewayController extends Controller
 				'profileMaritalStatus' => $this->pipeProfileValue($validated['profile_marital_status'] ?? []),
 				'profileLifestyleSegment' => $this->pipeProfileValue($validated['profile_lifestyle'] ?? []),
 				'profileReligion' => $this->pipeProfileValue($validated['profile_religion'] ?? [], [], true),
-				'profileCardType' => '',
-				'profileHometown' => null,
-				'profileWork' => '',
+				'profileCardType' => $this->pipeProfileValue($validated['profile_card_type'] ?? []),
+				'profileHometown' => $this->pipeProfileValue($validated['profile_hometown'] ?? []),
+				'profileWork' => $this->pipeProfileValue($validated['profile_work'] ?? []),
 			]);
 
 			$smsTargetedCampaign = SmsTargetedCampaign::create([
@@ -257,6 +334,7 @@ class ApiGatewayController extends Controller
 		abort_unless($channel === 'sms', 404);
 
 		$validated = $request->validate([
+			'payment_transaction_id' => ['required', 'string', 'max:128'],
 			'campaign_name' => ['nullable', 'string', 'max:255'],
 			'sender_name' => ['required', 'string', 'max:255'],
 			'message' => ['required', 'string', 'max:1024'],
@@ -277,6 +355,17 @@ class ApiGatewayController extends Controller
 		$smsLbaCampaign = null;
 
 		try {
+			$paymentTransactionId = trim((string) ($validated['payment_transaction_id'] ?? ''));
+			if ($paymentTransactionId === '') {
+				throw new RuntimeException('Pembayaran belum diinisiasi.');
+			}
+			$paymentResp = $client->paymentStatus($this->requireAccessToken($request), $paymentTransactionId);
+			$paymentStatus = strtoupper(trim((string) data_get($paymentResp, 'data.status')));
+			if ($paymentStatus !== 'SUCCESS') {
+				$label = $paymentStatus !== '' ? $paymentStatus : 'PENDING';
+				throw new RuntimeException('Pembayaran belum berhasil. Status: ' . $label);
+			}
+
 			$gwToken = $this->requireGatewayToken($request);
 
 			$campaignName = $this->generateSmsLbaCampaignName();
@@ -472,6 +561,16 @@ class ApiGatewayController extends Controller
 		}
 
 		return $gwToken;
+	}
+
+	private function requireAccessToken(Request $request): string
+	{
+		$accessToken = (string) $request->session()->get('myads.access_token', '');
+		if (trim($accessToken) === '') {
+			throw new RuntimeException('Token akses tidak ditemukan. Silakan login ulang.');
+		}
+
+		return $accessToken;
 	}
 
 	private function gatewayRefreshCallback(Request $request, MyadsApiClient $client): callable

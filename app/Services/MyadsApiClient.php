@@ -25,6 +25,16 @@ class MyadsApiClient
             ->timeout(20);
     }
 
+    private function bearerClient(string $accessToken): PendingRequest
+    {
+        $accessToken = trim($accessToken);
+        if ($accessToken == '') {
+            throw new RuntimeException('Token akses tidak ditemukan. Silakan login ulang.');
+        }
+
+        return $this->client()->withToken($accessToken);
+    }
+
     /**
      * API gateway wrapper shape:
      * - Outer (proxy) : { success: bool, data?: mixed, error?: mixed, message?: string }
@@ -131,6 +141,47 @@ class MyadsApiClient
 
         if ($response->failed()) {
             throw new RuntimeException($this->extractErrorMessage($response, 'Gagal ambil token gateway'));
+        }
+
+        return (array) $response->json();
+    }
+
+    /**
+     * @return array{success:bool, message?:string, data?:array}
+     */
+    public function paymentInitiate(string $accessToken, array $payload): array
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->post('/api/payment/initiate', $payload);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API payment initiate: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal initiate pembayaran'));
+        }
+
+        return (array) $response->json();
+    }
+
+    /**
+     * @return array{success:bool, message?:string, data?:array}
+     */
+    public function paymentStatus(string $accessToken, string $transactionId): array
+    {
+        $transactionId = trim($transactionId);
+        if ($transactionId === '') {
+            throw new RuntimeException('Transaction ID kosong.');
+        }
+
+        try {
+            $response = $this->bearerClient($accessToken)->get('/api/payment/' . rawurlencode($transactionId));
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API payment status: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal cek status pembayaran'));
         }
 
         return (array) $response->json();
