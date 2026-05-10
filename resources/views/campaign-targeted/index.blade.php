@@ -97,11 +97,14 @@
                 </thead>
                 <tbody>
                     @forelse ($campaignRows as $row)
-                        <tr>
+                        @php
+                            $reportUrl = route('campaign.menu', ['channel' => $channel, 'menu' => $menu, 'view' => 'show', 'id' => $row['id']]);
+                        @endphp
+                        <tr data-report-url="{{ $reportUrl }}" style="cursor: pointer;">
                             <td>{{ $row['id'] }}</td>
                             <td>{{ $row['date'] }}</td>
                             <td>
-                                <a href="{{ route('campaign.menu', ['channel' => $channel, 'menu' => $menu, 'view' => 'show', 'id' => $row['id']]) }}">{{ $row['title'] }}</a>
+                                <a href="{{ $reportUrl }}">{{ $row['title'] }}</a>
                             </td>
                             <td>{{ $row['operator'] }}</td>
                             <td>{{ $row['category'] }}</td>
@@ -119,3 +122,19 @@
         </div>
     </section>
 @endsection
+
+@push('scripts')
+    <script>
+        (() => {
+            document.querySelectorAll('[data-report-url]').forEach((row) => {
+                row.addEventListener('click', (event) => {
+                    if (event.target.closest('a, button, input, select, textarea')) {
+                        return;
+                    }
+
+                    window.location.href = row.dataset.reportUrl;
+                });
+            });
+        })();
+    </script>
+@endpush

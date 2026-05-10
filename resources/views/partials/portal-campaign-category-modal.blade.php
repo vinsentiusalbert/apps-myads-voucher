@@ -5,8 +5,6 @@
 
     $portalSmsLbaPrice = $formatPortalCampaignPrice(data_get($campaignPrices ?? [], 'sms_lba'));
     $portalSmsTargetedPrice = $formatPortalCampaignPrice(data_get($campaignPrices ?? [], 'sms_targeted'));
-    $portalWaLbaPrice = $formatPortalCampaignPrice(data_get($campaignPrices ?? [], 'wa_lba'));
-    $portalWaTargetedPrice = $formatPortalCampaignPrice(data_get($campaignPrices ?? [], 'wa_targeted'));
 @endphp
 
 <div class="portal-category-modal" id="campaignCategoryModal" hidden aria-hidden="true" data-price-url="{{ route('campaign.price-view') }}">
@@ -32,18 +30,6 @@
                 <span class="portal-category-card__channel">SMS</span>
                 <strong>Targeted</strong>
                 <small data-campaign-price-key="sms_targeted">{{ $portalSmsTargetedPrice }}</small>
-            </a>
-            <a href="{{ route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'location-based-area', 'view' => 'create']) }}" class="portal-category-card">
-                <span class="portal-category-card__icon portal-category-card__icon--wa">WA</span>
-                <span class="portal-category-card__channel">WA Business</span>
-                <strong>Location Based Area</strong>
-                <small data-campaign-price-key="wa_lba">{{ $portalWaLbaPrice }}</small>
-            </a>
-            <a href="{{ route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'targeted', 'view' => 'create']) }}" class="portal-category-card">
-                <span class="portal-category-card__icon portal-category-card__icon--target">TG</span>
-                <span class="portal-category-card__channel">WA Business</span>
-                <strong>Targeted</strong>
-                <small data-campaign-price-key="wa_targeted">{{ $portalWaTargetedPrice }}</small>
             </a>
         </div>
     </section>

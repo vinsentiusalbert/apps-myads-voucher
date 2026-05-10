@@ -139,55 +139,126 @@ class MyadsApiClient
     /**
      * @return array{success:bool, data?:array}
      */
-    public function getBalance(string $gatewayToken): array
+    public function getBalance(string $gatewayToken, ?callable $refreshGatewayToken = null): array
     {
-        return $this->postGw('/api/gw/get-balance', $gatewayToken, []);
+        return $this->postGw('/api/gw/get-balance', $gatewayToken, [], $refreshGatewayToken);
     }
 
     /**
      * @return array{success:bool, data?:array}
      */
-    public function campaignPriceView(string $gatewayToken, array $payload = ['campaignType' => 'ALL']): array
+    public function campaignPriceView(string $gatewayToken, array $payload = ['campaignType' => 'ALL'], ?callable $refreshGatewayToken = null): array
     {
-        return $this->postGw('/api/gw/price-view', $gatewayToken, $payload);
+        return $this->postGw('/api/gw/price-view', $gatewayToken, $payload, $refreshGatewayToken);
     }
 
     /**
      * @return array{success:bool, data?:array}
      */
-    public function profileDropdownList(string $gatewayToken, array $payload = ['profile' => 'ALL']): array
+    public function profileDropdownList(string $gatewayToken, array $payload = ['profile' => 'ALL'], ?callable $refreshGatewayToken = null): array
     {
-        return $this->postGw('/api/gw/profile-dropdown-list', $gatewayToken, $payload);
+        return $this->postGw('/api/gw/profile-dropdown-list', $gatewayToken, $payload, $refreshGatewayToken);
     }
 
     /**
      * @return array{success:bool, data?:array}
      */
-    public function campaignList(string $gatewayToken, array $payload = ['campaignId' => null]): array
+    public function campaignList(string $gatewayToken, array $payload = ['campaignId' => null], ?callable $refreshGatewayToken = null): array
     {
-        return $this->postGw('/api/gw/list', $gatewayToken, $payload);
+        return $this->postGw('/api/gw/list', $gatewayToken, $payload, $refreshGatewayToken);
     }
 
     /**
      * @return array{success:bool, data?:array}
      */
-    public function campaignTargetedAdd(string $gatewayToken, array $payload): array
+    public function campaignReport(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
     {
-        return $this->postGw('/api/gw/targeted-add', $gatewayToken, $payload);
+        return $this->postGw('/api/gw//scrt/myads/api/v1/report/view', $gatewayToken, $payload, $refreshGatewayToken);
     }
 
     /**
      * @return array{success:bool, data?:array}
      */
-    public function campaignLbaAdd(string $gatewayToken, array $payload): array
+    public function campaignTargetedAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
     {
-        return $this->postGw('/api/gw/lba-add', $gatewayToken, $payload);
+        return $this->postGw('/api/gw/targeted-add', $gatewayToken, $payload, $refreshGatewayToken);
     }
 
     /**
      * @return array{success:bool, data?:array}
      */
-    public function postGw(string $path, string $gatewayToken, array $payload): array
+    public function campaignLbaAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/lba-add', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function wabaTemplateAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/waba-template-add', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function wabaTemplateList(string $gatewayToken, array $payload = ['templateId' => null], ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/waba-template-list', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function wabaDisplayNameList(string $gatewayToken, array $payload = [], ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/waba-display-name-list', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function postGw(string $path, string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        try {
+            return $this->sendPostGw($path, $gatewayToken, $payload);
+        } catch (RuntimeException $e) {
+            if ($refreshGatewayToken === null || ! $this->isGatewayAuthorizationCacheMiss($e->getMessage())) {
+                throw $e;
+            }
+
+            $freshToken = (string) $refreshGatewayToken();
+            if (trim($freshToken) === '') {
+                throw $e;
+            }
+
+            return $this->sendPostGw($path, $freshToken, $payload);
+        }
+    }
+
+    public function extractGatewayToken(array $response): string
+    {
+        $token = data_get($response, 'data.data.token')
+            ?? data_get($response, 'data.token')
+            ?? data_get($response, 'token')
+            ?? '';
+
+        return is_string($token) ? trim($token) : '';
+    }
+
+    private function isGatewayAuthorizationCacheMiss(string $message): bool
+    {
+        $message = strtolower($message);
+
+        return str_contains($message, 'authorization data')
+            && str_contains($message, 'in-memory cache');
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    private function sendPostGw(string $path, string $gatewayToken, array $payload): array
     {
         try {
             $response = $this->client()
@@ -231,7 +302,25 @@ class MyadsApiClient
      * Upload file via gateway if needed by MMS flows.
      * Kept here because ApiGatewayTestController references it.
      */
-    public function uploadFile(string $gatewayToken, UploadedFile $file, string $type = 'FILE'): array
+    public function uploadFile(string $gatewayToken, UploadedFile $file, string $type = 'FILE', ?callable $refreshGatewayToken = null): array
+    {
+        try {
+            return $this->sendUploadFile($gatewayToken, $file, $type);
+        } catch (RuntimeException $e) {
+            if ($refreshGatewayToken === null || ! $this->isGatewayAuthorizationCacheMiss($e->getMessage())) {
+                throw $e;
+            }
+
+            $freshToken = (string) $refreshGatewayToken();
+            if (trim($freshToken) === '') {
+                throw $e;
+            }
+
+            return $this->sendUploadFile($freshToken, $file, $type);
+        }
+    }
+
+    private function sendUploadFile(string $gatewayToken, UploadedFile $file, string $type): array
     {
         try {
             $response = Http::baseUrl($this->baseUrl)

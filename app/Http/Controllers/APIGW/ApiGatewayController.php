@@ -20,7 +20,7 @@ class ApiGatewayController extends Controller
 		try {
 			return response()->json([
 				'success' => true,
-				'prices' => $this->campaignPrices($client, $this->requireGatewayToken($request)),
+				'prices' => $this->campaignPrices($client, $this->requireGatewayToken($request), $this->gatewayRefreshCallback($request, $client)),
 			]);
 		} catch (Throwable $e) {
 			return response()->json([
@@ -43,9 +43,63 @@ class ApiGatewayController extends Controller
 		try {
 			$resp = $client->profileDropdownList($this->requireGatewayToken($request), [
 				'profile' => 'ALL',
-			]);
+			], $this->gatewayRefreshCallback($request, $client));
 
 			return response()->json($resp);
+		} catch (Throwable $e) {
+			return response()->json([
+				'success' => false,
+				'message' => $e->getMessage(),
+			], 500);
+		}
+	}
+
+	public function campaignReport(Request $request, MyadsApiClient $client, string $channel): JsonResponse
+	{
+		abort_unless($channel === 'sms', 404);
+
+		$campaignId = trim((string) ($request->query('campaign_id')
+			?? $request->query('campaignId')
+			?? $request->input('campaign_id')
+			?? $request->input('campaignId')
+			?? ''));
+		if ($campaignId === '' || ! ctype_digit($campaignId)) {
+			return response()->json([
+				'success' => false,
+				'message' => 'Campaign ID wajib diisi.',
+			], 422);
+		}
+
+		try {
+			return response()->json($client->campaignReport($this->requireGatewayToken($request), [
+				'campaignId' => (int) $campaignId,
+			], $this->gatewayRefreshCallback($request, $client)));
+		} catch (Throwable $e) {
+			return response()->json([
+				'success' => false,
+				'message' => $e->getMessage(),
+			], 500);
+		}
+	}
+
+	public function wabaTemplateList(Request $request, MyadsApiClient $client): JsonResponse
+	{
+		try {
+			return response()->json($client->wabaTemplateList($this->requireGatewayToken($request), [
+				'templateId' => null,
+			], $this->gatewayRefreshCallback($request, $client)));
+		} catch (Throwable $e) {
+			return response()->json([
+				'success' => false,
+				'message' => $e->getMessage(),
+			], 500);
+		}
+	}
+
+	public function wabaDisplayNameList(Request $request, MyadsApiClient $client): JsonResponse
+	{
+		try {
+			return response()->json($client->wabaDisplayNameList($this->requireGatewayToken($request), [], $this->gatewayRefreshCallback($request, $client)));
 		} catch (Throwable $e) {
 			return response()->json([
 				'success' => false,
@@ -166,7 +220,7 @@ class ApiGatewayController extends Controller
 				'status' => 'pending',
 			]);
 
-			$resp = $client->campaignTargetedAdd($gwToken, $payload);
+			$resp = $client->campaignTargetedAdd($gwToken, $payload, $this->gatewayRefreshCallback($request, $client));
 			$campaignId = (string) (data_get($resp, 'data.data.campaignId')
 				?? data_get($resp, 'data.data.data.campaignId')
 				?? data_get($resp, 'data.campaignId')
@@ -304,7 +358,7 @@ class ApiGatewayController extends Controller
 				'status' => 'pending',
 			]);
 
-			$resp = $client->campaignLbaAdd($gwToken, $payload);
+			$resp = $client->campaignLbaAdd($gwToken, $payload, $this->gatewayRefreshCallback($request, $client));
 			$campaignId = (string) (data_get($resp, 'data.data.campaignId')
 				?? data_get($resp, 'data.data.data.campaignId')
 				?? data_get($resp, 'data.campaignId')
@@ -345,13 +399,13 @@ class ApiGatewayController extends Controller
 		return 'gotoads_sms_targeted_' . now()->format('YmdHis');
 	}
 
-	private function campaignPrices(MyadsApiClient $client, string $gatewayToken): array
+	private function campaignPrices(MyadsApiClient $client, string $gatewayToken, ?callable $refreshGatewayToken = null): array
 	{
 		$priceData = [];
 
 		foreach (['ALL', 'SMS', 'WABA'] as $campaignType) {
 			try {
-				$resp = $client->campaignPriceView($gatewayToken, ['campaignType' => $campaignType]);
+				$resp = $client->campaignPriceView($gatewayToken, ['campaignType' => $campaignType], $refreshGatewayToken);
 				$data = data_get($resp, 'data.data') ?? data_get($resp, 'data') ?? [];
 				if (is_array($data)) {
 					$priceData = array_merge($priceData, $this->flattenPriceData($data));
@@ -418,6 +472,22 @@ class ApiGatewayController extends Controller
 		}
 
 		return $gwToken;
+	}
+
+	private function gatewayRefreshCallback(Request $request, MyadsApiClient $client): callable
+	{
+		return function () use ($request, $client): string {
+			$gwResp = $client->getGatewayToken();
+			$gwToken = $client->extractGatewayToken($gwResp);
+
+			if ($gwToken === '') {
+				throw new RuntimeException('Gagal ambil token gateway (format response tidak sesuai).');
+			}
+
+			$request->session()->put('myads.gw_token', $gwToken);
+
+			return $gwToken;
+		};
 	}
 
 	private function formatDateYmd(?string $value): ?string

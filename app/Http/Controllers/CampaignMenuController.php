@@ -107,14 +107,16 @@ class CampaignMenuController extends Controller
             }
 
             if ($view === 'show') {
-                $campaignRow = $rows->firstWhere('id', (string) $request->query('id')) ?? $rows->first();
-                abort_unless(is_array($campaignRow), 404);
+                $campaignRow = $rows->firstWhere('id', (string) $request->query('id'))
+                    ?? $rows->first()
+                    ?? $this->fallbackCampaignRow($request, $channel, $menu, $page);
 
                 return view('campaign-lba.show', [
                     'channel' => $channel,
                     'menu' => $menu,
                     'page' => $page,
                     'campaignRow' => $campaignRow,
+                    'campaignReport' => $this->campaignReportFromApi($request, (string) ($campaignRow['id'] ?? '')),
                 ]);
             }
 
@@ -141,14 +143,16 @@ class CampaignMenuController extends Controller
             }
 
             if ($view === 'show') {
-                $campaignRow = $rows->firstWhere('id', (string) $request->query('id')) ?? $rows->first();
-                abort_unless(is_array($campaignRow), 404);
+                $campaignRow = $rows->firstWhere('id', (string) $request->query('id'))
+                    ?? $rows->first()
+                    ?? $this->fallbackCampaignRow($request, $channel, $menu, $page);
 
                 return view('campaign-targeted.show', [
                     'channel' => $channel,
                     'menu' => $menu,
                     'page' => $page,
                     'campaignRow' => $campaignRow,
+                    'campaignReport' => $this->campaignReportFromApi($request, (string) ($campaignRow['id'] ?? '')),
                 ]);
             }
 
@@ -209,7 +213,7 @@ class CampaignMenuController extends Controller
         ]);
     }
 
-    public function storeCampaignTemplate(Request $request): RedirectResponse
+    public function storeCampaignTemplate(Request $request, MyadsApiClient $client): RedirectResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', 'unique:campaign_templates,name'],
@@ -217,10 +221,50 @@ class CampaignMenuController extends Controller
             'category' => ['required', 'string', 'max:100'],
             'language' => ['required', 'string', 'max:100'],
             'header_type' => ['required', 'string', 'max:50'],
+            'header_label' => ['nullable', 'string', 'max:255'],
             'asset' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf,mp4', 'max:10240'],
             'body' => ['required', 'string', 'max:1024'],
             'footer' => ['nullable', 'string', 'max:60'],
+            'waba_account_id' => ['nullable', 'string', 'max:32'],
+            'phone_number_id' => ['nullable', 'string', 'max:32'],
+            'buttons' => ['nullable', 'array'],
+            'buttons.*.label' => ['nullable', 'string', 'max:255'],
+            'buttons.*.action' => ['nullable', 'string', 'max:50'],
+            'buttons.*.show_modal_short_url' => ['nullable', 'boolean'],
+            'buttons.*.action_replay' => ['nullable', 'string', 'max:255'],
+            'buttons.*.action_number' => ['nullable', 'string', 'max:20'],
+            'buttons.*.action_url_target' => ['nullable', 'string', 'max:255'],
+            'buttons.*.short_url' => ['nullable', 'string', 'max:255'],
+            'buttons.*.action_voucher_code' => ['nullable', 'string', 'max:50'],
         ]);
+
+        try {
+            $gwToken = $this->requireGatewayToken($request);
+            $headerPathFile = '';
+
+            if ($request->hasFile('asset') && $this->mapWabaHeaderType($validated['header_type']) !== 'TEXT') {
+                $uploadResp = $client->uploadFile($gwToken, $request->file('asset'), 'FILE', $this->gatewayRefreshCallback($request, $client));
+                $headerPathFile = $this->extractUploadedFileValue($uploadResp);
+            }
+
+            $payload = $this->buildWabaTemplatePayload(
+                $validated,
+                $headerPathFile,
+                $this->resolveWabaAccountIds($request, $client, $gwToken, $validated),
+            );
+
+            $resp = $client->wabaTemplateAdd($gwToken, $payload, $this->gatewayRefreshCallback($request, $client));
+        } catch (Throwable $e) {
+            return back()->withErrors([
+                'gw' => $e->getMessage(),
+            ])->withInput();
+        }
+
+        $templateId = (string) (data_get($resp, 'data.data.templateId')
+            ?? data_get($resp, 'data.data.id')
+            ?? data_get($resp, 'data.templateId')
+            ?? data_get($resp, 'data.id')
+            ?? '');
 
         $assetPath = null;
         if ($request->hasFile('asset')) {
@@ -228,6 +272,7 @@ class CampaignMenuController extends Controller
         }
 
         CampaignTemplate::create([
+            'gw_template_id' => $templateId !== '' ? $templateId : null,
             'name' => $validated['name'],
             'template_type' => $validated['template_type'],
             'category' => $validated['category'],
@@ -236,13 +281,15 @@ class CampaignMenuController extends Controller
             'asset_path' => $assetPath,
             'body' => $validated['body'],
             'footer' => $validated['footer'] ?? null,
-            'buttons' => [],
-            'status' => 'PENDING',
+            'buttons' => $payload['buttons'],
+            'status' => strtoupper((string) (data_get($resp, 'data.data.status') ?? data_get($resp, 'data.status') ?? 'PENDING')),
+            'gw_payload' => $payload,
+            'gw_response' => $resp,
         ]);
 
         return redirect()
             ->route('campaign-template.index')
-            ->with('status', 'Template campaign berhasil dibuat.');
+            ->with('status', 'Template WABA berhasil dikirim ke API GW.');
     }
 
     public function showCampaignTemplate(CampaignTemplate $template): View
@@ -268,6 +315,164 @@ class CampaignMenuController extends Controller
         } catch (Throwable) {
             return collect();
         }
+    }
+
+    private function buildWabaTemplatePayload(array $validated, string $headerPathFile, array $accountIds): array
+    {
+        $headerType = $this->mapWabaHeaderType((string) $validated['header_type']);
+        $buttons = $this->mapWabaTemplateButtons($validated['buttons'] ?? []);
+
+        return [
+            'templateName' => $validated['name'],
+            'language' => $this->mapWabaTemplateLanguage((string) $validated['language']),
+            'headerType' => $headerType,
+            'headerLabel' => trim((string) ($validated['header_label'] ?? '')),
+            'headerPathFile' => $headerPathFile,
+            'bodyMessage' => $validated['body'],
+            'bodyType' => 'STATIC',
+            'bodyPathFile' => '',
+            'useButton' => $buttons === [] ? 0 : 1,
+            'buttons' => $buttons,
+            'wabaAccountId' => $accountIds['wabaAccountId'],
+            'wabaButtonId' => '',
+            'phoneNumberId' => $accountIds['phoneNumberId'],
+        ];
+    }
+
+    private function mapWabaTemplateButtons(array $buttons): array
+    {
+        return collect($buttons)
+            ->filter(fn ($button): bool => is_array($button) && trim((string) ($button['label'] ?? '')) !== '')
+            ->map(function (array $button): array {
+                $action = strtoupper((string) ($button['action'] ?? 'URL'));
+                if (! in_array($action, ['QUICK_REPLY', 'URL', 'PHONE_NUMBER'], true)) {
+                    $action = 'URL';
+                }
+
+                $label = trim((string) ($button['label'] ?? ''));
+
+                return [
+                    'showModalShortUrl' => (bool) ($button['show_modal_short_url'] ?? false),
+                    'label' => $label,
+                    'action' => $action,
+                    'actionReplay' => trim((string) ($button['action_replay'] ?? $label)),
+                    'actionNumber' => trim((string) ($button['action_number'] ?? '')),
+                    'actionUrlTarget' => trim((string) ($button['action_url_target'] ?? '')),
+                    'shortUrl' => $button['short_url'] ?? null,
+                    'actionVoucherCode' => trim((string) ($button['action_voucher_code'] ?? '')),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function mapWabaTemplateLanguage(string $language): string
+    {
+        $language = strtolower(trim($language));
+
+        return match ($language) {
+            'english', 'en' => 'ENGLISH',
+            default => 'INDONESIA',
+        };
+    }
+
+    private function mapWabaHeaderType(string $headerType): string
+    {
+        $headerType = strtolower(trim($headerType));
+
+        return match ($headerType) {
+            'image' => 'IMAGE',
+            'video' => 'VIDEO',
+            'document' => 'DOCUMENT',
+            default => 'TEXT',
+        };
+    }
+
+    /**
+     * @return array{wabaAccountId:int|string, phoneNumberId:int|string}
+     */
+    private function resolveWabaAccountIds(Request $request, MyadsApiClient $client, string $gatewayToken, array $validated = []): array
+    {
+        $wabaAccountId = trim((string) ($validated['waba_account_id'] ?? ''));
+        $phoneNumberId = trim((string) ($validated['phone_number_id'] ?? ''));
+
+        if ($wabaAccountId === '') {
+            $wabaAccountId = trim((string) config('myads.waba_account_id', ''));
+        }
+
+        if ($phoneNumberId === '') {
+            $phoneNumberId = trim((string) config('myads.waba_phone_number_id', ''));
+        }
+
+        if ($wabaAccountId !== '' && $phoneNumberId !== '') {
+            return [
+                'wabaAccountId' => $this->normalizeNumericId($wabaAccountId),
+                'phoneNumberId' => $this->normalizeNumericId($phoneNumberId),
+            ];
+        }
+
+        $resp = $client->wabaDisplayNameList($gatewayToken, [], $this->gatewayRefreshCallback($request, $client));
+        $items = data_get($resp, 'data.data')
+            ?? data_get($resp, 'data')
+            ?? [];
+
+        if (is_array($items) && array_is_list($items)) {
+            $selected = collect($items)->first(function ($row): bool {
+                if (! is_array($row)) {
+                    return false;
+                }
+
+                $status = strtoupper((string) (data_get($row, 'status') ?? ''));
+                $displayNameStatus = strtoupper((string) (data_get($row, 'displayNameStatus') ?? ''));
+
+                return in_array($status, ['READY', 'APPROVED'], true)
+                    || in_array($displayNameStatus, ['APPROVED', 'VERIFIED'], true);
+            }) ?? collect($items)->first(fn ($row): bool => is_array($row));
+
+            if (is_array($selected)) {
+                $wabaAccountId = (string) (data_get($selected, 'wabaAccountId') ?? '');
+                $phoneNumberId = (string) (data_get($selected, 'phoneNumberId') ?? data_get($selected, 'phoneNumberiId') ?? '');
+            }
+        }
+
+        if ($wabaAccountId === '' || $phoneNumberId === '') {
+            throw new RuntimeException('WABA Account ID dan Phone Number ID belum tersedia. Isi MYADS_WABA_ACCOUNT_ID/MYADS_WABA_PHONE_NUMBER_ID atau pastikan display-name/list mengembalikan data.');
+        }
+
+        return [
+            'wabaAccountId' => $this->normalizeNumericId($wabaAccountId),
+            'phoneNumberId' => $this->normalizeNumericId($phoneNumberId),
+        ];
+    }
+
+    private function normalizeNumericId(string $value): int|string
+    {
+        $value = trim($value);
+
+        if ($value !== '' && ctype_digit($value) && strlen($value) < strlen((string) PHP_INT_MAX)) {
+            return (int) $value;
+        }
+
+        if ($value !== '' && ctype_digit($value) && strlen($value) === strlen((string) PHP_INT_MAX) && strcmp($value, (string) PHP_INT_MAX) <= 0) {
+            return (int) $value;
+        }
+
+        return $value;
+    }
+
+    private function extractUploadedFileValue(array $uploadResp): string
+    {
+        $value = data_get($uploadResp, 'data.data.pathFile')
+            ?? data_get($uploadResp, 'data.data.filePath')
+            ?? data_get($uploadResp, 'data.data.path')
+            ?? data_get($uploadResp, 'data.data.file')
+            ?? data_get($uploadResp, 'data.pathFile')
+            ?? data_get($uploadResp, 'data.filePath')
+            ?? data_get($uploadResp, 'data.path')
+            ?? data_get($uploadResp, 'data.file')
+            ?? '';
+
+        return is_string($value) ? $value : '';
     }
 
     private function mapWaTemplate(CampaignTemplate $template): array
@@ -337,6 +542,77 @@ class CampaignMenuController extends Controller
         ];
     }
 
+    private function wabaTemplateRowsFromApi(Request $request): array
+    {
+        $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
+        if ($gatewayToken === '') {
+            return [];
+        }
+
+        try {
+            /** @var MyadsApiClient $client */
+            $client = app(MyadsApiClient::class);
+            $resp = $client->wabaTemplateList($gatewayToken, ['templateId' => null], $this->gatewayRefreshCallback($request, $client));
+
+            $items = data_get($resp, 'data.data.list')
+                ?? data_get($resp, 'data.data.templates')
+                ?? data_get($resp, 'data.data.items')
+                ?? data_get($resp, 'data.data')
+                ?? data_get($resp, 'data')
+                ?? [];
+
+            if (! is_array($items)) {
+                return [];
+            }
+
+            $localByGatewayId = CampaignTemplate::query()
+                ->whereNotNull('gw_template_id')
+                ->get()
+                ->keyBy('gw_template_id');
+            $localByName = CampaignTemplate::query()->get()->keyBy('name');
+
+            return collect($items)
+                ->filter(fn ($row): bool => is_array($row))
+                ->map(function (array $row) use ($localByGatewayId, $localByName): array {
+                    $templateId = (string) (data_get($row, 'templateId')
+                        ?? data_get($row, 'id')
+                        ?? data_get($row, 'template_id')
+                        ?? '');
+                    $name = (string) (data_get($row, 'templateName')
+                        ?? data_get($row, 'name')
+                        ?? data_get($row, 'template_name')
+                        ?? '');
+                    $local = ($templateId !== '' ? $localByGatewayId->get($templateId) : null)
+                        ?? ($name !== '' ? $localByName->get($name) : null);
+                    $createdAt = data_get($row, 'createdAt')
+                        ?? data_get($row, 'created_at')
+                        ?? data_get($row, 'timeAdded')
+                        ?? ($local?->created_at);
+
+                    try {
+                        $createdAt = $createdAt ? \Carbon\Carbon::parse($createdAt) : now();
+                    } catch (Throwable) {
+                        $createdAt = now();
+                    }
+
+                    return [
+                        'id' => $local?->id,
+                        'gw_template_id' => $templateId,
+                        'name' => $name !== '' ? $name : '-',
+                        'category' => (string) (data_get($row, 'category') ?? $local?->category ?? '-'),
+                        'language' => (string) (data_get($row, 'language') ?? $local?->language ?? '-'),
+                        'body' => (string) (data_get($row, 'body') ?? data_get($row, 'message') ?? $local?->body ?? ''),
+                        'status' => (string) (data_get($row, 'status') ?? $local?->status ?? '-'),
+                        'created_at' => $createdAt,
+                    ];
+                })
+                ->values()
+                ->all();
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
     private function campaignRowsFromApi(Request $request, string $channel, string $menu): array
     {
         $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
@@ -347,17 +623,9 @@ class CampaignMenuController extends Controller
         try {
             /** @var MyadsApiClient $client */
             $client = app(MyadsApiClient::class);
-            $listResp = $client->campaignList($gatewayToken, ['campaignId' => null]);
+            $listResp = $client->campaignList($gatewayToken, ['campaignId' => null], $this->gatewayRefreshCallback($request, $client));
 
-            $items = data_get($listResp, 'data.data.list')
-                ?? data_get($listResp, 'data.data.campaigns')
-                ?? data_get($listResp, 'data.data.items')
-                ?? data_get($listResp, 'data.data')
-                ?? [];
-
-            if (! is_array($items)) {
-                return [];
-            }
+            $items = $this->extractCampaignListItems($listResp);
 
             $wantedChannel = $channel === 'sms' ? 'SMS' : null;
             if ($channel === 'wa-business') {
@@ -403,54 +671,218 @@ class CampaignMenuController extends Controller
                 return true;
             }));
 
-            return array_map(function ($row) {
-                $id = (string) (data_get($row, 'id') ?? data_get($row, 'campaignId') ?? '');
-                $title = (string) (data_get($row, 'campaignName') ?? data_get($row, 'title') ?? data_get($row, 'name') ?? '');
-
-                $startDate = (string) (data_get($row, 'startDate') ?? '');
-                $endDate = (string) (data_get($row, 'endDate') ?? '');
-                $dateLabel = '';
-                if ($startDate !== '') {
-                    try {
-                        $startLabel = \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y');
-                        $endLabel = $endDate !== ''
-                            ? \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y')
-                            : '';
-                        $dateLabel = ($endLabel !== '' && $endLabel !== $startLabel)
-                            ? $startLabel . ' - ' . $endLabel
-                            : $startLabel;
-                    } catch (Throwable) {
-                        $dateLabel = $startDate . ($endDate !== '' ? (' - ' . $endDate) : '');
-                    }
-                }
-
-                $channelType = (string) (data_get($row, 'inventoryType') ?? data_get($row, 'channel') ?? data_get($row, 'channel_type') ?? '');
-                $category = (string) (data_get($row, 'campaignType') ?? data_get($row, 'category') ?? '');
-                $operator = (string) (data_get($row, 'operator') ?? '-');
-
-                $status = (string) (data_get($row, 'status') ?? '');
-                $reason = (string) (data_get($row, 'reason') ?? '');
-                $statusDetail = trim($status . ($reason !== '' ? (': ' . $reason) : ''));
-
-                $bucketMain = data_get($row, 'bucketMain');
-                $totalPriceLabel = is_numeric($bucketMain)
-                    ? 'Rp ' . number_format((float) $bucketMain, 0, ',', '.')
-                    : '-';
-
-                return [
-                    'id' => $id,
-                    'date' => $dateLabel,
-                    'title' => $title,
-                    'operator' => $operator,
-                    'category' => $category,
-                    'channel_type' => $channelType,
-                    'status_detail' => $statusDetail,
-                    'total_price' => $totalPriceLabel,
-                ];
-            }, $filtered);
+            return array_map(fn ($row): array => $this->mapCampaignListRow($row), $filtered);
         } catch (Throwable) {
             return [];
         }
+    }
+
+    private function extractCampaignListItems(array $response): array
+    {
+        $items = data_get($response, 'data.data.list')
+            ?? data_get($response, 'data.data.campaigns')
+            ?? data_get($response, 'data.data.items')
+            ?? data_get($response, 'data.data.campaign')
+            ?? data_get($response, 'data.data.detail')
+            ?? data_get($response, 'data.data.data')
+            ?? data_get($response, 'data.data')
+            ?? data_get($response, 'data.list')
+            ?? data_get($response, 'data.campaigns')
+            ?? data_get($response, 'data.items')
+            ?? data_get($response, 'data.campaign')
+            ?? data_get($response, 'data.detail')
+            ?? [];
+
+        if (! is_array($items)) {
+            return [];
+        }
+
+        if (! array_is_list($items)) {
+            return [$items];
+        }
+
+        return array_values(array_filter($items, fn ($row): bool => is_array($row)));
+    }
+
+    private function mapCampaignListRow(array $row): array
+    {
+        $id = (string) (data_get($row, 'id') ?? data_get($row, 'campaignId') ?? '');
+        $title = (string) (data_get($row, 'campaignName') ?? data_get($row, 'title') ?? data_get($row, 'name') ?? '');
+
+        $startDate = (string) (data_get($row, 'startDate') ?? data_get($row, 'deliveryStartDate') ?? data_get($row, 'deliveryDate') ?? '');
+        $endDate = (string) (data_get($row, 'endDate') ?? data_get($row, 'deliveryEndDate') ?? '');
+        $dateLabel = '';
+        if ($startDate !== '') {
+            try {
+                $startLabel = \Carbon\Carbon::parse($startDate)->translatedFormat('d M Y');
+                $endLabel = $endDate !== ''
+                    ? \Carbon\Carbon::parse($endDate)->translatedFormat('d M Y')
+                    : '';
+                $dateLabel = ($endLabel !== '' && $endLabel !== $startLabel)
+                    ? $startLabel . ' - ' . $endLabel
+                    : $startLabel;
+            } catch (Throwable) {
+                $dateLabel = $startDate . ($endDate !== '' ? (' - ' . $endDate) : '');
+            }
+        }
+
+        $channelType = (string) (data_get($row, 'inventoryType') ?? data_get($row, 'channel') ?? data_get($row, 'channel_type') ?? '');
+        $category = (string) (data_get($row, 'campaignType') ?? data_get($row, 'category') ?? '');
+        $operator = (string) (data_get($row, 'operator') ?? '-');
+
+        $status = (string) (data_get($row, 'status') ?? '');
+        $reason = (string) (data_get($row, 'reason') ?? '');
+        $statusDetail = trim($status . ($reason !== '' ? (': ' . $reason) : ''));
+
+        $bucketMain = data_get($row, 'bucketMain') ?? data_get($row, 'totalPrice') ?? data_get($row, 'totalCost');
+        $totalPriceLabel = is_numeric($bucketMain)
+            ? 'Rp ' . number_format((float) $bucketMain, 0, ',', '.')
+            : '-';
+
+        return [
+            'id' => $id,
+            'date' => $dateLabel,
+            'title' => $title,
+            'operator' => $operator,
+            'category' => $category,
+            'channel_type' => $channelType,
+            'status_detail' => $statusDetail,
+            'total_price' => $totalPriceLabel,
+            'report_detail' => $this->campaignReportDetailFromListRow($row),
+            'raw' => $row,
+        ];
+    }
+
+    private function campaignReportDetailFromListRow(array $row): array
+    {
+        $row = $this->decodeNestedJsonValues($row);
+
+        $deliveries = $this->findNestedValue($row, ['deliveries', 'delivery', 'schedules', 'schedule']);
+        if (is_array($deliveries) && ! array_is_list($deliveries)) {
+            $deliveries = [$deliveries];
+        }
+
+        $controlNumbers = $this->findNestedValue($row, ['controlNumbers', 'controlNumber', 'testNumbers', 'testNumber']);
+        if (is_string($controlNumbers)) {
+            $controlNumbers = array_values(array_filter(array_map('trim', preg_split('/[,;\n]+/', $controlNumbers))));
+        } elseif (! is_array($controlNumbers)) {
+            $controlNumbers = [];
+        }
+
+        $location = $this->findNestedValue($row, ['locations', 'location']);
+        if (is_array($location) && array_is_list($location)) {
+            $location = is_array($location[0] ?? null) ? $location[0] : [];
+        }
+        if (! is_array($location)) {
+            $location = [];
+        }
+
+        return [
+            'sender_name' => $this->findNestedValue($row, ['senderName', 'sender_name', 'sender', 'from']),
+            'message' => $this->findNestedValue($row, ['message', 'messageText', 'smsMessage', 'bodyMessage', 'description']),
+            'recipient_total' => $this->findNestedValue($row, ['recepientTotal', 'recipientTotal', 'totalRecipient', 'totalRecepient', 'totalMessage']),
+            'deliveries' => is_array($deliveries) ? $deliveries : [],
+            'control_numbers' => $controlNumbers,
+            'location' => $location,
+            'profile_gender' => $this->findNestedValue($row, ['profileGender', 'gender']),
+            'profile_age' => $this->findNestedValue($row, ['profileAge', 'age']),
+            'profile_religion' => $this->findNestedValue($row, ['profileReligion', 'religion']),
+            'profile_os' => $this->findNestedValue($row, ['profileOs', 'os', 'device']),
+            'unit_price' => $this->findNestedValue($row, ['unitPrice', 'pricePerMessage', 'price']),
+            'grand_total' => $this->findNestedValue($row, ['grandTotal', 'totalPrice', 'totalCost', 'bucketMain']),
+            'short_url' => $this->findNestedValue($row, ['shortUrl', 'short_url']),
+        ];
+    }
+
+    private function decodeNestedJsonValues(mixed $value): mixed
+    {
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            if ($trimmed !== '' && in_array($trimmed[0], ['{', '['], true)) {
+                $decoded = json_decode($trimmed, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return $this->decodeNestedJsonValues($decoded);
+                }
+            }
+
+            return $value;
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $key => $item) {
+                $value[$key] = $this->decodeNestedJsonValues($item);
+            }
+        }
+
+        return $value;
+    }
+
+    private function findNestedValue(array $source, array $keys): mixed
+    {
+        $targets = array_map(fn (string $key): string => $this->normalizePayloadKey($key), $keys);
+
+        foreach ($source as $key => $value) {
+            if (in_array($this->normalizePayloadKey((string) $key), $targets, true) && $value !== null && $value !== '') {
+                return $value;
+            }
+
+            if (is_array($value)) {
+                $nested = $this->findNestedValue($value, $keys);
+                if ($nested !== null && $nested !== '') {
+                    return $nested;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizePayloadKey(string $key): string
+    {
+        if (str_contains($key, '.')) {
+            $key = substr(strrchr($key, '.'), 1);
+        }
+
+        return strtolower((string) preg_replace('/[^a-z0-9]/i', '', $key));
+    }
+
+    private function campaignReportFromApi(Request $request, string $campaignId): array
+    {
+        $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
+        $campaignId = trim($campaignId);
+
+        if ($gatewayToken === '' || $campaignId === '' || ! ctype_digit($campaignId)) {
+            return [];
+        }
+
+        try {
+            /** @var MyadsApiClient $client */
+            $client = app(MyadsApiClient::class);
+
+            return $client->campaignReport($gatewayToken, [
+                'campaignId' => (int) $campaignId,
+            ], $this->gatewayRefreshCallback($request, $client));
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    private function fallbackCampaignRow(Request $request, string $channel, string $menu, array $page): array
+    {
+        $campaignId = trim((string) $request->query('id', ''));
+        $isTargeted = $menu === 'targeted';
+
+        return [
+            'id' => $campaignId !== '' ? $campaignId : '-',
+            'date' => '-',
+            'title' => (string) ($page['title'] ?? ($isTargeted ? 'SMS Targeted' : 'SMS Location Based Area')),
+            'operator' => '-',
+            'category' => $isTargeted ? 'TARGETED' : 'LBA',
+            'channel_type' => $channel === 'sms' ? 'SMS' : strtoupper($channel),
+            'status_detail' => '-',
+            'total_price' => '-',
+            'raw' => [],
+        ];
     }
 
     private function resolveUnitPrice(Request $request, string $channel, string $menu): int
@@ -477,7 +909,7 @@ class CampaignMenuController extends Controller
 
         /** @var MyadsApiClient $client */
         $client = app(MyadsApiClient::class);
-        $resp = $client->campaignPriceView($gatewayToken, ['campaignType' => 'ALL']);
+        $resp = $client->campaignPriceView($gatewayToken, ['campaignType' => 'ALL'], $this->gatewayRefreshCallback($request, $client));
 
         $value = data_get($resp, 'data.data.' . $priceKey);
         if (is_numeric($value)) {
@@ -485,6 +917,32 @@ class CampaignMenuController extends Controller
         }
 
         return 0;
+    }
+
+    private function requireGatewayToken(Request $request): string
+    {
+        $gwToken = (string) $request->session()->get('myads.gw_token', '');
+        if (trim($gwToken) === '') {
+            throw new RuntimeException('Token gateway tidak ditemukan. Silakan login ulang.');
+        }
+
+        return $gwToken;
+    }
+
+    private function gatewayRefreshCallback(Request $request, MyadsApiClient $client): callable
+    {
+        return function () use ($request, $client): string {
+            $gwResp = $client->getGatewayToken();
+            $gwToken = $client->extractGatewayToken($gwResp);
+
+            if ($gwToken === '') {
+                throw new RuntimeException('Gagal ambil token gateway (format response tidak sesuai).');
+            }
+
+            $request->session()->put('myads.gw_token', $gwToken);
+
+            return $gwToken;
+        };
     }
 
     private function pages(): array

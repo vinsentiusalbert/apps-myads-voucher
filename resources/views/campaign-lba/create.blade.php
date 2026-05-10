@@ -143,10 +143,10 @@
                     </div>
                 </div>
 
-            <a href="#" class="campaign-template-link">{{ $isTargeted ? 'Gunakan dari Template' : 'Gunakan dari Template' }}</a>
+            {{-- <a href="#" class="campaign-template-link">{{ $isTargeted ? 'Gunakan dari Template' : 'Gunakan dari Template' }}</a> --}}
 
                 <div class="field-group">
-                    <label for="campaign_message" class="field-label">{{ $isTargeted ? '' : 'Isi Konten' }}</label>
+                    <label for="campaign_message" class="field-label">Isi Konten</label>
                     <textarea id="campaign_message" name="message" form="campaignGwSubmitForm" class="text-input campaign-message-input"></textarea>
                     <div class="campaign-message-meta">
                         <span>Mohon pastikan pesan iklan Anda tidak mengandung unsur terlarang.</span>

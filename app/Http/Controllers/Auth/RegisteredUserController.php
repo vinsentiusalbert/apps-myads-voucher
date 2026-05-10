@@ -86,9 +86,9 @@ class RegisteredUserController extends Controller
 
         try {
             $gwResp = $client->getGatewayToken();
-            $gwToken = data_get($gwResp, 'data.data.token');
+            $gwToken = $client->extractGatewayToken($gwResp);
 
-            if (! is_string($gwToken) || trim($gwToken) === '') {
+            if ($gwToken === '') {
                 throw new \RuntimeException('Gagal ambil token gateway (format response tidak sesuai).');
             }
 

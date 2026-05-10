@@ -25,8 +25,10 @@ class DashboardController extends Controller
         ];
 
         if ($gatewayToken !== '') {
+            $refreshGatewayToken = $this->gatewayRefreshCallback($request, $client);
+
             try {
-                $balanceResp = $client->getBalance($gatewayToken);
+                $balanceResp = $client->getBalance($gatewayToken, $refreshGatewayToken);
 
                 $amount = data_get($balanceResp, 'data.data.balanceMain')
                     ?? data_get($balanceResp, 'data.data.mainBalance')
@@ -48,7 +50,7 @@ class DashboardController extends Controller
             }
 
             try {
-                $listResp = $client->campaignList($gatewayToken, ['campaignId' => null]);
+                $listResp = $client->campaignList($gatewayToken, ['campaignId' => null], $refreshGatewayToken);
 
                 $items = $this->extractCampaignItems($listResp);
 
@@ -68,7 +70,7 @@ class DashboardController extends Controller
             }
 
             try {
-                $campaignPrices = $this->campaignPrices($client, $gatewayToken);
+                $campaignPrices = $this->campaignPrices($client, $gatewayToken, $refreshGatewayToken);
             } catch (\Throwable) {
                 // optional
             }
@@ -84,13 +86,13 @@ class DashboardController extends Controller
         ]);
     }
 
-    private function campaignPrices(MyadsApiClient $client, string $gatewayToken): array
+    private function campaignPrices(MyadsApiClient $client, string $gatewayToken, ?callable $refreshGatewayToken = null): array
     {
         $responses = [];
 
         foreach (['ALL', 'SMS', 'WABA'] as $campaignType) {
             try {
-                $responses[] = $client->campaignPriceView($gatewayToken, ['campaignType' => $campaignType]);
+                $responses[] = $client->campaignPriceView($gatewayToken, ['campaignType' => $campaignType], $refreshGatewayToken);
             } catch (\Throwable) {
                 // Keep trying the other campaign types.
             }
@@ -211,5 +213,21 @@ class DashboardController extends Controller
     private function isWaCampaign(array $row): bool
     {
         return in_array($this->campaignChannel($row), ['WABA', 'WA', 'WA-BUSINESS', 'WA BUSINESS', 'WHATSAPP'], true);
+    }
+
+    private function gatewayRefreshCallback(Request $request, MyadsApiClient $client): callable
+    {
+        return function () use ($request, $client): string {
+            $gwResp = $client->getGatewayToken();
+            $gwToken = $client->extractGatewayToken($gwResp);
+
+            if ($gwToken === '') {
+                throw new \RuntimeException('Gagal ambil token gateway (format response tidak sesuai).');
+            }
+
+            $request->session()->put('myads.gw_token', $gwToken);
+
+            return $gwToken;
+        };
     }
 }

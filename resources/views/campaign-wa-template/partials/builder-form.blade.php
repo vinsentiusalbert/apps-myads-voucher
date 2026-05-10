@@ -1,5 +1,6 @@
 @php
     $templateValue = fn (string $field, mixed $default = null) => old($field, $isWaTemplateRead ? $templateRow->{$field} : $default);
+    $templatePayloadValue = fn (string $field, mixed $default = null) => old($field, $isWaTemplateRead ? data_get($templateRow->gw_payload ?? [], $field, $default) : $default);
 @endphp
 
 @if ($errors->any())
@@ -61,9 +62,19 @@
             <div class="template-builder-field">
                 <label>Language</label>
                 <select name="language" required @disabled($isWaTemplateRead)>
-                    <option value="Indonesia" @selected($templateValue('language', 'Indonesia') === 'Indonesia')>Indonesia</option>
-                    <option value="English" @selected($templateValue('language') === 'English')>English</option>
+                    <option value="INDONESIA" @selected(in_array($templateValue('language', 'INDONESIA'), ['INDONESIA', 'Indonesia'], true))>INDONESIA</option>
+                    <option value="ENGLISH" @selected(in_array($templateValue('language'), ['ENGLISH', 'English'], true))>ENGLISH</option>
                 </select>
+            </div>
+
+            <div class="template-builder-field">
+                <label>WABA Account ID</label>
+                <input type="text" name="waba_account_id" value="{{ $templatePayloadValue('wabaAccountId') }}" placeholder="3735503976689341" @readonly($isWaTemplateRead)>
+            </div>
+
+            <div class="template-builder-field">
+                <label>Phone Number ID</label>
+                <input type="text" name="phone_number_id" value="{{ $templatePayloadValue('phoneNumberId') }}" placeholder="337795902761255" @readonly($isWaTemplateRead)>
             </div>
         </article>
 
@@ -72,13 +83,18 @@
             <p>Fill in the header, body and footer section of your template</p>
 
             <div class="template-builder-field">
-                <label>Header (optional)</label>
+                <label>Header Type</label>
                 <select name="header_type" @disabled($isWaTemplateRead)>
-                    <option value="none" @selected($templateValue('header_type', 'none') === 'none')>None</option>
-                    <option value="image" @selected($templateValue('header_type') === 'image')>Image</option>
-                    <option value="video" @selected($templateValue('header_type') === 'video')>Video</option>
-                    <option value="document" @selected($templateValue('header_type') === 'document')>Document</option>
+                    <option value="TEXT" @selected(in_array($templateValue('header_type', 'TEXT'), ['TEXT', 'none'], true))>TEXT</option>
+                    <option value="IMAGE" @selected(in_array($templateValue('header_type'), ['IMAGE', 'image'], true))>IMAGE</option>
+                    <option value="VIDEO" @selected(in_array($templateValue('header_type'), ['VIDEO', 'video'], true))>VIDEO</option>
+                    <option value="DOCUMENT" @selected(in_array($templateValue('header_type'), ['DOCUMENT', 'document'], true))>DOCUMENT</option>
                 </select>
+            </div>
+
+            <div class="template-builder-field">
+                <label>Header Label</label>
+                <input type="text" name="header_label" value="{{ $templatePayloadValue('headerLabel') }}" maxlength="255" placeholder="Test" @readonly($isWaTemplateRead)>
             </div>
 
             <div class="template-builder-field">

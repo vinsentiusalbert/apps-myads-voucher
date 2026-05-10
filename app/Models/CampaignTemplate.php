@@ -15,6 +15,7 @@ class CampaignTemplate extends Model
      * @var list<string>
      */
     protected $fillable = [
+        'gw_template_id',
         'name',
         'template_type',
         'category',
@@ -25,6 +26,8 @@ class CampaignTemplate extends Model
         'footer',
         'buttons',
         'status',
+        'gw_payload',
+        'gw_response',
     ];
 
     /**
@@ -36,6 +39,8 @@ class CampaignTemplate extends Model
     {
         return [
             'buttons' => 'array',
+            'gw_payload' => 'array',
+            'gw_response' => 'array',
         ];
     }
 }

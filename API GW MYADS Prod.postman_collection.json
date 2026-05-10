@@ -872,7 +872,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\"campaignType\":\"LBA\"} //BROADCAST,TARGETED, LBA,WABA, ALL",
+          "raw": "{\"campaignType\":\"ALL\"} //BROADCAST,TARGETED, LBA,WABA, ALL",
           "options": {
             "raw": {
               "language": "json"
@@ -880,16 +880,11 @@
           }
         },
         "url": {
-          "raw": "https://api.digitalcore.telkomsel.com/preprod-web/scrt/myads/api/v1/campaign/price-view",
-          "protocol": "https",
+          "raw": "{{base_url}}/scrt/myads/api/v1/campaign/price-view",
           "host": [
-            "api",
-            "digitalcore",
-            "telkomsel",
-            "com"
+            "{{base_url}}"
           ],
           "path": [
-            "preprod-web",
             "scrt",
             "myads",
             "api",
@@ -938,16 +933,11 @@
           }
         },
         "url": {
-          "raw": "https://api.digitalcore.telkomsel.com/preprod-web/scrt/myads/api/v1/campaign/profile-dropdown-list",
-          "protocol": "https",
+          "raw": "{{base_url}}/scrt/myads/api/v1/campaign/profile-dropdown-list",
           "host": [
-            "api",
-            "digitalcore",
-            "telkomsel",
-            "com"
+            "{{base_url}}"
           ],
           "path": [
-            "preprod-web",
             "scrt",
             "myads",
             "api",
@@ -996,16 +986,11 @@
           }
         },
         "url": {
-          "raw": "https://api.digitalcore.telkomsel.com/preprod-web/scrt/myads/api/v1/campaign/list",
-          "protocol": "https",
+          "raw": "{{base_url}}/scrt/myads/api/v1/campaign/list",
           "host": [
-            "api",
-            "digitalcore",
-            "telkomsel",
-            "com"
+            "{{base_url}}"
           ],
           "path": [
-            "preprod-web",
             "scrt",
             "myads",
             "api",
@@ -1073,6 +1058,386 @@
           ]
         },
         "description": "Generated from cURL: curl --location 'https://api.digitalcore.telkomsel.com/preprod-web/scrt/myads/api/v1/campaign/stop' \\\r\n--header 'Content-Type: application/json' \\\r\n--header 'X-API-SECRET: {{x-api-secret}}' \\\r\n--header 'api_key: {{api_key}}' \\\r\n--header 'X-signature: {{signature}}' \\\r\n--header 'Authorization: Bearer {{token}}' \\\r\n--data '{\"campaignId\":10717}'"
+      },
+      "response": []
+    },
+    {
+      "name": "Waba Broadcast",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-SECRET",
+            "value": "{{x-api-secret}}"
+          },
+          {
+            "key": "api_key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "X-signature",
+            "value": "{{signature}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"channel\": \"WABA\",\r\n  \"campaignName\": \"WABA Broadcast Campaign\",\r\n  \"senderName\": \"MyAds\",\r\n  \"templateId\": \"TEMP001\",\r\n  \"msisdnFile\": \"<encrypted_file>\",\r\n  \"msisdnFileName\": \"target.csv\",\r\n  \"deliveries\": [\r\n    {\r\n      \"deliveryDate\": \"20251101\",\r\n      \"deliveryTime\": \"0900\"\r\n    }\r\n  ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/scrt/myads/api/v1/campaign/waba/broadcast/add",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "scrt",
+            "myads",
+            "api",
+            "v1",
+            "campaign",
+            "waba",
+            "broadcast",
+            "add"
+          ]
+        },
+        "description": "Generated from cURL: curl --location 'http://api.goto-myads.com/api/gw//scrt/myads/api/v1/campaign/waba/broadcast/add' \\\r\n--header 'Content-Type: application/json' \\\r\n--header 'X-API-SECRET: bGR5dzNoVFVTWXR0SkxPd3FHZTRlRUQyUHk2T3NsTHZkZnl6dkVLeVRTV00zTkptVWVvaHF1ZUJVblMzSWJvajoyMDI2MDUxMA==' \\\r\n--header 'api_key: 4ZuSccJUhfvVl4DvVVJ2uFEY' \\\r\n--header 'X-signature: c781a184925cf306b60adcbae8c42db9' \\\r\n--header 'Authorization: Bearer <PASTE_TOKEN_HERE>' \\\r\n--data '{\r\n  \"channel\": \"WABA\",\r\n  \"campaignName\": \"WABA Broadcast Campaign\",\r\n  \"senderName\": \"MyAds\",\r\n  \"templateId\": \"TEMP001\",\r\n  \"msisdnFile\": \"<encrypted_file>\",\r\n  \"msisdnFileName\": \"target.csv\",\r\n  \"deliveries\": [\r\n    {\r\n      \"deliveryDate\": \"20251101\",\r\n      \"deliveryTime\": \"0900\"\r\n    }\r\n  ]\r\n}'"
+      },
+      "response": []
+    },
+    {
+      "name": "Waba Targeted",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-SECRET",
+            "value": "{{x-api-secret}}"
+          },
+          {
+            "key": "api_key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "X-signature",
+            "value": "{{signature}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"channel\": \"WABA\",\r\n  \"campaignName\": \"WABA Targeted Campaign\",\r\n  \"senderName\": \"MyAds\",\r\n  \"templateId\": \"TEMP001\",\r\n  \"recepientTotal\": 100,\r\n  \"profileGender\": \"m\",\r\n  \"profileOs\": \"Android\",\r\n  \"deliveries\": [\r\n    {\r\n      \"deliveryDate\": \"20251102\",\r\n      \"deliveryTime\": \"1000\"\r\n    }\r\n  ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/scrt/myads/api/v1/campaign/waba/targeted/add",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "scrt",
+            "myads",
+            "api",
+            "v1",
+            "campaign",
+            "waba",
+            "targeted",
+            "add"
+          ]
+        },
+        "description": "Generated from cURL: curl --location 'http://api.goto-myads.com/api/gw//scrt/myads/api/v1/campaign/waba/targeted/add' \\\r\n--header 'Content-Type: application/json' \\\r\n--header 'X-API-SECRET: bGR5dzNoVFVTWXR0SkxPd3FHZTRlRUQyUHk2T3NsTHZkZnl6dkVLeVRTV00zTkptVWVvaHF1ZUJVblMzSWJvajoyMDI2MDUxMA==' \\\r\n--header 'api_key: 4ZuSccJUhfvVl4DvVVJ2uFEY' \\\r\n--header 'X-signature: c781a184925cf306b60adcbae8c42db9' \\\r\n--header 'Authorization: Bearer <PASTE_TOKEN_HERE>' \\\r\n--data '{\r\n  \"channel\": \"WABA\",\r\n  \"campaignName\": \"WABA Targeted Campaign\",\r\n  \"senderName\": \"MyAds\",\r\n  \"templateId\": \"TEMP001\",\r\n  \"recepientTotal\": 100,\r\n  \"profileGender\": \"m\",\r\n  \"profileOs\": \"Android\",\r\n  \"deliveries\": [\r\n    {\r\n      \"deliveryDate\": \"20251102\",\r\n      \"deliveryTime\": \"1000\"\r\n    }\r\n  ]\r\n}'"
+      },
+      "response": []
+    },
+    {
+      "name": "Waba LBA",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-SECRET",
+            "value": "{{x-api-secret}}"
+          },
+          {
+            "key": "api_key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "X-signature",
+            "value": "{{signature}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"channel\": \"WABA\",\r\n  \"campaignName\": \"WABA LBA Campaign\",\r\n  \"senderName\": \"MyAds\",\r\n  \"templateId\": \"TEMP001\",\r\n  \"recepientTotal\": 100,\r\n  \"deliveries\": [\r\n    {\r\n      \"deliveryStartDate\": \"20251101\",\r\n      \"deliveryStartTime\": \"0800\",\r\n      \"deliveryEndDate\": \"20251102\",\r\n      \"deliveryEndTime\": \"1700\"\r\n    }\r\n  ],\r\n  \"contents\": {\r\n    \"locations\": {\r\n      \"address\": \"Jakarta\",\r\n      \"latitude\": -6.2,\r\n      \"longitude\": 106.8,\r\n      \"locationNameMap\": \"Jakarta\",\r\n      \"locationNameUser\": \"Jakarta Area\",\r\n      \"radius\": 500,\r\n      \"locationType\": \"ALL\"\r\n    }\r\n  }\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/scrt/myads/api/v1/campaign/waba/lba/add",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "scrt",
+            "myads",
+            "api",
+            "v1",
+            "campaign",
+            "waba",
+            "lba",
+            "add"
+          ]
+        },
+        "description": "Generated from cURL: curl --location 'http://api.goto-myads.com/api/gw//scrt/myads/api/v1/campaign/waba/lba/add' \\\r\n--header 'Content-Type: application/json' \\\r\n--header 'X-API-SECRET: bGR5dzNoVFVTWXR0SkxPd3FHZTRlRUQyUHk2T3NsTHZkZnl6dkVLeVRTV00zTkptVWVvaHF1ZUJVblMzSWJvajoyMDI2MDUxMA==' \\\r\n--header 'api_key: 4ZuSccJUhfvVl4DvVVJ2uFEY' \\\r\n--header 'X-signature: c781a184925cf306b60adcbae8c42db9' \\\r\n--header 'Authorization: Bearer <PASTE_TOKEN_HERE>' \\\r\n--data '{\r\n  \"channel\": \"WABA\",\r\n  \"campaignName\": \"WABA LBA Campaign\",\r\n  \"senderName\": \"MyAds\",\r\n  \"templateId\": \"TEMP001\",\r\n  \"recepientTotal\": 100,\r\n  \"deliveries\": [\r\n    {\r\n      \"deliveryStartDate\": \"20251101\",\r\n      \"deliveryStartTime\": \"0800\",\r\n      \"deliveryEndDate\": \"20251102\",\r\n      \"deliveryEndTime\": \"1700\"\r\n    }\r\n  ],\r\n  \"contents\": {\r\n    \"locations\": {\r\n      \"address\": \"Jakarta\",\r\n      \"latitude\": -6.2,\r\n      \"longitude\": 106.8,\r\n      \"locationNameMap\": \"Jakarta\",\r\n      \"locationNameUser\": \"Jakarta Area\",\r\n      \"radius\": 500,\r\n      \"locationType\": \"ALL\"\r\n    }\r\n  }\r\n}'"
+      },
+      "response": []
+    },
+    {
+      "name": "Waba Template Add",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-SECRET",
+            "value": "{{x-api-secret}}"
+          },
+          {
+            "key": "api_key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "X-signature",
+            "value": "{{signature}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"templateName\": \"promo_template\",\r\n  \"category\": \"MARKETING\",\r\n  \"language\": \"id\",\r\n  \"body\": \"Halo pelanggan, promo terbaru tersedia.\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/scrt/myads/api/v1/waba/template/add",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "scrt",
+            "myads",
+            "api",
+            "v1",
+            "waba",
+            "template",
+            "add"
+          ]
+        },
+        "description": "Generated from cURL: curl --location 'http://api.goto-myads.com/api/gw//scrt/myads/api/v1/waba/template/add' \\\r\n--header 'Content-Type: application/json' \\\r\n--header 'X-API-SECRET: bGR5dzNoVFVTWXR0SkxPd3FHZTRlRUQyUHk2T3NsTHZkZnl6dkVLeVRTV00zTkptVWVvaHF1ZUJVblMzSWJvajoyMDI2MDUxMA==' \\\r\n--header 'api_key: 4ZuSccJUhfvVl4DvVVJ2uFEY' \\\r\n--header 'X-signature: c781a184925cf306b60adcbae8c42db9' \\\r\n--header 'Authorization: Bearer <PASTE_TOKEN_HERE>' \\\r\n--data '{\r\n  \"templateName\": \"promo_template\",\r\n  \"category\": \"MARKETING\",\r\n  \"language\": \"id\",\r\n  \"body\": \"Halo pelanggan, promo terbaru tersedia.\"\r\n}'"
+      },
+      "response": []
+    },
+    {
+      "name": "Waba Template List",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-SECRET",
+            "value": "{{x-api-secret}}"
+          },
+          {
+            "key": "api_key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "X-signature",
+            "value": "{{signature}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/scrt/myads/api/v1/waba/template/list",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "scrt",
+            "myads",
+            "api",
+            "v1",
+            "waba",
+            "template",
+            "list"
+          ]
+        },
+        "description": "Generated from cURL: curl --location 'http://api.goto-myads.com/api/gw//scrt/myads/api/v1/waba/template/list' \\\r\n--header 'Content-Type: application/json' \\\r\n--header 'X-API-SECRET: bGR5dzNoVFVTWXR0SkxPd3FHZTRlRUQyUHk2T3NsTHZkZnl6dkVLeVRTV00zTkptVWVvaHF1ZUJVblMzSWJvajoyMDI2MDUxMA==' \\\r\n--header 'api_key: 4ZuSccJUhfvVl4DvVVJ2uFEY' \\\r\n--header 'X-signature: c781a184925cf306b60adcbae8c42db9' \\\r\n--header 'Authorization: Bearer <PASTE_TOKEN_HERE>' \\\r\n--data '{}'"
+      },
+      "response": []
+    },
+    {
+      "name": "Waba Display Name List",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-SECRET",
+            "value": "{{x-api-secret}}"
+          },
+          {
+            "key": "api_key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "X-signature",
+            "value": "{{signature}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/scrt/myads/api/v1/waba/display-name/list",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "scrt",
+            "myads",
+            "api",
+            "v1",
+            "waba",
+            "display-name",
+            "list"
+          ]
+        },
+        "description": "Generated from cURL: curl --location 'http://api.goto-myads.com/api/gw//scrt/myads/api/v1/waba/display-name/list' \\\r\n--header 'Content-Type: application/json' \\\r\n--header 'X-API-SECRET: bGR5dzNoVFVTWXR0SkxPd3FHZTRlRUQyUHk2T3NsTHZkZnl6dkVLeVRTV00zTkptVWVvaHF1ZUJVblMzSWJvajoyMDI2MDUxMA==' \\\r\n--header 'api_key: 4ZuSccJUhfvVl4DvVVJ2uFEY' \\\r\n--header 'X-signature: c781a184925cf306b60adcbae8c42db9' \\\r\n--header 'Authorization: Bearer <PASTE_TOKEN_HERE>' \\\r\n--data '{}'"
+      },
+      "response": []
+    },
+    {
+      "name": "Campaign Report",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-API-SECRET",
+            "value": "{{x-api-secret}}"
+          },
+          {
+            "key": "api_key",
+            "value": "{{api_key}}"
+          },
+          {
+            "key": "X-signature",
+            "value": "{{signature}}"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"campaignId\": 2171\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/scrt/myads/api/v1/campaign/report",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "scrt",
+            "myads",
+            "api",
+            "v1",
+            "campaign",
+            "report"
+          ]
+        },
+        "description": "Generated from cURL: curl --location 'http://api.goto-myads.com/api/gw//scrt/myads/api/v1/campaign/report' \\\r\n--header 'Content-Type: application/json' \\\r\n--header 'X-API-SECRET: bGR5dzNoVFVTWXR0SkxPd3FHZTRlRUQyUHk2T3NsTHZkZnl6dkVLeVRTV00zTkptVWVvaHF1ZUJVblMzSWJvajoyMDI2MDUxMA==' \\\r\n--header 'api_key: 4ZuSccJUhfvVl4DvVVJ2uFEY' \\\r\n--header 'X-signature: c781a184925cf306b60adcbae8c42db9' \\\r\n--header 'Authorization: Bearer <PASTE_TOKEN_HERE>' \\\r\n--data '{\r\n  \"campaignId\": 2171\r\n}'"
       },
       "response": []
     }

@@ -27,29 +27,41 @@ class ApiGatewayTestController extends Controller
             }
 
             $result = [];
+            $refreshGatewayToken = function () use ($request, $client): string {
+                $gwResp = $client->getGatewayToken();
+                $freshToken = $client->extractGatewayToken($gwResp);
+
+                if ($freshToken === '') {
+                    throw new \RuntimeException('Gagal ambil token gateway (format response tidak sesuai).');
+                }
+
+                $request->session()->put('myads.gw_token', $freshToken);
+
+                return $freshToken;
+            };
 
             switch ($action) {
 
                 case 'balance':
-                    $result = $client->getBalance($gwToken);
+                    $result = $client->getBalance($gwToken, $refreshGatewayToken);
                     break;
 
                 case 'campaign_list':
                     $result = $client->campaignList($gwToken, [
                         'campaignId' => null
-                    ]);
+                    ], $refreshGatewayToken);
                     break;
 
                 case 'price_view':
                     $result = $client->campaignPriceView($gwToken, [
                         'campaignType' => 'ALL'
-                    ]);
+                    ], $refreshGatewayToken);
                     break;
 
                 case 'profile_dropdown':
                     $result = $client->profileDropdownList($gwToken, [
                         'profile' => 'ALL'
-                    ]);
+                    ], $refreshGatewayToken);
                     break;
 
                 case 'targeted_add':
@@ -71,7 +83,7 @@ class ApiGatewayTestController extends Controller
                         ]
                     ];
 
-                    $result = $client->campaignTargetedAdd($gwToken, $payload);
+                    $result = $client->campaignTargetedAdd($gwToken, $payload, $refreshGatewayToken);
 
                     break;
 
@@ -109,7 +121,7 @@ class ApiGatewayTestController extends Controller
                         ]
                     ];
 
-                    $result = $client->campaignLbaAdd($gwToken, $payload);
+                    $result = $client->campaignLbaAdd($gwToken, $payload, $refreshGatewayToken);
 
                     break;
 
@@ -122,7 +134,8 @@ class ApiGatewayTestController extends Controller
                     $result = $client->uploadFile(
                         $gwToken,
                         $request->file('file'),
-                        'FILE'
+                        'FILE',
+                        $refreshGatewayToken
                     );
 
                     break;

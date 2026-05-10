@@ -27,6 +27,8 @@
 
         <nav class="portal-nav" aria-label="Main navigation">
             @foreach ($navMenus as $menu)
+                @continue(($menu['key'] ?? null) === 'wa-business')
+
                 @php
                     $isActive = ($activeNav ?? null) === $menu['key'];
                     $hasChildren = ! empty($menu['children']);

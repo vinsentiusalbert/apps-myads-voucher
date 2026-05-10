@@ -1,0 +1,171 @@
+<?php
+    $title = $page['title'];
+    $bodyClass = '';
+    $mainClass = '';
+    $contentClass = 'portal-content--template-library';
+    $templateRows = $templateRows ?? collect();
+    $templateCount = $templateCount ?? $templateRows->count();
+    $approvedTemplateCount = $approvedTemplateCount ?? $templateRows->where('status', 'APPROVED')->count();
+    $isApiTemplateSource = $isApiTemplateSource ?? false;
+    $navMenus = [
+        [
+            'key' => 'dashboard',
+            'label' => 'Dashboard',
+            'icon' => 'dashboard',
+            'href' => route('dashboard'),
+        ],
+        [
+            'key' => 'sms',
+            'label' => 'SMS',
+            'icon' => 'sms',
+            'children' => [
+                [
+                    'key' => 'sms-location-based-area',
+                    'label' => 'Location Based Area',
+                    'icon' => 'location',
+                    'href' => route('campaign.menu', ['channel' => 'sms', 'menu' => 'location-based-area']),
+                ],
+                [
+                    'key' => 'sms-targeted',
+                    'label' => 'Targeted',
+                    'icon' => 'targeted',
+                    'href' => route('campaign.menu', ['channel' => 'sms', 'menu' => 'targeted']),
+                ],
+            ],
+        ],
+        [
+            'key' => 'wa-business',
+            'label' => 'WA Business',
+            'icon' => 'wa',
+            'children' => [
+                [
+                    'key' => 'wa-campaign-template',
+                    'label' => 'Campaign Template',
+                    'icon' => 'template',
+                    'href' => route('campaign-template.index'),
+                ],
+                [
+                    'key' => 'wa-location-based-area',
+                    'label' => 'Location Based Area',
+                    'icon' => 'location',
+                    'href' => route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'location-based-area']),
+                ],
+                [
+                    'key' => 'wa-targeted',
+                    'label' => 'Targeted',
+                    'icon' => 'targeted',
+                    'href' => route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'targeted']),
+                ],
+            ],
+        ],
+    ];
+    $activeNav = 'wa-business';
+    $activeSubnav = 'wa-campaign-template';
+?>
+
+
+
+<?php $__env->startSection('content'); ?>
+    <section class="template-library-hero">
+        <div>
+            <h1 class="template-library-hero__title">Template Message</h1>
+        </div>
+        <a href="<?php echo e(route('campaign-template.index', ['view' => 'create'])); ?>" class="template-library-hero__cta">
+            <span>+</span>
+            <span>Create Template</span>
+        </a>
+    </section>
+
+    <?php if(session('status')): ?>
+        <section class="template-library-card">
+            <strong><?php echo e(session('status')); ?></strong>
+        </section>
+    <?php endif; ?>
+
+    <?php if($isApiTemplateSource): ?>
+        <section class="template-library-card">
+            <strong>Data template diambil dari API GW WABA Template List.</strong>
+        </section>
+    <?php endif; ?>
+
+    <section class="template-library-card">
+        <div class="template-library-tabs">
+            <button type="button" class="template-library-tab template-library-tab--active">
+                <span>All</span>
+                <strong><?php echo e($templateCount); ?></strong>
+            </button>
+            <button type="button" class="template-library-tab">
+                <span>Approved</span>
+                <strong><?php echo e($approvedTemplateCount); ?></strong>
+            </button>
+        </div>
+
+        <form method="GET" action="<?php echo e(route('campaign-template.index')); ?>" class="template-library-filters">
+            <label class="template-library-filter">
+                <span>Category Template</span>
+                <select name="category">
+                    <option value="">All Category</option>
+                    <option value="MARKETING" <?php if(request('category') === 'MARKETING'): echo 'selected'; endif; ?>>MARKETING</option>
+                    <option value="UTILITY" <?php if(request('category') === 'UTILITY'): echo 'selected'; endif; ?>>UTILITY</option>
+                    <option value="AUTHENTICATION" <?php if(request('category') === 'AUTHENTICATION'): echo 'selected'; endif; ?>>AUTHENTICATION</option>
+                </select>
+            </label>
+
+            <label class="template-library-filter">
+                <span>Start date</span>
+                <input type="date" name="start_date" value="<?php echo e(request('start_date')); ?>">
+            </label>
+
+            <label class="template-library-filter">
+                <span>End date</span>
+                <input type="date" name="end_date" value="<?php echo e(request('end_date')); ?>">
+            </label>
+            <button type="submit" class="template-builder-secondary">Filter</button>
+        </form>
+
+        <div class="template-library-table-wrap">
+            <table class="template-library-table">
+                <thead>
+                    <tr>
+                        <th>Template Name</th>
+                        <th>Time Added</th>
+                        <th>Category</th>
+                        <th>Language</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php $__empty_1 = true; $__currentLoopData = $templateRows; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $row): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <tr>
+                            <td>
+                                <?php if(! empty($row->id)): ?>
+                                    <a href="<?php echo e(route('campaign-template.show', $row->id)); ?>"><?php echo e($row->name); ?></a>
+                                <?php else: ?>
+                                    <strong><?php echo e($row->name); ?></strong>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <strong><?php echo e($row->created_at->format('d M Y')); ?></strong>
+                                <span><?php echo e($row->created_at->format('H:i')); ?> WIB</span>
+                            </td>
+                            <td><?php echo e($row->category); ?></td>
+                            <td>
+                                <strong><?php echo e($row->language); ?></strong>
+                                <span><?php echo e(\Illuminate\Support\Str::limit($row->body ?? '-', 80)); ?></span>
+                            </td>
+                            <td>
+                                <span class="template-library-status"><?php echo e($row->status); ?></span>
+                            </td>
+                        </tr>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <tr>
+                            <td colspan="5">Belum ada template campaign.</td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </section>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.portal', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH D:\1 Kerja\api-project\resources\views/campaign-wa-template/index.blade.php ENDPATH**/ ?>

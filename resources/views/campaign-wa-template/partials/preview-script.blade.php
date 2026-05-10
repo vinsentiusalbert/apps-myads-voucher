@@ -14,6 +14,17 @@
         const isTemplateRead = @json($isWaTemplateRead);
         let templateButtonIndex = 0;
 
+        const defaultPreviewBody = `Halo Pelanggan Setia ComboFit, kamu mendapatkan akses Exercise Plan GRATIS selama 30 hari
+
+- Akses ke program latihan fisik oleh Coach profesional
+- Panduan video latihan yang mudah diikuti
+- Tips dan trik kebugaran
+
+Aktifkan akunmu di link ini
+https://bit.ly/Fita_Combofit
+
+#SehatMakinNikmat bersama Fita!`;
+
         const syncTemplateChoiceState = () => {
             templateTypeInputs.forEach((input) => {
                 input.closest('.template-builder-choice')?.classList.toggle('template-builder-choice--active', input.checked);
@@ -26,16 +37,7 @@
             }
 
             const value = templateBodyInput.value.trim();
-            templatePreviewBody.textContent = value || `Halo Pelanggan Setia ComboFit, kamu mendapatkan akses Exercise Plan GRATIS selama 30 hari 🔥
-
-✅ Akses ke program latihan fisik oleh Coach profesional
-✅ Panduan video latihan yang mudah diikuti
-✅ Tips dan trik kebugaran
-
-Aktifkan akunmu di link ini
-https://bit.ly/Fita_Combofit
-
-#SehatMakinNikmat bersama Fita!`;
+            templatePreviewBody.textContent = value || defaultPreviewBody;
             templateBodyCount.textContent = `${templateBodyInput.value.length} / 1024`;
         };
 
@@ -84,6 +86,8 @@ https://bit.ly/Fita_Combofit
         const bindTemplateButtonCard = (card) => {
             const textInput = card.querySelector('[data-template-button-text]');
             const urlInput = card.querySelector('[data-template-button-url]');
+            const actionInput = card.querySelector('[data-template-button-action]');
+            const replayInput = card.querySelector('[data-template-button-replay]');
             const removeButton = card.querySelector('[data-template-button-remove]');
             const textMeta = card.querySelector('[data-template-button-meta]');
             const urlMeta = card.querySelector('[data-template-url-meta]');
@@ -95,11 +99,15 @@ https://bit.ly/Fita_Combofit
                 if (urlMeta && urlInput) {
                     urlMeta.textContent = `${urlInput.value.length} / 2000`;
                 }
+                if (replayInput && textInput) {
+                    replayInput.value = textInput.value;
+                }
                 syncTemplateButtons();
             };
 
             textInput?.addEventListener('input', syncCard);
             urlInput?.addEventListener('input', syncCard);
+            actionInput?.addEventListener('change', syncCard);
             removeButton?.addEventListener('click', () => {
                 card.remove();
                 syncTemplateButtons();
@@ -128,6 +136,7 @@ https://bit.ly/Fita_Combofit
             }
 
             templateButtonIndex += 1;
+            const inputName = `buttons[${templateButtonIndex}]`;
             const card = document.createElement('article');
             card.className = 'template-builder-button-card';
             card.dataset.templateButtonCard = String(templateButtonIndex);
@@ -138,30 +147,36 @@ https://bit.ly/Fita_Combofit
                 <div class="template-builder-button-card__grid">
                     <div class="template-builder-button-card__field">
                         <label>Type of action</label>
-                        <select>
-                            <option>Visit website</option>
+                        <select name="${inputName}[action]" data-template-button-action>
+                            <option value="URL">Visit website</option>
+                            <option value="QUICK_REPLY">Quick reply</option>
                         </select>
                     </div>
                     <div class="template-builder-button-card__field">
                         <label>Button Text</label>
-                        <input type="text" value="Visit website" maxlength="25" data-template-button-text>
+                        <input type="text" name="${inputName}[label]" value="Visit website" maxlength="25" data-template-button-text>
                         <span class="template-builder-button-card__meta" data-template-button-meta>13 / 25</span>
                     </div>
                     <div class="template-builder-button-card__field">
                         <label>Url Type</label>
-                        <select>
-                            <option>static</option>
+                        <select name="${inputName}[show_modal_short_url]">
+                            <option value="0">static</option>
+                            <option value="1">short URL</option>
                         </select>
                     </div>
                     <div class="template-builder-button-card__field">
                         <label>Website URL</label>
-                        <input type="text" value="" maxlength="2000" placeholder="Website URL" data-template-button-url>
+                        <input type="text" name="${inputName}[action_url_target]" value="" maxlength="2000" placeholder="Website URL" data-template-button-url>
                         <span class="template-builder-button-card__meta" data-template-url-meta>0 / 2000</span>
                     </div>
-                    <button type="button" class="template-builder-button-card__remove" data-template-button-remove aria-label="Hapus tombol">×</button>
+                    <input type="hidden" name="${inputName}[action_replay]" value="" data-template-button-replay>
+                    <input type="hidden" name="${inputName}[action_number]" value="">
+                    <input type="hidden" name="${inputName}[short_url]" value="">
+                    <input type="hidden" name="${inputName}[action_voucher_code]" value="">
+                    <button type="button" class="template-builder-button-card__remove" data-template-button-remove aria-label="Hapus tombol">x</button>
                 </div>
                 <div class="template-builder-button-card__alert">
-                    <span>⚠</span>
+                    <span>!</span>
                     <p>Direct WhatsApp links are not allowed in CTA buttons as per Meta's policy. Please place the link (e.g. wa.me/6281xxx) in the message body instead</p>
                 </div>
             `;
