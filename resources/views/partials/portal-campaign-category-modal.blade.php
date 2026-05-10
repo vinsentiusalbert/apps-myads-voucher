@@ -122,7 +122,10 @@
         };
 
         categoryOpenButtons.forEach((button) => {
-            button.addEventListener('click', openCategoryModal);
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                openCategoryModal();
+            });
         });
 
         categoryCloseButtons.forEach((button) => {

@@ -37,16 +37,16 @@
             'icon' => 'wa',
             'children' => [
                 [
-                    'key' => 'wa-location-based-area',
-                    'label' => 'Location Based Area',
-                    'icon' => 'location',
-                    'href' => route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'location-based-area']),
-                ],
-                [
                     'key' => 'wa-campaign-template',
                     'label' => 'Campaign Template',
                     'icon' => 'template',
                     'href' => route('campaign-template.index'),
+                ],
+                [
+                    'key' => 'wa-location-based-area',
+                    'label' => 'Location Based Area',
+                    'icon' => 'location',
+                    'href' => route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'location-based-area']),
                 ],
                 [
                     'key' => 'wa-targeted',
@@ -127,18 +127,15 @@
                 <div class="field-group">
                     <label for="campaign_sender" class="field-label">Nama Pengirim</label>
                     <div class="campaign-inline-field">
-                        <select id="campaign_sender" name="sender_name" form="campaignGwSubmitForm" class="text-input text-input--select">
-                            @if ($isTargeted)
-                            <option selected>GRANDHIKA</option>
-                            <option>IFTAR OFFER</option>
-                            <option>PROMO SMS</option>
-                            @else
-                            <option>MyAds SMS</option>
-                            <option>Promo Outlet</option>
-                            <option>Info Bisnis</option>
-                            @endif
-                        </select>
-                        <a href="#" class="campaign-inline-link">{{ $isTargeted ? 'Buat Nama Pengirim baru' : 'Buat Nama Pengirim Baru' }}</a>
+                        <input
+                            type="text"
+                            id="campaign_sender"
+                            name="sender_name"
+                            form="campaignGwSubmitForm"
+                            class="text-input"
+                            maxlength="255"
+                            required
+                        >
                     </div>
                 </div>
 
@@ -264,7 +261,7 @@
                     </div>
                     <div class="campaign-phone__avatar"></div>
                     @if ($isTargeted)
-                    <p class="campaign-phone__sender" id="campaignSenderPreview">GRANDHIKA</p>
+                    <p class="campaign-phone__sender" id="campaignSenderPreview"></p>
                     @endif
                     <p class="campaign-phone__time">Hari ini 13:59</p>
                     <div class="campaign-phone__sheet">
@@ -585,7 +582,7 @@
                             <div class="campaign-review-grid">
                                 <div>
                                     <span class="campaign-review-grid__label">Pengirim</span>
-                                    <strong id="campaignReviewSender">MyAds SMS</strong>
+                                    <strong id="campaignReviewSender"></strong>
                                 </div>
                                 <div>
                                     <span class="campaign-review-grid__label">Konten Pesan</span>
@@ -1408,7 +1405,7 @@
                 const totalCostLabel = unitPrice > 0 ? formatCurrency(totalCost) : '-';
 
                 setText('campaignReviewTitle', titleInput?.value?.trim() || 'Tanpa Judul');
-                setText('campaignReviewSender', sender?.value || 'MyAds SMS');
+                setText('campaignReviewSender', sender?.value || '');
                 setText('campaignReviewMessage', messageInput?.value?.trim() || '-');
                 setText('campaignReviewLocation', locationState.name || '-');
                 setText('campaignReviewRadius', `${normalizeAudience(radius)} meter`);
@@ -1950,7 +1947,7 @@
 
             syncMessagePreview();
             syncSenderPreview();
-            senderInput?.addEventListener('change', syncSenderPreview);
+            senderInput?.addEventListener('input', syncSenderPreview);
             messageInput?.addEventListener('input', syncMessagePreview);
             addButton?.addEventListener('click', createButtonCard);
             initCampaignMultiselects();
