@@ -18,7 +18,11 @@
         @if (! empty($createButtonHref))
             <a href="{{ $createButtonHref }}" class="portal-create-btn portal-create-btn--link">{{ $createButtonLabel }}</a>
         @else
-            <button type="button" class="portal-create-btn" data-campaign-category-open>{{ $createButtonLabel }}</button>
+            <a
+                href="{{ route('campaign.menu', ['channel' => 'sms', 'menu' => 'location-based-area', 'view' => 'create']) }}"
+                class="portal-create-btn portal-create-btn--link"
+                data-campaign-category-open
+            >{{ $createButtonLabel }}</a>
         @endif
 
         <nav class="portal-nav" aria-label="Main navigation">
