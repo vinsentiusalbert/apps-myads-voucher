@@ -10,7 +10,7 @@ class DashboardController extends Controller
 {
     public function index(Request $request, MyadsApiClient $client): View
     {
-        $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
+        $gatewayToken = $this->resolveGatewayToken($request, $client);
 
         $balanceFormatted = '-';
         $balanceExpiry = null;
@@ -84,6 +84,20 @@ class DashboardController extends Controller
             'campaignWaTotal' => $campaignWaTotal,
             'campaignPrices' => $campaignPrices,
         ]);
+    }
+
+    private function resolveGatewayToken(Request $request, MyadsApiClient $client): string
+    {
+        $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
+        if (trim($gatewayToken) !== '') {
+            return $gatewayToken;
+        }
+
+        try {
+            return ($this->gatewayRefreshCallback($request, $client))();
+        } catch (\Throwable) {
+            return '';
+        }
     }
 
     private function campaignPrices(MyadsApiClient $client, string $gatewayToken, ?callable $refreshGatewayToken = null): array
@@ -218,7 +232,7 @@ class DashboardController extends Controller
     private function gatewayRefreshCallback(Request $request, MyadsApiClient $client): callable
     {
         return function () use ($request, $client): string {
-            $gwResp = $client->getGatewayToken();
+            $gwResp = $client->getGatewayToken((string) $request->session()->get('myads.access_token', ''));
             $gwToken = $client->extractGatewayToken($gwResp);
 
             if ($gwToken === '') {

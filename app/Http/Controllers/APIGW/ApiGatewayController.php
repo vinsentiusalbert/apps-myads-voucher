@@ -144,9 +144,12 @@ class ApiGatewayController extends Controller
 	public function wabaTemplateList(Request $request, MyadsApiClient $client): JsonResponse
 	{
 		try {
-			return response()->json($client->wabaTemplateList($this->requireGatewayToken($request), [
-				'templateId' => null,
-			], $this->gatewayRefreshCallback($request, $client)));
+			return response()->json($client->wabaTemplateList(
+				$this->requireAccessToken($request),
+				[],
+				$this->requireGatewayToken($request),
+				$this->gatewayRefreshCallback($request, $client)
+			));
 		} catch (Throwable $e) {
 			return response()->json([
 				'success' => false,
@@ -158,7 +161,23 @@ class ApiGatewayController extends Controller
 	public function wabaDisplayNameList(Request $request, MyadsApiClient $client): JsonResponse
 	{
 		try {
-			return response()->json($client->wabaDisplayNameList($this->requireGatewayToken($request), [], $this->gatewayRefreshCallback($request, $client)));
+			$payload = $client->wabaDisplayNameList(
+				$this->requireAccessToken($request),
+				[],
+				$this->requireGatewayToken($request),
+				$this->gatewayRefreshCallback($request, $client)
+			);
+			$list = data_get($payload, 'data.data.list')
+				?? data_get($payload, 'data.list')
+				?? data_get($payload, 'data.data.items')
+				?? data_get($payload, 'data.items')
+				?? [];
+
+			return response()->json([
+				'success' => true,
+				'list' => is_array($list) ? array_values(array_filter($list, fn ($row) => is_array($row))) : [],
+				'raw' => $payload,
+			]);
 		} catch (Throwable $e) {
 			return response()->json([
 				'success' => false,
@@ -557,7 +576,9 @@ class ApiGatewayController extends Controller
 	{
 		$gwToken = (string) $request->session()->get('myads.gw_token', '');
 		if (trim($gwToken) === '') {
-			throw new RuntimeException('Token gateway tidak ditemukan. Silakan login ulang.');
+			/** @var MyadsApiClient $client */
+			$client = app(MyadsApiClient::class);
+			$gwToken = ($this->gatewayRefreshCallback($request, $client))();
 		}
 
 		return $gwToken;
@@ -576,7 +597,7 @@ class ApiGatewayController extends Controller
 	private function gatewayRefreshCallback(Request $request, MyadsApiClient $client): callable
 	{
 		return function () use ($request, $client): string {
-			$gwResp = $client->getGatewayToken();
+			$gwResp = $client->getGatewayToken((string) $request->session()->get('myads.access_token', ''));
 			$gwToken = $client->extractGatewayToken($gwResp);
 
 			if ($gwToken === '') {

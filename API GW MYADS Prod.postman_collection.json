@@ -1,9 +1,9 @@
 {
   "info": {
-    "_postman_id": "217e626b-daff-4bf9-853b-ad17e0d70dda",
-    "name": "API GW MYADS Prod",
+    "_postman_id": "6301e6cb-b6b2-44e9-b342-c9d10beab67c",
+    "name": "API GW MYADS Prod New",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "25654094"
+    "_exporter_id": "17490517"
   },
   "item": [
     {
@@ -125,7 +125,7 @@
               },
               "status": "OK",
               "code": 200,
-              "_postman_previewlanguage": null,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "content-type",
@@ -299,7 +299,7 @@
               },
               "status": "OK",
               "code": 200,
-              "_postman_previewlanguage": null,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "content-type",
@@ -465,7 +465,7 @@
               },
               "status": "OK",
               "code": 200,
-              "_postman_previewlanguage": null,
+              "_postman_previewlanguage": "Text",
               "header": [
                 {
                   "key": "content-type",
@@ -696,7 +696,7 @@
           ]
         },
         "url": {
-          "raw": "https://api.digitalcore.telkomsel.com/preprod-web/scrt/myads/api/v1/content/upload",
+          "raw": "https://api.digitalcore.telkomsel.com/scrt/myads/api/v1/content/upload",
           "protocol": "https",
           "host": [
             "api",
@@ -705,7 +705,6 @@
             "com"
           ],
           "path": [
-            "preprod-web",
             "scrt",
             "myads",
             "api",
@@ -745,7 +744,9 @@
                 {
                   "type": "file",
                   "key": "file",
-                  "src": "/C:/Users/akbar.abdurrahman/Downloads/files.csv"
+                  "src": [
+                    "/C:/Users/akbar.abdurrahman/Downloads/files.csv"
+                  ]
                 },
                 {
                   "type": "text",
@@ -776,7 +777,7 @@
           },
           "status": "OK",
           "code": 200,
-          "_postman_previewlanguage": null,
+          "_postman_previewlanguage": "Text",
           "header": [
             {
               "key": "content-type",
@@ -1254,7 +1255,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n  \"templateName\": \"promo_template\",\r\n  \"category\": \"MARKETING\",\r\n  \"language\": \"id\",\r\n  \"body\": \"Halo pelanggan, promo terbaru tersedia.\"\r\n}",
+          "raw": "{\r\n    \"templateName\": \"test_template_waba2\",\r\n    \"language\": \"INDONESIA\",\r\n    \"headerType\": \"TEXT\",\r\n    \"headerLabel\": \"Test\",\r\n    \"headerPathFile\": \"\",\r\n    \"bodyMessage\": \"Test\",\r\n    \"bodyType\": \"STATIC\",\r\n    \"bodyPathFile\": \"\",\r\n    \"useButton\": 1,\r\n    \"buttons\": [\r\n        {\r\n            \"showModalShortUrl\": false,\r\n            \"label\": \"Test\",\r\n            \"action\": \"QUICK_REPLY\",\r\n            \"actionReplay\": \"\",\r\n            \"actionNumber\": \"\",\r\n            \"actionUrlTarget\": \"\",\r\n            \"shortUrl\": null,\r\n            \"actionVoucherCode\": \"\"\r\n        }\r\n    ],\r\n    \"wabaAccountId\": 754609787733489,\r\n    \"phoneNumberId\": 857922274060319\r\n}",
           "options": {
             "raw": {
               "language": "json"

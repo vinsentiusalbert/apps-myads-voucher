@@ -10,8 +10,19 @@
         const templateButtonList = document.getElementById('templateButtonList');
         const templatePreviewActions = document.getElementById('templatePreviewActions');
         const templateButtonWarning = document.getElementById('templateButtonWarning');
-        const templateTypeInputs = Array.from(document.querySelectorAll('input[name="template_type"]'));
+        const wabaDisplayNameField = document.querySelector('[data-waba-display-name-field]');
+        const wabaDisplayNameSelect = document.getElementById('wabaDisplayNameSelect');
+        const wabaAccountIdInput = document.getElementById('wabaAccountIdInput');
+        const phoneNumberIdInput = document.getElementById('phoneNumberIdInput');
+        const oldWabaAccountId = @json(old('waba_account_id'));
+        const oldPhoneNumberId = @json(old('phone_number_id'));
+        const oldDisplayName = @json(old('display_name'));
         const isTemplateRead = @json($isWaTemplateRead);
+        const fallbackWabaDisplayName = {
+            verifiedName: 'Telkomsel Promo & Rewards',
+            wabaAccountId: '754609787733489',
+            phoneNumberId: '857922274060319',
+        };
         let templateButtonIndex = 0;
 
         const defaultPreviewBody = `Halo Pelanggan Setia ComboFit, kamu mendapatkan akses Exercise Plan GRATIS selama 30 hari
@@ -25,14 +36,12 @@ https://bit.ly/Fita_Combofit
 
 #SehatMakinNikmat bersama Fita!`;
 
-        const syncTemplateChoiceState = () => {
-            templateTypeInputs.forEach((input) => {
-                input.closest('.template-builder-choice')?.classList.toggle('template-builder-choice--active', input.checked);
-            });
-        };
-
         const syncTemplateBodyPreview = () => {
             if (!templateBodyInput || !templatePreviewBody || !templateBodyCount) {
+                return;
+            }
+            if (isTemplateRead) {
+                templateBodyCount.textContent = `${templateBodyInput.value.length} / 1024`;
                 return;
             }
 
@@ -65,6 +74,9 @@ https://bit.ly/Fita_Combofit
 
         const syncTemplateButtons = () => {
             if (!templateButtonList || !templatePreviewActions || !templateAddButton || !templateButtonWarning) {
+                return;
+            }
+            if (isTemplateRead) {
                 return;
             }
 
@@ -116,17 +128,134 @@ https://bit.ly/Fita_Combofit
             syncCard();
         };
 
+        const valueFrom = (row, keys) => {
+            for (const key of keys) {
+                if (row && row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
+                    return String(row[key]).trim();
+                }
+            }
+
+            return '';
+        };
+
+        const extractWabaDisplayNameRows = (payload) => {
+            const candidates = [
+                payload?.list,
+                payload?.data?.data,
+                payload?.data?.data?.data,
+                payload?.data?.data?.list,
+                payload?.data?.data?.items,
+                payload?.data?.list,
+                payload?.data?.items,
+                payload?.data,
+                payload,
+            ];
+
+            for (const candidate of candidates) {
+                if (Array.isArray(candidate)) {
+                    return candidate.filter((row) => row && typeof row === 'object');
+                }
+            }
+
+            return [];
+        };
+
+        const syncSelectedWabaDisplayName = () => {
+            if (!wabaDisplayNameSelect || !wabaAccountIdInput || !phoneNumberIdInput) {
+                return;
+            }
+
+            const selected = wabaDisplayNameSelect.selectedOptions[0];
+            wabaAccountIdInput.value = selected?.dataset.wabaAccountId || '';
+            phoneNumberIdInput.value = selected?.dataset.phoneNumberId || '';
+        };
+
+        const applyWabaDisplayNameOptions = (rows, placeholder = 'Pilih display name', useFallback = false) => {
+            if (!wabaDisplayNameSelect) {
+                return;
+            }
+
+            wabaDisplayNameSelect.replaceChildren(new Option(placeholder, ''));
+
+            rows.forEach((row) => {
+                const verifiedName = valueFrom(row, ['verifiedName', 'verified_name', 'displayName', 'display_name', 'name']);
+                const wabaAccountId = valueFrom(row, ['wabaAccountId', 'waba_account_id', 'accountId', 'account_id']);
+                const phoneNumberId = valueFrom(row, ['phoneNumberId', 'phoneNumberiId', 'phone_number_id']);
+
+                if (verifiedName === '') {
+                    return;
+                }
+
+                const option = new Option(verifiedName, verifiedName);
+                option.dataset.wabaAccountId = wabaAccountId;
+                option.dataset.phoneNumberId = phoneNumberId;
+                option.selected = (oldWabaAccountId && oldWabaAccountId === wabaAccountId)
+                    || (oldPhoneNumberId && oldPhoneNumberId === phoneNumberId)
+                    || (oldDisplayName && oldDisplayName === verifiedName);
+                wabaDisplayNameSelect.appendChild(option);
+            });
+
+            if (wabaDisplayNameSelect.options.length === 1 && useFallback) {
+                const fallbackOption = new Option(fallbackWabaDisplayName.verifiedName, fallbackWabaDisplayName.verifiedName);
+                fallbackOption.dataset.wabaAccountId = fallbackWabaDisplayName.wabaAccountId;
+                fallbackOption.dataset.phoneNumberId = fallbackWabaDisplayName.phoneNumberId;
+                fallbackOption.selected = true;
+                wabaDisplayNameSelect.appendChild(fallbackOption);
+            } else if (wabaDisplayNameSelect.options.length === 1) {
+                wabaDisplayNameSelect.replaceChildren(new Option('Display name tidak tersedia', ''));
+            } else if (!wabaDisplayNameSelect.value && wabaDisplayNameSelect.options.length === 2) {
+                wabaDisplayNameSelect.selectedIndex = 1;
+            }
+
+            syncSelectedWabaDisplayName();
+        };
+
+        const loadWabaDisplayNames = async () => {
+            if (!wabaDisplayNameField || !wabaDisplayNameSelect || !wabaAccountIdInput || !phoneNumberIdInput) {
+                return;
+            }
+
+            const listUrl = wabaDisplayNameField.dataset.listUrl;
+            if (!listUrl) {
+                return;
+            }
+
+            wabaDisplayNameSelect.disabled = true;
+            wabaDisplayNameSelect.replaceChildren(new Option('Memuat display name...', ''));
+
+            try {
+                const response = await fetch(listUrl, {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+
+                const payload = await response.json();
+                if (!response.ok) {
+                    throw new Error(payload?.message || `Display name request failed with status ${response.status}`);
+                }
+                if (payload?.success === false) {
+                    throw new Error(payload?.message || 'Display name request failed');
+                }
+
+                const rows = extractWabaDisplayNameRows(payload);
+                applyWabaDisplayNameOptions(rows, 'Pilih display name');
+            } catch (error) {
+                applyWabaDisplayNameOptions([fallbackWabaDisplayName], 'Gagal memuat display name', true);
+            } finally {
+                wabaDisplayNameSelect.disabled = false;
+            }
+        };
+
         syncTemplateBodyPreview();
-        syncTemplateChoiceState();
 
         templateBodyInput?.addEventListener('input', syncTemplateBodyPreview);
-        templateTypeInputs.forEach((input) => {
-            input.addEventListener('change', syncTemplateChoiceState);
-        });
 
         if (!isTemplateRead) {
             syncTemplateAssetPreview();
             templateAssetInput?.addEventListener('change', syncTemplateAssetPreview);
+            wabaDisplayNameSelect?.addEventListener('change', syncSelectedWabaDisplayName);
+            loadWabaDisplayNames();
         }
 
         templateAddButton?.addEventListener('click', () => {

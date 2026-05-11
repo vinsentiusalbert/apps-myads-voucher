@@ -1,6 +1,12 @@
 @php
     $templateValue = fn (string $field, mixed $default = null) => old($field, $isWaTemplateRead ? $templateRow->{$field} : $default);
     $templatePayloadValue = fn (string $field, mixed $default = null) => old($field, $isWaTemplateRead ? data_get($templateRow->gw_payload ?? [], $field, $default) : $default);
+    $defaultPreviewBody = "Halo Pelanggan Setia ComboFit, kamu mendapatkan akses Exercise Plan GRATIS selama 30 hari\n\n- Akses ke program latihan fisik oleh Coach profesional\n- Panduan video latihan yang mudah diikuti\n- Tips dan trik kebugaran\n\nAktifkan akunmu di link ini\nhttps://bit.ly/Fita_Combofit\n\n#SehatMakinNikmat bersama Fita!";
+    $previewButtons = collect(data_get($templateRow ?? null, 'buttons', data_get($templateRow ?? null, 'gw_payload.buttons', [])))
+        ->filter(fn ($button) => is_array($button) && trim((string) ($button['label'] ?? '')) !== '')
+        ->values();
+    $previewHeaderType = strtoupper((string) $templateValue('header_type', 'TEXT'));
+    $previewHeaderLabel = trim((string) $templatePayloadValue('headerLabel', $templateValue('name', '')));
 @endphp
 
 @if ($errors->any())
@@ -22,30 +28,10 @@
 @endif
     <div class="template-builder-main">
         <article class="template-builder-card">
-            <h2>Template Preview</h2>
-            <p>Choose the category that best describes your message template. Then, select the type of message that you want to send.</p>
-
-            <label class="template-builder-choice {{ $templateValue('template_type', 'simple_message') === 'simple_message' ? 'template-builder-choice--active' : '' }}">
-                <input type="radio" name="template_type" value="simple_message" @checked($templateValue('template_type', 'simple_message') === 'simple_message') @disabled($isWaTemplateRead)>
-                <span class="template-builder-choice__dot"></span>
-                <span>
-                    <strong>Simple Message</strong>
-                    <small>Custom send promotions with only have 1 upload image Capability</small>
-                </span>
-            </label>
-
-            <label class="template-builder-choice {{ $templateValue('template_type') === 'carousel_cards' ? 'template-builder-choice--active' : '' }}">
-                <input type="radio" name="template_type" value="carousel_cards" @checked($templateValue('template_type') === 'carousel_cards') @disabled($isWaTemplateRead)>
-                <span class="template-builder-choice__dot"></span>
-                <span>
-                    <strong>Carousel Cards</strong>
-                    <small>Send promotion with custom multiple image using carousel component</small>
-                </span>
-            </label>
-        </article>
-
-        <article class="template-builder-card">
             <h2>Template name and language</h2>
+            @unless ($isWaTemplateRead)
+                <input type="hidden" name="template_type" value="{{ $templateValue('template_type', 'simple_message') }}">
+            @endunless
             <div class="template-builder-field">
                 <label>Name your template</label>
                 <input type="text" name="name" value="{{ $templateValue('name', 'campaign_whatsapp') }}" required @readonly($isWaTemplateRead)>
@@ -55,7 +41,6 @@
                 <label>Category Template</label>
                 <select name="category" required @disabled($isWaTemplateRead)>
                     <option value="Single Banner" @selected($templateValue('category', 'Single Banner') === 'Single Banner')>Single Banner</option>
-                    <option value="Carousel" @selected($templateValue('category') === 'Carousel')>Carousel</option>
                 </select>
             </div>
 
@@ -67,15 +52,21 @@
                 </select>
             </div>
 
-            <div class="template-builder-field">
-                <label>WABA Account ID</label>
-                <input type="text" name="waba_account_id" value="{{ $templatePayloadValue('wabaAccountId') }}" placeholder="3735503976689341" @readonly($isWaTemplateRead)>
-            </div>
-
-            <div class="template-builder-field">
-                <label>Phone Number ID</label>
-                <input type="text" name="phone_number_id" value="{{ $templatePayloadValue('phoneNumberId') }}" placeholder="337795902761255" @readonly($isWaTemplateRead)>
-            </div>
+            @unless ($isWaTemplateRead)
+                <div class="template-builder-field" data-waba-display-name-field data-list-url="{{ route('campaign-template.display-name-list') }}">
+                    <label>Display Name</label>
+                    <select id="wabaDisplayNameSelect" name="display_name" required>
+                        <option value="">Memuat display name...</option>
+                    </select>
+                    <input type="hidden" id="wabaAccountIdInput" name="waba_account_id" value="{{ old('waba_account_id') }}">
+                    <input type="hidden" id="phoneNumberIdInput" name="phone_number_id" value="{{ old('phone_number_id') }}">
+                </div>
+            @else
+                <div class="template-builder-field">
+                    <label>Display Name</label>
+                    <input type="text" value="{{ $templatePayloadValue('verifiedName', $templatePayloadValue('displayName')) }}" readonly>
+                </div>
+            @endunless
         </article>
 
         <article class="template-builder-card">
@@ -126,7 +117,6 @@
             </div>
 
             <div class="template-builder-inline-actions">
-                <button type="button" class="template-builder-ai">Creating body content with AI <span>Token quota: 0</span></button>
                 <button type="button" class="template-builder-secondary">Add Body Variable</button>
             </div>
 
@@ -167,8 +157,13 @@
             <h2>Template Preview</h2>
             <div class="template-builder-phone">
                 <div class="template-builder-phone__message">
-                    <img src="{{ $isWaTemplateRead && $templateRow->asset_path ? asset('storage/' . $templateRow->asset_path) : asset('assets/logo.png') }}" alt="Preview asset" class="template-builder-phone__image" id="templatePreviewImage">
-                    <div class="template-builder-phone__body" id="templatePreviewBody">
+                    @if ($previewHeaderType === 'TEXT' && $previewHeaderLabel !== '')
+                        <strong class="template-builder-phone__header-text">{{ $previewHeaderLabel }}</strong>
+                        <img src="{{ $isWaTemplateRead && $templateRow->asset_path ? asset('storage/' . $templateRow->asset_path) : asset('assets/logo.png') }}" alt="Preview asset" class="template-builder-phone__image" id="templatePreviewImage" hidden>
+                    @else
+                        <img src="{{ $isWaTemplateRead && $templateRow->asset_path ? asset('storage/' . $templateRow->asset_path) : asset('assets/logo.png') }}" alt="Preview asset" class="template-builder-phone__image" id="templatePreviewImage">
+                    @endif
+                    <div class="template-builder-phone__body" id="templatePreviewBody">{{ trim((string) $templateValue('body', '')) !== '' ? $templateValue('body') : $defaultPreviewBody }}@if(false)
                         Halo Pelanggan Setia ComboFit, kamu mendapatkan akses Exercise Plan GRATIS selama 30 hari 🔥
 
                         ✅ Akses ke program latihan fisik oleh Coach profesional
@@ -179,9 +174,13 @@
                         https://bit.ly/Fita_Combofit
 
                         #SehatMakinNikmat bersama Fita!
-                    </div>
+                    @endif</div>
                     <div class="template-builder-phone__actions" id="templatePreviewActions">
-                        <div class="template-builder-phone__cta">Coba Sekarang</div>
+                        @forelse ($previewButtons as $button)
+                            <div class="template-builder-phone__cta">{{ $button['label'] }}</div>
+                        @empty
+                            <div class="template-builder-phone__cta">Coba Sekarang</div>
+                        @endforelse
                     </div>
                 </div>
             </div>

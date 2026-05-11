@@ -4651,6 +4651,15 @@ body.campaign-map-open {
     word-break: break-word;
 }
 
+.template-builder-phone__header-text {
+    display: block;
+    color: #2a313c;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
 .template-builder-phone__image {
     width: 100%;
     height: 140px;

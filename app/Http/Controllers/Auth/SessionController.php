@@ -69,7 +69,7 @@ class SessionController extends Controller
         ]);
 
         try {
-            $gwResp = $client->getGatewayToken();
+            $gwResp = $client->getGatewayToken((string) data_get($loginResp, 'data.access_token'));
             $gwToken = $client->extractGatewayToken($gwResp);
 
             if ($gwToken === '') {
