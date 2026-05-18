@@ -26,7 +26,7 @@ class ApiGatewayController extends Controller
 		]);
 
 		try {
-			$accessToken = $this->requireAccessToken($request);
+			$accessToken = $this->ensureValidAccessToken($request, $client);
 			$user = $request->user();
 			$email = is_object($user) ? (string) ($user->email ?? '') : '';
 			$name = is_object($user) ? (string) ($user->name ?? '') : '';
@@ -63,7 +63,7 @@ class ApiGatewayController extends Controller
 	public function paymentStatus(Request $request, MyadsApiClient $client, string $transactionId): JsonResponse
 	{
 		try {
-			$accessToken = $this->requireAccessToken($request);
+			$accessToken = $this->ensureValidAccessToken($request, $client);
 			$resp = $client->paymentStatus($accessToken, $transactionId);
 			return response()->json($resp);
 		} catch (Throwable $e) {
@@ -212,7 +212,7 @@ class ApiGatewayController extends Controller
 			if ($paymentTransactionId === '') {
 				throw new RuntimeException('Pembayaran belum diinisiasi.');
 			}
-			$paymentResp = $client->paymentStatus($this->requireAccessToken($request), $paymentTransactionId);
+			$paymentResp = $client->paymentStatus($this->ensureValidAccessToken($request, $client), $paymentTransactionId);
 			$paymentStatus = strtoupper(trim((string) data_get($paymentResp, 'data.status')));
 			if ($paymentStatus !== 'SUCCESS') {
 				$label = $paymentStatus !== '' ? $paymentStatus : 'PENDING';
@@ -359,7 +359,7 @@ class ApiGatewayController extends Controller
 			if ($paymentTransactionId === '') {
 				throw new RuntimeException('Pembayaran belum diinisiasi.');
 			}
-			$paymentResp = $client->paymentStatus($this->requireAccessToken($request), $paymentTransactionId);
+			$paymentResp = $client->paymentStatus($this->ensureValidAccessToken($request, $client), $paymentTransactionId);
 			$paymentStatus = strtoupper(trim((string) data_get($paymentResp, 'data.status')));
 			if ($paymentStatus !== 'SUCCESS') {
 				$label = $paymentStatus !== '' ? $paymentStatus : 'PENDING';
@@ -587,6 +587,39 @@ class ApiGatewayController extends Controller
 
 			return $gwToken;
 		};
+	}
+
+	/**
+	 * Ensure access token is valid, auto-refresh jika sudah expired
+	 * Throws exception jika refresh gagal
+	 */
+	private function ensureValidAccessToken(Request $request, MyadsApiClient $client): string
+	{
+		try {
+			$accessToken = $this->requireAccessToken($request);
+			return $accessToken;
+		} catch (RuntimeException $e) {
+			// Token kosong, coba refresh
+			$refreshToken = (string) $request->session()->get('myads.refresh_token', '');
+			if (trim($refreshToken) === '') {
+				throw new RuntimeException('Session expired. Silakan login ulang.');
+			}
+
+			try {
+				$resp = $client->refreshAccessToken($refreshToken);
+				$newAccessToken = (string) data_get($resp, 'data.access_token', '');
+				if (trim($newAccessToken) === '') {
+					throw new RuntimeException('Token akses tidak valid dari server.');
+				}
+
+				// Update session dengan token baru
+				$request->session()->put('myads.access_token', $newAccessToken);
+
+				return $newAccessToken;
+			} catch (Throwable $refreshError) {
+				throw new RuntimeException('Token sudah kadaluarsa dan refresh gagal. Silakan login ulang.');
+			}
+		}
 	}
 
 	private function formatDateYmd(?string $value): ?string

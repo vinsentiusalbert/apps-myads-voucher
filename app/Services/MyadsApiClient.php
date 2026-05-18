@@ -373,6 +373,27 @@ class MyadsApiClient
     }
 
     /**
+     * Refresh access token using refresh token
+     * @return array{success:bool, data?:array}
+     */
+    public function refreshAccessToken(string $refreshToken): array
+    {
+        try {
+            $response = $this->client()->post('/api/auth/refresh', [
+                'refresh_token' => $refreshToken,
+            ]);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API refresh: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Refresh token gagal'));
+        }
+
+        return (array) $response->json();
+    }
+
+    /**
      * Upload file via gateway if needed by MMS flows.
      * Kept here because ApiGatewayTestController references it.
      */
