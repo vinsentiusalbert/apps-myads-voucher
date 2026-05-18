@@ -90,7 +90,8 @@
     <section class="campaign-compose-card campaign-compose-card--single">
         <div class="campaign-compose-card__header campaign-compose-card__header--single">
             <div>
-                <h2 class="campaign-compose-card__section-title">Template Pesan</h2>
+                <p class="campaign-section-kicker" id="waTargetedSectionKicker">Step 01</p>
+                <h1 id="waTargetedSectionHeading">Template Pesan</h1>
             </div>
             <div class="campaign-title-chip">
                 <span>Judul Iklan</span>
@@ -348,10 +349,7 @@
                             <input id="waTargetedRecipientCount" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
                             <p class="campaign-step-two__alert" data-wa-targeted-recipient-count-alert>Jumlah penerima minimal 5 perhari</p>
                         </div>
-                        <div class="campaign-estimate-card">
-                            <span class="campaign-estimate-card__label">Estimasi Penerima Potensial</span>
-                            <strong id="waTargetedEstimate">-</strong>
-                        </div>
+                        <strong id="waTargetedEstimate" hidden>-</strong>
                     </div>
                 </div>
 
@@ -681,6 +679,8 @@
             const stepFourBack = document.getElementById('waTargetedStepFourBack');
             const stepPanels = document.querySelectorAll('[data-wa-targeted-panel]');
             const stepItems = document.querySelectorAll('[data-wa-targeted-step]');
+            const sectionKicker = document.getElementById('waTargetedSectionKicker');
+            const sectionHeading = document.getElementById('waTargetedSectionHeading');
             const targetedRecipient = document.getElementById('waTargetedRecipientType');
             const targetedProfileBuilder = document.getElementById('waTargetedProfileBuilder');
             const targetedProfileFields = Array.from(document.querySelectorAll('#waTargetedProfileBuilder select'));
@@ -740,6 +740,18 @@
                     item.classList.toggle('campaign-step--active', current === stepNumber);
                     item.classList.toggle('campaign-step--completed', current < stepNumber);
                 });
+
+                if (sectionKicker) {
+                    sectionKicker.textContent = `Step ${String(stepNumber).padStart(2, '0')}`;
+                }
+
+                if (sectionHeading) {
+                    sectionHeading.textContent =
+                        stepNumber === 2 ? 'Atur Profil Penerima' :
+                        stepNumber === 3 ? 'Atur Pengiriman' :
+                        stepNumber === 4 ? 'Review & Pembayaran' :
+                        'Template Pesan';
+                }
             };
 
             const initCampaignMultiselects = () => {
@@ -1116,6 +1128,52 @@
                 const now = new Date();
                 const pad = (value) => String(value).padStart(2, '0');
                 return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+            };
+
+            const toDateInputValue = (date) => {
+                const pad = (value) => String(value).padStart(2, '0');
+                return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+            };
+
+            const defaultDeliverySchedule = () => {
+                const now = new Date();
+                const start = new Date(now);
+                start.setSeconds(0, 0);
+                start.setMinutes(Math.ceil(start.getMinutes() / 30) * 30);
+
+                const end = new Date(start);
+                end.setHours(end.getHours() + 4);
+
+                const startDate = new Date(now);
+                startDate.setDate(startDate.getDate() + 1);
+                const endDate = new Date(startDate);
+                const dayOffset = Math.floor((new Date(end.getFullYear(), end.getMonth(), end.getDate()) - new Date(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000);
+                endDate.setDate(endDate.getDate() + Math.max(0, dayOffset));
+                const timeValue = (date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+                return {
+                    startDate: toDateInputValue(startDate),
+                    endDate: toDateInputValue(endDate),
+                    startTime: timeValue(start),
+                    endTime: timeValue(end),
+                };
+            };
+
+            const applyDefaultDeliverySchedule = (scheduleId) => {
+                const defaults = defaultDeliverySchedule();
+                const dateStart = document.querySelector(`[data-wa-targeted-schedule-date-start="${scheduleId}"]`);
+                const dateEnd = document.querySelector(`[data-wa-targeted-schedule-date-end="${scheduleId}"]`);
+
+                if (dateStart) {
+                    dateStart.value = defaults.startDate;
+                }
+                if (dateEnd) {
+                    dateEnd.value = defaults.endDate;
+                }
+
+                initScheduleTimeSelects(scheduleId, defaults.startTime, defaults.endTime);
+                syncSchedulePreview(scheduleId);
+                return defaults;
             };
 
             const initScheduleTimeSelects = (scheduleId, startValue = '09:30', endValue = '10:00') => {
@@ -1621,7 +1679,7 @@
                 }
 
                 scheduleIndex += 1;
-                const defaultDate = todayDateValue();
+                const defaults = defaultDeliverySchedule();
                 const item = document.createElement('article');
                 item.className = 'campaign-schedule-card';
                 item.dataset.waTargetedScheduleItem = String(scheduleIndex);
@@ -1634,17 +1692,17 @@
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label" for="waTargetedScheduleDate${scheduleIndex}Start">Tgl Kirim</label>
                             <div class="campaign-range-field">
-                                <input id="waTargetedScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${defaultDate}" data-wa-targeted-schedule-date-start="${scheduleIndex}">
+                                <input id="waTargetedScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${defaults.startDate}" data-wa-targeted-schedule-date-start="${scheduleIndex}">
                                 <span class="campaign-range-field__separator">-</span>
-                                <input id="waTargetedScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${defaultDate}" data-wa-targeted-schedule-date-end="${scheduleIndex}">
+                                <input id="waTargetedScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${defaults.endDate}" data-wa-targeted-schedule-date-end="${scheduleIndex}">
                             </div>
-                            <p class="campaign-range-preview" id="waTargetedScheduleDatePreview${scheduleIndex}">${formatScheduleDate(defaultDate)} - ${formatScheduleDate(defaultDate)}</p>
+                            <p class="campaign-range-preview" id="waTargetedScheduleDatePreview${scheduleIndex}">${formatScheduleDate(defaults.startDate)} - ${formatScheduleDate(defaults.endDate)}</p>
                         </div>
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label" for="waTargetedScheduleTime${scheduleIndex}">Jam Kirim</label>
                             <div class="campaign-time-picker" data-wa-targeted-time-picker="${scheduleIndex}">
                                 <button type="button" class="campaign-time-picker__trigger" data-wa-targeted-time-trigger="${scheduleIndex}">
-                                    <span class="campaign-time-picker__value" id="waTargetedScheduleTimePreview${scheduleIndex}">09:30-10:00 WIB</span>
+                                    <span class="campaign-time-picker__value" id="waTargetedScheduleTimePreview${scheduleIndex}">${defaults.startTime}-${defaults.endTime} WIB</span>
                                     <span class="campaign-time-picker__clock">i</span>
                                 </button>
                                 <div class="campaign-time-picker__panel" data-wa-targeted-time-panel="${scheduleIndex}" hidden>
@@ -1677,7 +1735,7 @@
                 `;
 
                 scheduleList.appendChild(item);
-                initScheduleTimeSelects(scheduleIndex);
+                initScheduleTimeSelects(scheduleIndex, defaults.startTime, defaults.endTime);
                 syncSchedulePreview(scheduleIndex);
                 syncScheduleRemoveState();
                 syncStepThreeValidity();
@@ -1923,8 +1981,7 @@
                 syncTargetedProfileBuilder();
                 syncStepTwoValidity();
             });
-            initScheduleTimeSelects(1);
-            syncSchedulePreview(1);
+            applyDefaultDeliverySchedule(1);
             syncScheduleRemoveState();
             syncStepThreeValidity();
             syncTargetedStep(1);

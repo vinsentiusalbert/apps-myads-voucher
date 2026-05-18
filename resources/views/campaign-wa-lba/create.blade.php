@@ -102,7 +102,8 @@
     <section class="campaign-compose-card campaign-compose-card--single">
         <div class="campaign-compose-card__header campaign-compose-card__header--single">
             <div>
-                <h2 class="campaign-compose-card__section-title">Template Pesan</h2>
+                <p class="campaign-section-kicker" id="waLbaSectionKicker">Step 01</p>
+                <h1 id="waLbaSectionHeading">Template Pesan</h1>
             </div>
         </div>
 
@@ -269,7 +270,7 @@
                     </div>
                 </div>
 
-                <div class="campaign-send-grid">
+                {{-- <div class="campaign-send-grid">
                     <div class="campaign-step-two__section">
                         <h2 class="campaign-block__title">Hitung Estimasi Penerima Potensial</h2>
                         <p class="campaign-block__copy">Gunakan lokasi dan profil target di atas untuk melihat estimasi penerima potensial sebelum melanjutkan ke tahap pengiriman.</p>
@@ -278,7 +279,7 @@
                         <span class="campaign-estimate-card__label">Estimasi Penerima Potensial</span>
                         <strong id="campaignAudienceEstimate">0</strong>
                     </div>
-                </div>
+                </div> --}}
 
                 <div class="campaign-form-actions campaign-form-actions--step-two">
                     <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="waLbaStepTwoBack">Sebelumnya</button>
@@ -295,13 +296,10 @@
                         <div class="field-group campaign-field-group--compact">
                             <label for="waLbaRecipientCount" class="field-label">Jumlah Penerima</label>
                             <input id="waLbaRecipientCount" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
-                            <p class="campaign-step-two__alert">Minimal 5 jumlah penerima perhari</p>
+                            <p class="campaign-step-two__alert" data-wa-lba-recipient-count-alert>Jumlah penerima minimal 5 perhari</p>
                             <p class="campaign-block__copy">Berdasarkan policy Meta, batas maksimum kuota pengiriman Anda dalam satu hari sebesar 100.000 pesan.</p>
                         </div>
-                        <div class="campaign-estimate-card">
-                            <span class="campaign-estimate-card__label">Estimasi Maksimal Penerima Potensial</span>
-                            <strong id="waLbaRecipientEstimateRange">140.630-171.880</strong>
-                        </div>
+                        <span id="waLbaRecipientEstimateRange" hidden>0-0</span>
                     </div>
                 </div>
 
@@ -317,18 +315,18 @@
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label">Tanggal Kirim</label>
                                     <div class="campaign-range-field">
-                                        <input id="waLbaScheduleDate1Start" type="date" class="text-input" value="2026-04-27" data-schedule-date-start="1">
+                                        <input id="waLbaScheduleDate1Start" type="date" class="text-input" value="{{ now()->addDay()->toDateString() }}" data-schedule-date-start="1">
                                         <span class="campaign-range-field__separator">-</span>
-                                        <input id="waLbaScheduleDate1End" type="date" class="text-input" value="2026-04-27" data-schedule-date-end="1">
+                                        <input id="waLbaScheduleDate1End" type="date" class="text-input" value="{{ now()->addDay()->toDateString() }}" data-schedule-date-end="1">
                                     </div>
-                                    <p class="campaign-range-preview" id="waLbaScheduleDatePreview1">27/04/26 - 27/04/26</p>
+                                    <p class="campaign-range-preview" id="waLbaScheduleDatePreview1">{{ now()->addDay()->format('d/m/y') }} - {{ now()->addDay()->format('d/m/y') }}</p>
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label">Jam Kirim</label>
                                     <div class="campaign-time-picker" data-time-picker="1">
                                         <button type="button" class="campaign-time-picker__trigger" data-time-trigger="1">
-                                            <span class="campaign-time-picker__value" id="waLbaScheduleTimePreview1">13:00-13:30 WIB</span>
-                                            <span class="campaign-time-picker__clock">◷</span>
+                                            <span class="campaign-time-picker__value" id="waLbaScheduleTimePreview1">09:30-13:30 WIB</span>
+                                            <span class="campaign-time-picker__clock">i</span>
                                         </button>
                                         <div class="campaign-time-picker__panel" data-time-panel="1" hidden>
                                             <div class="campaign-time-picker__columns">
@@ -356,8 +354,15 @@
                                     </div>
                                 </div>
                             </div>
-                            <p class="campaign-step-two__alert">Pembuatan iklan tidak boleh sebelum waktu sekarang.</p>
+                            <p class="campaign-step-two__alert" data-wa-lba-schedule-duration-alert>Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal</p>
                         </article>
+                    </div>
+                    <div class="campaign-schedule-actions">
+                        <div class="campaign-schedule-divider"></div>
+                        <button type="button" class="campaign-inline-action" id="waLbaAddSchedule">
+                            <span class="campaign-inline-action__icon">+</span>
+                            <span>Tambah Jadwal Pengirim</span>
+                        </button>
                     </div>
                 </div>
 
@@ -375,14 +380,18 @@
                 </div>
 
                 <div class="campaign-step-two__section">
-                    <h2 class="campaign-block__title">Tentukan Nomor Test</h2>
-                    <div class="field-group">
-                        <label for="waLbaTestRecipient" class="field-label">Nomor Tes Iklan</label>
-                        <select id="waLbaTestRecipient" class="text-input text-input--select">
-                            <option value="">Nomor Tes Iklan</option>
-                            <option>081234567890</option>
-                            <option>082345678901</option>
-                        </select>
+                    <h2 class="campaign-block__title">Tentukan Nomor Penerima Tes Iklan</h2>
+                    <div class="campaign-test-recipient" id="waLbaTestRecipientBuilder">
+                        <input type="hidden" id="waLbaTestRecipient" value="">
+                        <fieldset class="campaign-test-recipient__box">
+                            <legend>Nomor Penerima Tes Iklan</legend>
+                            <div class="campaign-test-recipient__entry">
+                                <span class="campaign-test-recipient__prefix">+62</span>
+                                <input id="waLbaTestRecipientInput" type="text" inputmode="numeric" class="campaign-test-recipient__input" placeholder="Nomor Penerima Tes Iklan">
+                                <button type="button" class="campaign-test-recipient__add" id="waLbaTestRecipientAdd">Tambahkan</button>
+                            </div>
+                            <div class="campaign-test-recipient__list" id="waLbaTestRecipientList"></div>
+                        </fieldset>
                     </div>
                     <p class="campaign-block__copy">
                         Nomor test digunakan sebagai nomor penerima pesan untuk memastikan apakah pesan berhasil terkirim. Nomor test akan menerima pesan 1 jam sebelum jadwal pengiriman.
@@ -679,6 +688,8 @@
             const nextButton = document.getElementById('waLbaNextButton');
             const stepPanels = document.querySelectorAll('[data-wa-lba-panel]');
             const stepItems = document.querySelectorAll('[data-wa-lba-step]');
+            const sectionKicker = document.getElementById('waLbaSectionKicker');
+            const sectionHeading = document.getElementById('waLbaSectionHeading');
             const stepTwoBack = document.getElementById('waLbaStepTwoBack');
             const stepTwoNext = document.getElementById('waLbaStepTwoNext');
             const stepThreeBack = document.getElementById('waLbaStepThreeBack');
@@ -716,9 +727,13 @@
             const ageSelect = document.getElementById('campaign_age');
             const religionSelect = document.getElementById('campaign_religion');
             const scheduleList = document.getElementById('waLbaScheduleList');
+            const addScheduleButton = document.getElementById('waLbaAddSchedule');
             const recipientCountInput = document.getElementById('waLbaRecipientCount');
             const termsCheck = document.getElementById('waLbaTermsCheck');
             const testRecipient = document.getElementById('waLbaTestRecipient');
+            const testRecipientInput = document.getElementById('waLbaTestRecipientInput');
+            const testRecipientAdd = document.getElementById('waLbaTestRecipientAdd');
+            const testRecipientList = document.getElementById('waLbaTestRecipientList');
             const estimateRange = document.getElementById('waLbaRecipientEstimateRange');
             const reviewSchedules = document.getElementById('waLbaReviewSchedules');
             const waLbaGwSubmitButton = document.getElementById('waLbaGwSubmitButton');
@@ -761,6 +776,18 @@
                     item.classList.toggle('campaign-step--active', current === stepNumber);
                     item.classList.toggle('campaign-step--completed', current < stepNumber);
                 });
+
+                if (sectionKicker) {
+                    sectionKicker.textContent = `Step ${String(stepNumber).padStart(2, '0')}`;
+                }
+
+                if (sectionHeading) {
+                    sectionHeading.textContent =
+                        stepNumber === 2 ? 'Atur Penerima' :
+                        stepNumber === 3 ? 'Atur Pengiriman' :
+                        stepNumber === 4 ? 'Review & Pembayaran' :
+                        'Template Pesan';
+                }
             };
 
             const getSelectedCount = (select) => Array.from(select?.selectedOptions || []).length;
@@ -802,6 +829,52 @@
                 return `${day}/${month}/${year.slice(-2)}`;
             };
 
+            const toDateInputValue = (date) => {
+                const pad = (value) => String(value).padStart(2, '0');
+                return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+            };
+
+            const defaultDeliverySchedule = () => {
+                const now = new Date();
+                const start = new Date(now);
+                start.setSeconds(0, 0);
+                start.setMinutes(Math.ceil(start.getMinutes() / 30) * 30);
+
+                const end = new Date(start);
+                end.setHours(end.getHours() + 4);
+
+                const startDate = new Date(now);
+                startDate.setDate(startDate.getDate() + 1);
+                const endDate = new Date(startDate);
+                const dayOffset = Math.floor((new Date(end.getFullYear(), end.getMonth(), end.getDate()) - new Date(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000);
+                endDate.setDate(endDate.getDate() + Math.max(0, dayOffset));
+                const timeValue = (date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+                return {
+                    startDate: toDateInputValue(startDate),
+                    endDate: toDateInputValue(endDate),
+                    startTime: timeValue(start),
+                    endTime: timeValue(end),
+                };
+            };
+
+            const applyDefaultDeliverySchedule = (scheduleId) => {
+                const defaults = defaultDeliverySchedule();
+                const dateStart = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`);
+                const dateEnd = document.querySelector(`[data-schedule-date-end="${scheduleId}"]`);
+
+                if (dateStart) {
+                    dateStart.value = defaults.startDate;
+                }
+                if (dateEnd) {
+                    dateEnd.value = defaults.endDate;
+                }
+
+                initScheduleTimeSelects(scheduleId, defaults.startTime, defaults.endTime);
+                syncSchedulePreview(scheduleId);
+                return defaults;
+            };
+
             const syncSchedulePreview = (scheduleId) => {
                 const dateStart = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`);
                 const dateEnd = document.querySelector(`[data-schedule-date-end="${scheduleId}"]`);
@@ -821,7 +894,7 @@
                 }
             };
 
-            const initScheduleTimeSelects = (scheduleId, startValue = '13:00', endValue = '13:30') => {
+            const initScheduleTimeSelects = (scheduleId, startValue = '09:30', endValue = '13:30') => {
                 const [startHour, startMinute] = startValue.split(':');
                 const [endHour, endMinute] = endValue.split(':');
                 const timeStartHour = document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`);
@@ -855,18 +928,64 @@
                 });
             };
 
+            const syncScheduleRemoveState = () => {
+                const schedules = scheduleList?.querySelectorAll('[data-schedule-item]') || [];
+                schedules.forEach((item, index) => {
+                    const title = item.querySelector('.campaign-schedule-card__header span');
+                    const removeButton = item.querySelector('[data-remove-schedule]');
+                    if (title) {
+                        title.textContent = `Jadwal Pengiriman ${index + 1}`;
+                    }
+                    if (removeButton) {
+                        removeButton.hidden = schedules.length <= 1;
+                    }
+                });
+            };
+
+            const getScheduleDurationMinutes = (scheduleId) => {
+                const startHour = Number(document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
+                const startMinute = Number(document.querySelector(`[data-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
+                const endHour = Number(document.querySelector(`[data-schedule-time-end-hour="${scheduleId}"]`)?.value || NaN);
+                const endMinute = Number(document.querySelector(`[data-schedule-time-end-minute="${scheduleId}"]`)?.value || NaN);
+
+                if ([startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
+                    return 0;
+                }
+
+                return (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+            };
+
             const syncStepThreeState = () => {
                 const recipientCount = Number(recipientCountInput?.value || 0);
+                const isRecipientValid = recipientCount >= 5;
+                const recipientAlert = document.querySelector('[data-wa-lba-recipient-count-alert]');
                 const audienceBase = Number((audienceEstimate?.textContent || '0').replace(/\./g, '')) || 0;
                 const minimum = Math.max(5, audienceBase - Math.round(audienceBase * 0.08));
                 const maximum = Math.max(minimum + 1200, audienceBase + Math.round(audienceBase * 0.18));
+
+                if (recipientAlert) {
+                    recipientAlert.hidden = isRecipientValid;
+                }
 
                 if (estimateRange) {
                     estimateRange.textContent = `${new Intl.NumberFormat('id-ID').format(minimum)}-${new Intl.NumberFormat('id-ID').format(maximum)}`;
                 }
 
+                let isScheduleValid = true;
+                document.querySelectorAll('[data-schedule-item]').forEach((item) => {
+                    const scheduleId = item.dataset.scheduleItem;
+                    const alert = item.querySelector('[data-wa-lba-schedule-duration-alert]');
+                    const isItemValid = getScheduleDurationMinutes(scheduleId) >= 240;
+
+                    if (alert) {
+                        alert.hidden = isItemValid;
+                    }
+
+                    isScheduleValid = isScheduleValid && isItemValid;
+                });
+
                 if (stepThreeNext) {
-                    stepThreeNext.disabled = !(recipientCount >= 5 && termsCheck?.checked && testRecipient?.value);
+                    stepThreeNext.disabled = !(isRecipientValid && termsCheck?.checked && testRecipient?.value && isScheduleValid);
                 }
             };
 
@@ -965,7 +1084,10 @@
                     return 'Jumlah penerima minimal 5 pesan.';
                 }
                 if (!testRecipient?.value) {
-                    return 'Pilih nomor test iklan terlebih dahulu.';
+                    return 'Tambahkan nomor penerima tes iklan terlebih dahulu.';
+                }
+                if (Array.from(scheduleList?.querySelectorAll('[data-schedule-item]') || []).some((item) => getScheduleDurationMinutes(item.dataset.scheduleItem) < 240)) {
+                    return 'Atur jadwal minimal 4 jam/hari.';
                 }
                 if (!termsCheck?.checked) {
                     return 'Centang persetujuan Syarat dan Ketentuan terlebih dahulu.';
@@ -1282,12 +1404,91 @@
                 });
             };
 
+            const normalizeTestRecipient = (value) => {
+                const digits = String(value || '').replace(/\D/g, '');
+                if (digits === '') {
+                    return '';
+                }
+                if (digits.startsWith('62')) {
+                    return digits;
+                }
+                if (digits.startsWith('0')) {
+                    return `62${digits.slice(1)}`;
+                }
+                return `62${digits}`;
+            };
+
+            const renderTestRecipientItem = (number) => {
+                if (!testRecipientList || !testRecipient) {
+                    return;
+                }
+
+                const existing = testRecipientList.querySelector(`[data-test-recipient="${number}"]`);
+                if (existing) {
+                    testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
+                        other.checked = false;
+                    });
+                    existing.querySelector('input[type="checkbox"]').checked = true;
+                    testRecipient.value = number;
+                    syncStepThreeState();
+                    return;
+                }
+
+                const item = document.createElement('label');
+                item.className = 'campaign-test-recipient__item';
+                item.dataset.testRecipient = number;
+                item.innerHTML = `
+                    <input type="checkbox" checked>
+                    <span>${number}</span>
+                    <button type="button" class="campaign-test-recipient__remove" aria-label="Hapus nomor" title="Hapus nomor">&times;</button>
+                `;
+
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                const removeButton = item.querySelector('button');
+
+                checkbox.addEventListener('change', () => {
+                    testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
+                        if (other !== checkbox) {
+                            other.checked = false;
+                        }
+                    });
+                    testRecipient.value = checkbox.checked ? number : '';
+                    syncStepThreeState();
+                });
+
+                removeButton.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    if (testRecipient.value === number) {
+                        testRecipient.value = '';
+                    }
+                    item.remove();
+                    syncStepThreeState();
+                });
+
+                testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
+                    other.checked = false;
+                });
+                testRecipientList.appendChild(item);
+                testRecipient.value = number;
+                syncStepThreeState();
+            };
+
+            const addTestRecipient = () => {
+                const number = normalizeTestRecipient(testRecipientInput?.value);
+                if (number === '') {
+                    return;
+                }
+                renderTestRecipientItem(number);
+                testRecipientInput.value = '';
+            };
+
             const addScheduleItem = () => {
                 if (!scheduleList) {
                     return;
                 }
 
                 scheduleIndex += 1;
+                const defaults = defaultDeliverySchedule();
                 const item = document.createElement('article');
                 item.className = 'campaign-schedule-card';
                 item.dataset.scheduleItem = String(scheduleIndex);
@@ -1300,18 +1501,18 @@
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label">Tanggal Kirim</label>
                             <div class="campaign-range-field">
-                                <input id="waLbaScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="2026-04-27" data-schedule-date-start="${scheduleIndex}">
+                                <input id="waLbaScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${defaults.startDate}" data-schedule-date-start="${scheduleIndex}">
                                 <span class="campaign-range-field__separator">-</span>
-                                <input id="waLbaScheduleDate${scheduleIndex}End" type="date" class="text-input" value="2026-04-27" data-schedule-date-end="${scheduleIndex}">
+                                <input id="waLbaScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${defaults.endDate}" data-schedule-date-end="${scheduleIndex}">
                             </div>
-                            <p class="campaign-range-preview" id="waLbaScheduleDatePreview${scheduleIndex}">27/04/26 - 27/04/26</p>
+                            <p class="campaign-range-preview" id="waLbaScheduleDatePreview${scheduleIndex}">${formatScheduleDate(defaults.startDate)} - ${formatScheduleDate(defaults.endDate)}</p>
                         </div>
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label">Jam Kirim</label>
                             <div class="campaign-time-picker" data-time-picker="${scheduleIndex}">
                                 <button type="button" class="campaign-time-picker__trigger" data-time-trigger="${scheduleIndex}">
-                                    <span class="campaign-time-picker__value" id="waLbaScheduleTimePreview${scheduleIndex}">13:00-13:30 WIB</span>
-                                    <span class="campaign-time-picker__clock">◷</span>
+                                    <span class="campaign-time-picker__value" id="waLbaScheduleTimePreview${scheduleIndex}">${defaults.startTime}-${defaults.endTime} WIB</span>
+                                    <span class="campaign-time-picker__clock">i</span>
                                 </button>
                                 <div class="campaign-time-picker__panel" data-time-panel="${scheduleIndex}" hidden>
                                     <div class="campaign-time-picker__columns">
@@ -1339,12 +1540,14 @@
                             </div>
                         </div>
                     </div>
-                    <p class="campaign-step-two__alert">Pembuatan iklan tidak boleh sebelum waktu sekarang.</p>
+                    <p class="campaign-step-two__alert" data-wa-lba-schedule-duration-alert>Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal</p>
                 `;
 
                 scheduleList.appendChild(item);
-                initScheduleTimeSelects(scheduleIndex);
+                initScheduleTimeSelects(scheduleIndex, defaults.startTime, defaults.endTime);
                 syncSchedulePreview(scheduleIndex);
+                syncScheduleRemoveState();
+                syncStepThreeState();
             };
 
             window.openCampaignLocationModal = function () {
@@ -1597,6 +1800,7 @@
                 updateLiveRadius();
                 syncStepTwoState();
             });
+            addScheduleButton?.addEventListener('click', addScheduleItem);
             scheduleList?.addEventListener('click', (event) => {
                 const trigger = event.target.closest('[data-time-trigger]');
                 if (trigger) {
@@ -1608,6 +1812,7 @@
                 if (removeButton) {
                     const item = removeButton.closest('[data-schedule-item]');
                     item?.remove();
+                    syncScheduleRemoveState();
                     syncStepThreeState();
                 }
             });
@@ -1627,11 +1832,19 @@
 
                 if (scheduleId) {
                     syncSchedulePreview(scheduleId);
+                    syncStepThreeState();
                 }
             });
             recipientCountInput?.addEventListener('input', syncStepThreeState);
             termsCheck?.addEventListener('change', syncStepThreeState);
             testRecipient?.addEventListener('change', syncStepThreeState);
+            testRecipientAdd?.addEventListener('click', addTestRecipient);
+            testRecipientInput?.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    addTestRecipient();
+                }
+            });
             waLbaGwSubmitButton?.addEventListener('click', async () => {
                 try {
                     await submitWabaLbaAfterPayment();
@@ -1656,8 +1869,8 @@
                 }
             });
             initCampaignMultiselects();
-            initScheduleTimeSelects(1);
-            syncSchedulePreview(1);
+            applyDefaultDeliverySchedule(1);
+            syncScheduleRemoveState();
             syncTemplateDisplay();
             syncStepState(1);
             syncStepTwoState();
