@@ -228,7 +228,7 @@ class CampaignMenuController extends Controller
     public function storeCampaignTemplate(Request $request, MyadsApiClient $client): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:campaign_templates,name'],
+            'name' => ['required', 'string', 'max:255'],
             'template_type' => ['required', 'string', 'max:50'],
             'category' => ['required', 'string', 'max:100'],
             'language' => ['required', 'string', 'max:100'],
@@ -279,35 +279,6 @@ class CampaignMenuController extends Controller
             ])->withInput();
         }
 
-        $templateId = (string) (data_get($resp, 'data.data.templateId')
-            ?? data_get($resp, 'data.data.id')
-            ?? data_get($resp, 'data.templateId')
-            ?? data_get($resp, 'data.id')
-            ?? '');
-
-        $assetPath = null;
-        if ($request->hasFile('asset')) {
-            $assetPath = $request->file('asset')->store('campaign-templates', 'public');
-        }
-
-        CampaignTemplate::create([
-            'gw_template_id' => $templateId !== '' ? $templateId : null,
-            'name' => $validated['name'],
-            'template_type' => $validated['template_type'],
-            'category' => $validated['category'],
-            'language' => $validated['language'],
-            'header_type' => $validated['header_type'],
-            'asset_path' => $assetPath,
-            'body' => $validated['body'],
-            'footer' => $validated['footer'] ?? null,
-            'buttons' => $payload['buttons'],
-            'status' => strtoupper((string) (data_get($resp, 'data.data.activationStatus') ?? data_get($resp, 'data.activationStatus') ?? data_get($resp, 'data.data.status') ?? data_get($resp, 'data.status') ?? 'PENDING')),
-            'gw_payload' => array_merge($payload, [
-                'verifiedName' => trim((string) ($validated['display_name'] ?? '')),
-            ]),
-            'gw_response' => $resp,
-        ]);
-
         return redirect()
             ->route('campaign-template.index')
             ->with('status', 'Template WABA berhasil dikirim ke API GW.');
@@ -351,17 +322,16 @@ class CampaignMenuController extends Controller
 
     private function resolveWaTemplates()
     {
-        try {
-            return CampaignTemplate::query()
-                ->latest()
-                ->get()
-                ->map(function (CampaignTemplate $template): array {
-                    return $this->mapWaTemplate($template);
-                })
-                ->values();
-        } catch (Throwable) {
+        $request = request();
+
+        if (! $request instanceof Request) {
             return collect();
         }
+
+        return collect($this->wabaTemplateRowsFromApi($request))
+            ->filter(fn (array $row): bool => trim((string) ($row['gw_template_id'] ?? $row['id'] ?? '')) !== '')
+            ->map(fn (array $row): array => $this->mapApiWaTemplateForSelect($row))
+            ->values();
     }
 
     private function buildWabaTemplatePayload(array $validated, string $headerPathFile, array $accountIds): array
@@ -558,6 +528,50 @@ class CampaignMenuController extends Controller
         ];
     }
 
+    private function mapApiWaTemplateForSelect(array $row): array
+    {
+        $raw = is_array($row['raw'] ?? null) ? $row['raw'] : [];
+        $body = trim((string) ($row['body'] ?? ''));
+        $lines = preg_split('/\r\n|\r|\n/', $body) ?: [];
+        $headline = trim((string) ($lines[0] ?? 'Template pesan WA Business'));
+        $message = trim(implode("\n\n", array_slice($lines, 1))) ?: $body;
+        $buttons = data_get($raw, 'buttons')
+            ?? data_get($raw, 'buttonList')
+            ?? data_get($raw, 'button_list')
+            ?? data_get($raw, 'components.buttons')
+            ?? [];
+        if (! is_array($buttons)) {
+            $buttons = [];
+        }
+
+        $headerPathFile = (string) (data_get($raw, 'headerPathFile') ?? data_get($raw, 'header_path_file') ?? '');
+        $assetUrl = $headerPathFile !== '' ? $headerPathFile : asset('assets/logo.png');
+        $category = strtolower((string) ($row['category'] ?? ''));
+        $isCarousel = str_contains($category, 'carousel');
+
+        return [
+            'id' => (string) ($row['gw_template_id'] ?? ''),
+            'local_id' => '',
+            'gw_template_id' => (string) ($row['gw_template_id'] ?? ''),
+            'name' => (string) ($row['name'] ?? '-'),
+            'account_name' => (string) (data_get($raw, 'verifiedName') ?? data_get($raw, 'displayName') ?? 'Telkomsel Promo & Rewards'),
+            'template_kind' => (string) ($row['category'] ?? '-'),
+            'channel_kind' => $isCarousel ? 'Carousel' : 'Basic',
+            'bubble_headline' => $headline,
+            'bubble_message' => $message,
+            'asset_url' => $assetUrl,
+            'cards' => $isCarousel
+                ? [
+                    ['title' => 'Card 1', 'caption' => 'Slide utama campaign WA Business'],
+                    ['title' => 'Card 2', 'caption' => 'Slide lanjutan untuk menampilkan informasi tambahan'],
+                ]
+                : [],
+            'price_note' => 'Template yang dipilih menggunakan Display Name Default, sehingga akan dikenakan biaya sebesar Rp 1.100 per pesan.',
+            'cta' => trim((string) data_get($buttons, '0.label')) ?: 'Coba Sekarang',
+            'preview_name' => (string) (data_get($raw, 'verifiedName') ?? data_get($raw, 'displayName') ?? 'Name'),
+        ];
+    }
+
     private function apiTemplateRowForShow(array $row): object
     {
         $raw = is_array($row['raw'] ?? null) ? $row['raw'] : [];
@@ -649,15 +663,9 @@ class CampaignMenuController extends Controller
                 return [];
             }
 
-            $localByGatewayId = CampaignTemplate::query()
-                ->whereNotNull('gw_template_id')
-                ->get()
-                ->keyBy('gw_template_id');
-            $localByName = CampaignTemplate::query()->get()->keyBy('name');
-
             return collect($items)
                 ->filter(fn ($row): bool => is_array($row))
-                ->map(function (array $row) use ($localByGatewayId, $localByName): array {
+                ->map(function (array $row): array {
                     $templateId = (string) (data_get($row, 'templateId')
                         ?? data_get($row, 'id')
                         ?? data_get($row, 'template_id')
@@ -666,12 +674,10 @@ class CampaignMenuController extends Controller
                         ?? data_get($row, 'name')
                         ?? data_get($row, 'template_name')
                         ?? '');
-                    $local = ($templateId !== '' ? $localByGatewayId->get($templateId) : null)
-                        ?? ($name !== '' ? $localByName->get($name) : null);
                     $createdAt = data_get($row, 'createdAt')
                         ?? data_get($row, 'created_at')
                         ?? data_get($row, 'timeAdded')
-                        ?? ($local?->created_at);
+                        ?? null;
 
                     try {
                         $createdAt = $createdAt ? \Carbon\Carbon::parse($createdAt) : now();
@@ -680,13 +686,13 @@ class CampaignMenuController extends Controller
                     }
 
                     return [
-                        'id' => $local?->id,
+                        'id' => null,
                         'gw_template_id' => $templateId,
                         'name' => $name !== '' ? $name : '-',
-                        'category' => (string) (data_get($row, 'category') ?? $local?->category ?? '-'),
-                        'language' => (string) (data_get($row, 'language') ?? $local?->language ?? '-'),
-                        'body' => (string) (data_get($row, 'bodyMessage') ?? data_get($row, 'body_message') ?? data_get($row, 'body') ?? data_get($row, 'message') ?? data_get($row, 'templateBody') ?? data_get($row, 'template_body') ?? $local?->body ?? ''),
-                        'status' => (string) (data_get($row, 'activationStatus') ?? data_get($row, 'activation_status') ?? data_get($row, 'status') ?? $local?->status ?? '-'),
+                        'category' => (string) (data_get($row, 'category') ?? '-'),
+                        'language' => (string) (data_get($row, 'language') ?? '-'),
+                        'body' => (string) (data_get($row, 'bodyMessage') ?? data_get($row, 'body_message') ?? data_get($row, 'body') ?? data_get($row, 'message') ?? data_get($row, 'templateBody') ?? data_get($row, 'template_body') ?? ''),
+                        'status' => (string) (data_get($row, 'activationStatus') ?? data_get($row, 'activation_status') ?? data_get($row, 'status') ?? '-'),
                         'created_at' => $createdAt,
                         'raw' => $row,
                     ];
