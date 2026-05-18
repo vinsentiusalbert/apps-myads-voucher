@@ -174,26 +174,38 @@ class CampaignMenuController extends Controller
     public function listCampaignTemplates(Request $request): View
     {
         $page = $this->pages()['wa-business']['campaign-template'];
-        $templates = CampaignTemplate::query()
-            ->when($request->filled('q'), function ($query) use ($request): void {
-                $search = $request->string('q')->toString();
+        $templates = collect($this->wabaTemplateRowsFromApi($request))
+            ->when($request->filled('q'), function ($rows) use ($request) {
+                $search = strtolower($request->string('q')->toString());
 
-                $query->where(function ($query) use ($search): void {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('body', 'like', "%{$search}%");
+                return $rows->filter(function (array $row) use ($search): bool {
+                    return str_contains(strtolower((string) ($row['name'] ?? '')), $search)
+                        || str_contains(strtolower((string) ($row['body'] ?? '')), $search);
                 });
             })
-            ->when($request->filled('category'), function ($query) use ($request): void {
-                $query->where('category', $request->string('category')->toString());
+            ->when($request->filled('category'), function ($rows) use ($request) {
+                $category = $request->string('category')->toString();
+
+                return $rows->filter(fn (array $row): bool => (string) ($row['category'] ?? '') === $category);
             })
-            ->when($request->filled('start_date'), function ($query) use ($request): void {
-                $query->whereDate('created_at', '>=', $request->date('start_date'));
+            ->when($request->filled('start_date'), function ($rows) use ($request) {
+                $startDate = $request->date('start_date');
+                if (! $startDate) {
+                    return $rows;
+                }
+
+                return $rows->filter(fn (array $row): bool => isset($row['created_at']) && $row['created_at'] >= $startDate->startOfDay());
             })
-            ->when($request->filled('end_date'), function ($query) use ($request): void {
-                $query->whereDate('created_at', '<=', $request->date('end_date'));
+            ->when($request->filled('end_date'), function ($rows) use ($request) {
+                $endDate = $request->date('end_date');
+                if (! $endDate) {
+                    return $rows;
+                }
+
+                return $rows->filter(fn (array $row): bool => isset($row['created_at']) && $row['created_at'] <= $endDate->endOfDay());
             })
-            ->latest()
-            ->get();
+            ->sortByDesc(fn (array $row) => $row['created_at'] ?? now())
+            ->values();
 
         if ($request->query('view') === 'create') {
             return view('campaign-wa-template.create', [
@@ -208,8 +220,8 @@ class CampaignMenuController extends Controller
             'menu' => 'campaign-template',
             'page' => $page,
             'templateRows' => $templates,
-            'templateCount' => CampaignTemplate::count(),
-            'approvedTemplateCount' => CampaignTemplate::where('status', 'APPROVED')->count(),
+            'templateCount' => $templates->count(),
+            'approvedTemplateCount' => $templates->filter(fn (array $row): bool => strtoupper((string) ($row['status'] ?? '')) === 'APPROVED')->count(),
         ]);
     }
 
@@ -221,10 +233,11 @@ class CampaignMenuController extends Controller
             'category' => ['required', 'string', 'max:100'],
             'language' => ['required', 'string', 'max:100'],
             'header_type' => ['required', 'string', 'max:50'],
-            'header_label' => ['nullable', 'string', 'max:255'],
-            'asset' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf,mp4', 'max:10240'],
-            'body' => ['required', 'string', 'max:1024'],
+            'header_label' => ['nullable', 'required_if:header_type,TEXT', 'string', 'max:60'],
+            'asset' => ['nullable', 'required_if:header_type,IMAGE', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'body' => ['required', 'string', 'max:550'],
             'footer' => ['nullable', 'string', 'max:60'],
+            'display_name' => ['required', 'string', 'max:255'],
             'waba_account_id' => ['nullable', 'string', 'max:32'],
             'phone_number_id' => ['nullable', 'string', 'max:32'],
             'buttons' => ['nullable', 'array'],
@@ -236,14 +249,20 @@ class CampaignMenuController extends Controller
             'buttons.*.action_url_target' => ['nullable', 'string', 'max:255'],
             'buttons.*.short_url' => ['nullable', 'string', 'max:255'],
             'buttons.*.action_voucher_code' => ['nullable', 'string', 'max:50'],
+        ], [
+            'header_label.required_if' => 'Header Text wajib diisi jika Header Type adalah Teks.',
+            'asset.required_if' => 'Upload gambar wajib diisi jika Header Type adalah Gambar.',
+            'asset.mimes' => 'Format gambar header harus jpg, jpeg, png, atau webp.',
+            'asset.max' => 'Ukuran gambar header maksimal 5MB.',
         ]);
 
         try {
-            $gwToken = $this->requireGatewayToken($request);
+            $accessToken = $this->requireAccessToken($request);
             $headerPathFile = '';
+            $gwToken = $this->requireGatewayToken($request);
 
-            if ($request->hasFile('asset') && $this->mapWabaHeaderType($validated['header_type']) !== 'TEXT') {
-                $uploadResp = $client->uploadFile($gwToken, $request->file('asset'), 'FILE', $this->gatewayRefreshCallback($request, $client));
+            if ($request->hasFile('asset') && $this->mapWabaHeaderType($validated['header_type']) === 'IMAGE') {
+                $uploadResp = $client->uploadFile($accessToken, $request->file('asset'), 'MULTIMEDIA', $gwToken, $this->gatewayRefreshCallback($request, $client));
                 $headerPathFile = $this->extractUploadedFileValue($uploadResp);
             }
 
@@ -253,7 +272,7 @@ class CampaignMenuController extends Controller
                 $this->resolveWabaAccountIds($request, $client, $gwToken, $validated),
             );
 
-            $resp = $client->wabaTemplateAdd($gwToken, $payload, $this->gatewayRefreshCallback($request, $client));
+            $resp = $client->wabaTemplateAdd($accessToken, $payload, $gwToken, $this->gatewayRefreshCallback($request, $client));
         } catch (Throwable $e) {
             return back()->withErrors([
                 'gw' => $e->getMessage(),
@@ -282,8 +301,10 @@ class CampaignMenuController extends Controller
             'body' => $validated['body'],
             'footer' => $validated['footer'] ?? null,
             'buttons' => $payload['buttons'],
-            'status' => strtoupper((string) (data_get($resp, 'data.data.status') ?? data_get($resp, 'data.status') ?? 'PENDING')),
-            'gw_payload' => $payload,
+            'status' => strtoupper((string) (data_get($resp, 'data.data.activationStatus') ?? data_get($resp, 'data.activationStatus') ?? data_get($resp, 'data.data.status') ?? data_get($resp, 'data.status') ?? 'PENDING')),
+            'gw_payload' => array_merge($payload, [
+                'verifiedName' => trim((string) ($validated['display_name'] ?? '')),
+            ]),
             'gw_response' => $resp,
         ]);
 
@@ -299,6 +320,32 @@ class CampaignMenuController extends Controller
             'menu' => 'campaign-template',
             'page' => $this->pages()['wa-business']['campaign-template'],
             'templateRow' => $template,
+        ]);
+    }
+
+    public function showCampaignTemplateFromApi(Request $request): View
+    {
+        $templateId = trim((string) $request->query('template_id', ''));
+        $name = trim((string) $request->query('name', ''));
+
+        abort_if($templateId === '' && $name === '', 404);
+
+        $row = collect($this->wabaTemplateRowsFromApi($request))
+            ->first(function (array $row) use ($templateId, $name): bool {
+                $rowTemplateId = trim((string) ($row['gw_template_id'] ?? ''));
+                $rowName = trim((string) ($row['name'] ?? ''));
+
+                return ($templateId !== '' && $rowTemplateId === $templateId)
+                    || ($name !== '' && $rowName === $name);
+            });
+
+        abort_unless(is_array($row), 404);
+
+        return view('campaign-wa-template.show', [
+            'channel' => 'wa-business',
+            'menu' => 'campaign-template',
+            'page' => $this->pages()['wa-business']['campaign-template'],
+            'templateRow' => $this->apiTemplateRowForShow($row),
         ]);
     }
 
@@ -323,18 +370,17 @@ class CampaignMenuController extends Controller
         $buttons = $this->mapWabaTemplateButtons($validated['buttons'] ?? []);
 
         return [
-            'templateName' => $validated['name'],
+            'templateName' => trim((string) $validated['name']),
             'language' => $this->mapWabaTemplateLanguage((string) $validated['language']),
             'headerType' => $headerType,
-            'headerLabel' => trim((string) ($validated['header_label'] ?? '')),
-            'headerPathFile' => $headerPathFile,
+            'headerLabel' => $headerType === 'TEXT' ? trim((string) ($validated['header_label'] ?? '')) : '',
+            'headerPathFile' => $headerType === 'IMAGE' ? $headerPathFile : '',
             'bodyMessage' => $validated['body'],
             'bodyType' => 'STATIC',
             'bodyPathFile' => '',
             'useButton' => $buttons === [] ? 0 : 1,
             'buttons' => $buttons,
             'wabaAccountId' => $accountIds['wabaAccountId'],
-            'wabaButtonId' => '',
             'phoneNumberId' => $accountIds['phoneNumberId'],
         ];
     }
@@ -350,15 +396,16 @@ class CampaignMenuController extends Controller
                 }
 
                 $label = trim((string) ($button['label'] ?? ''));
+                $isUrlAction = $action === 'URL';
 
                 return [
-                    'showModalShortUrl' => (bool) ($button['show_modal_short_url'] ?? false),
+                    'showModalShortUrl' => $isUrlAction ? (bool) ($button['show_modal_short_url'] ?? false) : false,
                     'label' => $label,
                     'action' => $action,
-                    'actionReplay' => trim((string) ($button['action_replay'] ?? $label)),
+                    'actionReplay' => trim((string) ($button['action_replay'] ?? '')),
                     'actionNumber' => trim((string) ($button['action_number'] ?? '')),
-                    'actionUrlTarget' => trim((string) ($button['action_url_target'] ?? '')),
-                    'shortUrl' => $button['short_url'] ?? null,
+                    'actionUrlTarget' => $isUrlAction ? trim((string) ($button['action_url_target'] ?? '')) : '',
+                    'shortUrl' => $isUrlAction ? ($button['short_url'] ?? null) : null,
                     'actionVoucherCode' => trim((string) ($button['action_voucher_code'] ?? '')),
                 ];
             })
@@ -381,9 +428,9 @@ class CampaignMenuController extends Controller
         $headerType = strtolower(trim($headerType));
 
         return match ($headerType) {
+            'none' => 'NONE',
             'image' => 'IMAGE',
-            'video' => 'VIDEO',
-            'document' => 'DOCUMENT',
+            'text' => 'TEXT',
             default => 'TEXT',
         };
     }
@@ -396,14 +443,6 @@ class CampaignMenuController extends Controller
         $wabaAccountId = trim((string) ($validated['waba_account_id'] ?? ''));
         $phoneNumberId = trim((string) ($validated['phone_number_id'] ?? ''));
 
-        if ($wabaAccountId === '') {
-            $wabaAccountId = trim((string) config('myads.waba_account_id', ''));
-        }
-
-        if ($phoneNumberId === '') {
-            $phoneNumberId = trim((string) config('myads.waba_phone_number_id', ''));
-        }
-
         if ($wabaAccountId !== '' && $phoneNumberId !== '') {
             return [
                 'wabaAccountId' => $this->normalizeNumericId($wabaAccountId),
@@ -411,23 +450,35 @@ class CampaignMenuController extends Controller
             ];
         }
 
-        $resp = $client->wabaDisplayNameList($gatewayToken, [], $this->gatewayRefreshCallback($request, $client));
-        $items = data_get($resp, 'data.data')
+        $displayName = trim((string) ($validated['display_name'] ?? ''));
+        if ($displayName === '') {
+            throw new RuntimeException('Display name wajib dipilih dari list API.');
+        }
+
+        $resp = $client->wabaDisplayNameList($this->requireAccessToken($request), [], $gatewayToken, $this->gatewayRefreshCallback($request, $client));
+        $items = data_get($resp, 'data.data.list')
+            ?? data_get($resp, 'data.data.items')
+            ?? data_get($resp, 'data.list')
+            ?? data_get($resp, 'data.items')
+            ?? data_get($resp, 'data.data')
             ?? data_get($resp, 'data')
             ?? [];
 
         if (is_array($items) && array_is_list($items)) {
-            $selected = collect($items)->first(function ($row): bool {
+            $selected = collect($items)->first(function ($row) use ($displayName): bool {
                 if (! is_array($row)) {
                     return false;
                 }
 
-                $status = strtoupper((string) (data_get($row, 'status') ?? ''));
-                $displayNameStatus = strtoupper((string) (data_get($row, 'displayNameStatus') ?? ''));
+                $apiDisplayName = trim((string) (data_get($row, 'verifiedName')
+                    ?? data_get($row, 'verified_name')
+                    ?? data_get($row, 'displayName')
+                    ?? data_get($row, 'display_name')
+                    ?? data_get($row, 'name')
+                    ?? ''));
 
-                return in_array($status, ['READY', 'APPROVED'], true)
-                    || in_array($displayNameStatus, ['APPROVED', 'VERIFIED'], true);
-            }) ?? collect($items)->first(fn ($row): bool => is_array($row));
+                return $apiDisplayName !== '' && hash_equals($displayName, $apiDisplayName);
+            });
 
             if (is_array($selected)) {
                 $wabaAccountId = (string) (data_get($selected, 'wabaAccountId') ?? '');
@@ -436,7 +487,7 @@ class CampaignMenuController extends Controller
         }
 
         if ($wabaAccountId === '' || $phoneNumberId === '') {
-            throw new RuntimeException('WABA Account ID dan Phone Number ID belum tersedia. Isi MYADS_WABA_ACCOUNT_ID/MYADS_WABA_PHONE_NUMBER_ID atau pastikan display-name/list mengembalikan data.');
+            throw new RuntimeException('WABA Account ID dan Phone Number ID belum tersedia untuk display name yang dipilih dari API.');
         }
 
         return [
@@ -485,7 +536,9 @@ class CampaignMenuController extends Controller
         $isCarousel = $template->template_type === 'carousel_cards' || str_contains(strtolower((string) $template->category), 'carousel');
 
         return [
-            'id' => (string) $template->id,
+            'id' => (string) ($template->gw_template_id ?: $template->id),
+            'local_id' => (string) $template->id,
+            'gw_template_id' => (string) ($template->gw_template_id ?? ''),
             'name' => $template->name,
             'account_name' => 'Telkomsel Promo & Rewards',
             'template_kind' => ucfirst(str_replace('_', ' ', (string) $template->template_type)),
@@ -502,6 +555,42 @@ class CampaignMenuController extends Controller
             'price_note' => 'Template yang dipilih menggunakan Display Name Default, sehingga akan dikenakan biaya sebesar Rp 1.100 per pesan.',
             'cta' => data_get($template->buttons, '0.label', 'Coba Sekarang'),
             'preview_name' => 'Name',
+        ];
+    }
+
+    private function apiTemplateRowForShow(array $row): object
+    {
+        $raw = is_array($row['raw'] ?? null) ? $row['raw'] : [];
+        $buttons = data_get($raw, 'buttons')
+            ?? data_get($raw, 'buttonList')
+            ?? data_get($raw, 'button_list')
+            ?? data_get($raw, 'components.buttons')
+            ?? [];
+        if (! is_array($buttons)) {
+            $buttons = [];
+        }
+
+        return (object) [
+            'id' => null,
+            'gw_template_id' => (string) ($row['gw_template_id'] ?? ''),
+            'name' => (string) ($row['name'] ?? '-'),
+            'template_type' => 'simple_message',
+            'category' => (string) ($row['category'] ?? 'Single Banner'),
+            'language' => (string) ($row['language'] ?? 'INDONESIA'),
+            'header_type' => (string) (data_get($raw, 'headerType') ?? data_get($raw, 'header_type') ?? 'TEXT'),
+            'asset_path' => null,
+            'body' => (string) (data_get($raw, 'bodyMessage') ?? data_get($raw, 'body_message') ?? data_get($raw, 'body') ?? data_get($raw, 'message') ?? data_get($raw, 'templateBody') ?? data_get($raw, 'template_body') ?? ($row['body'] ?? '')),
+            'footer' => (string) (data_get($raw, 'footer') ?? ''),
+            'buttons' => $buttons,
+            'status' => (string) ($row['status'] ?? '-'),
+            'gw_payload' => [
+                'verifiedName' => data_get($raw, 'verifiedName') ?? data_get($raw, 'displayName') ?? '',
+                'displayName' => data_get($raw, 'displayName') ?? data_get($raw, 'verifiedName') ?? '',
+                'headerLabel' => data_get($raw, 'headerLabel') ?? data_get($raw, 'header_label') ?? '',
+                'headerPathFile' => data_get($raw, 'headerPathFile') ?? data_get($raw, 'header_path_file') ?? '',
+                'buttons' => $buttons,
+            ],
+            'created_at' => $row['created_at'] ?? now(),
         ];
     }
 
@@ -544,15 +633,10 @@ class CampaignMenuController extends Controller
 
     private function wabaTemplateRowsFromApi(Request $request): array
     {
-        $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
-        if ($gatewayToken === '') {
-            return [];
-        }
-
         try {
             /** @var MyadsApiClient $client */
             $client = app(MyadsApiClient::class);
-            $resp = $client->wabaTemplateList($gatewayToken, ['templateId' => null], $this->gatewayRefreshCallback($request, $client));
+            $resp = $client->wabaTemplateList($this->requireAccessToken($request), [], $this->requireGatewayToken($request), $this->gatewayRefreshCallback($request, $client));
 
             $items = data_get($resp, 'data.data.list')
                 ?? data_get($resp, 'data.data.templates')
@@ -601,9 +685,10 @@ class CampaignMenuController extends Controller
                         'name' => $name !== '' ? $name : '-',
                         'category' => (string) (data_get($row, 'category') ?? $local?->category ?? '-'),
                         'language' => (string) (data_get($row, 'language') ?? $local?->language ?? '-'),
-                        'body' => (string) (data_get($row, 'body') ?? data_get($row, 'message') ?? $local?->body ?? ''),
-                        'status' => (string) (data_get($row, 'status') ?? $local?->status ?? '-'),
+                        'body' => (string) (data_get($row, 'bodyMessage') ?? data_get($row, 'body_message') ?? data_get($row, 'body') ?? data_get($row, 'message') ?? data_get($row, 'templateBody') ?? data_get($row, 'template_body') ?? $local?->body ?? ''),
+                        'status' => (string) (data_get($row, 'activationStatus') ?? data_get($row, 'activation_status') ?? data_get($row, 'status') ?? $local?->status ?? '-'),
                         'created_at' => $createdAt,
+                        'raw' => $row,
                     ];
                 })
                 ->values()
@@ -615,14 +700,10 @@ class CampaignMenuController extends Controller
 
     private function campaignRowsFromApi(Request $request, string $channel, string $menu): array
     {
-        $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
-        if ($gatewayToken === '') {
-            return [];
-        }
-
         try {
             /** @var MyadsApiClient $client */
             $client = app(MyadsApiClient::class);
+            $gatewayToken = $this->requireGatewayToken($request);
             $listResp = $client->campaignList($gatewayToken, ['campaignId' => null], $this->gatewayRefreshCallback($request, $client));
 
             $items = $this->extractCampaignListItems($listResp);
@@ -848,16 +929,16 @@ class CampaignMenuController extends Controller
 
     private function campaignReportFromApi(Request $request, string $campaignId): array
     {
-        $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
         $campaignId = trim($campaignId);
 
-        if ($gatewayToken === '' || $campaignId === '' || ! ctype_digit($campaignId)) {
+        if ($campaignId === '' || ! ctype_digit($campaignId)) {
             return [];
         }
 
         try {
             /** @var MyadsApiClient $client */
             $client = app(MyadsApiClient::class);
+            $gatewayToken = $this->requireGatewayToken($request);
 
             return $client->campaignReport($gatewayToken, [
                 'campaignId' => (int) $campaignId,
@@ -892,11 +973,6 @@ class CampaignMenuController extends Controller
             return 0;
         }
 
-        $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
-        if ($gatewayToken === '') {
-            return 0;
-        }
-
         $priceKey = match ($menu) {
             'location-based-area' => 'LBA_SMS',
             'targeted' => 'TARGETED_SMS',
@@ -909,6 +985,7 @@ class CampaignMenuController extends Controller
 
         /** @var MyadsApiClient $client */
         $client = app(MyadsApiClient::class);
+        $gatewayToken = $this->requireGatewayToken($request);
         $resp = $client->campaignPriceView($gatewayToken, ['campaignType' => 'ALL'], $this->gatewayRefreshCallback($request, $client));
 
         $value = data_get($resp, 'data.data.' . $priceKey);
@@ -923,16 +1000,28 @@ class CampaignMenuController extends Controller
     {
         $gwToken = (string) $request->session()->get('myads.gw_token', '');
         if (trim($gwToken) === '') {
-            throw new RuntimeException('Token gateway tidak ditemukan. Silakan login ulang.');
+            /** @var MyadsApiClient $client */
+            $client = app(MyadsApiClient::class);
+            $gwToken = ($this->gatewayRefreshCallback($request, $client))();
         }
 
         return $gwToken;
     }
 
+    private function requireAccessToken(Request $request): string
+    {
+        $accessToken = (string) $request->session()->get('myads.access_token', '');
+        if (trim($accessToken) === '') {
+            throw new RuntimeException('Token akses tidak ditemukan. Silakan login ulang.');
+        }
+
+        return $accessToken;
+    }
+
     private function gatewayRefreshCallback(Request $request, MyadsApiClient $client): callable
     {
         return function () use ($request, $client): string {
-            $gwResp = $client->getGatewayToken();
+            $gwResp = $client->getGatewayToken((string) $request->session()->get('myads.access_token', ''));
             $gwToken = $client->extractGatewayToken($gwResp);
 
             if ($gwToken === '') {
@@ -1005,7 +1094,6 @@ class CampaignMenuController extends Controller
                         'Atur Profil Penerima',
                         'Atur Pengiriman',
                         'Review & Pembayaran',
-                        'Menunggu Persetujuan',
                     ],
                     'screenshots' => $targetedShots,
                 ],
@@ -1047,7 +1135,6 @@ class CampaignMenuController extends Controller
                         'Atur Profil Penerima',
                         'Atur Pengiriman',
                         'Review & Pembayaran',
-                        'Menunggu Persetujuan',
                     ],
                     'screenshots' => $targetedShots,
                 ],

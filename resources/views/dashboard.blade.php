@@ -30,6 +30,34 @@
                 ],
             ],
         ],
+        [
+            'key' => 'wa-business',
+            'label' => 'WA Business',
+            'icon' => 'wa',
+            'children' => [
+                [
+                    'key' => 'wa-campaign-template',
+                    'label' => 'Campaign Template',
+                    'icon' => 'template',
+                    'href' => route('campaign-template.index'),
+                    'interactive' => true,
+                ],
+                [
+                    'key' => 'wa-location-based-area',
+                    'label' => 'Location Based Area',
+                    'icon' => 'location',
+                    'href' => route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'location-based-area']),
+                    'interactive' => true,
+                ],
+                [
+                    'key' => 'wa-targeted',
+                    'label' => 'Targeted',
+                    'icon' => 'targeted',
+                    'href' => route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'targeted']),
+                    'interactive' => true,
+                ],
+            ],
+        ],
     ];
     $activeNav = 'dashboard';
 @endphp
@@ -50,12 +78,15 @@
 
         $campaignTotalLabel = $campaignTotal === null ? '-' : (string) $campaignTotal;
         $campaignSmsLabel = $campaignSmsTotal === null ? '-' : (string) $campaignSmsTotal;
+        $campaignWaLabel = $campaignWaTotal === null ? '-' : (string) $campaignWaTotal;
         $gwStatusLabel = session()->has('myads.gw_token') ? 'OK' : '-';
         $formatPrice = static fn ($value): string => is_numeric($value)
             ? 'Rp ' . number_format((float) $value, 0, ',', '.') . ' / pesan'
             : 'Harga belum tersedia';
         $smsLbaPrice = $formatPrice(data_get($campaignPrices ?? [], 'sms_lba'));
         $smsTargetedPrice = $formatPrice(data_get($campaignPrices ?? [], 'sms_targeted'));
+        $waLbaPrice = $formatPrice(data_get($campaignPrices ?? [], 'wa_lba'));
+        $waTargetedPrice = $formatPrice(data_get($campaignPrices ?? [], 'wa_targeted'));
     @endphp
 
     <section class="portal-hero">
@@ -96,6 +127,10 @@
                 <p class="portal-stats__label">Campaign channel SMS</p>
             </div>
             <div class="portal-stats__item">
+                <p class="portal-stats__value">{{ $campaignWaLabel }}</p>
+                <p class="portal-stats__label">Campaign channel WA Business</p>
+            </div>
+            <div class="portal-stats__item">
                 <p class="portal-stats__value">{{ $gwStatusLabel }}</p>
                 <p class="portal-stats__label">Token gateway di session</p>
             </div>
@@ -119,6 +154,27 @@
                     <a href="{{ route('campaign.menu', ['channel' => 'sms', 'menu' => 'targeted', 'view' => 'create']) }}" class="portal-service-list__item portal-service-list__item--campaign">
                         <span>Targeted</span>
                         <strong>{{ $smsTargetedPrice }}</strong>
+                    </a>
+                </div>
+            </article>
+
+            <article class="portal-service-card">
+                <div class="portal-service-card__title-row">
+                    <h3>WA Business</h3>
+                    <span>{{ $campaignWaLabel }} campaign</span>
+                </div>
+                <div class="portal-service-list">
+                    <a href="{{ route('campaign-template.index') }}" class="portal-service-list__item portal-service-list__item--campaign">
+                        <span>Campaign Template</span>
+                        <strong>Kelola template</strong>
+                    </a>
+                    <a href="{{ route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'location-based-area', 'view' => 'create']) }}" class="portal-service-list__item portal-service-list__item--campaign">
+                        <span>Location Based Area</span>
+                        <strong>{{ $waLbaPrice }}</strong>
+                    </a>
+                    <a href="{{ route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'targeted', 'view' => 'create']) }}" class="portal-service-list__item portal-service-list__item--campaign">
+                        <span>Targeted</span>
+                        <strong>{{ $waTargetedPrice }}</strong>
                     </a>
                 </div>
             </article>

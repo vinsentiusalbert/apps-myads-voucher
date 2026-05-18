@@ -93,7 +93,7 @@
 
     <section class="campaign-info-banner">
         <span class="campaign-info-banner__icon">i</span>
-        <p>Pelajari cara membuat iklan Anda agar lebih menarik. <a href="#">Pelajari Selengkapnya.</a></p>
+        <p>Pelajari cara membuat iklan Anda agar lebih menarik. <a href="https://www.youtube.com/watch?v=0JDF-U6Yze0">Pelajari Selengkapnya.</a></p>
     </section>
 
     <section class="campaign-compose-card campaign-compose-card--single">
@@ -184,7 +184,7 @@
             </div>
 
             <div class="campaign-form-actions campaign-form-actions--wa-lba">
-                <button type="button" class="campaign-draft-btn">
+                {{-- <button type="button" class="campaign-draft-btn">
                     <span class="campaign-draft-btn__icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none">
                             <path d="M6 3.75h8.75L19.5 8.5v11a1.75 1.75 0 0 1-1.75 1.75H6A1.75 1.75 0 0 1 4.25 19.5V5.5A1.75 1.75 0 0 1 6 3.75Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
@@ -193,7 +193,7 @@
                         </svg>
                     </span>
                     <span>Simpan Iklan Sebagai Draft</span>
-                </button>
+                </button> --}}
 
                 <button type="button" class="submit-btn lba-primary-btn campaign-step-nav-btn" id="waLbaNextButton" disabled>
                     Lanjutkan
@@ -389,7 +389,7 @@
 
                 <div class="campaign-form-actions campaign-form-actions--step-two">
                     <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="waLbaStepThreeBack">Sebelumnya</button>
-                    <button type="button" class="campaign-draft-btn">
+                    {{-- <button type="button" class="campaign-draft-btn">
                         <span class="campaign-draft-btn__icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" fill="none">
                                 <path d="M6 3.75h8.75L19.5 8.5v11a1.75 1.75 0 0 1-1.75 1.75H6A1.75 1.75 0 0 1 4.25 19.5V5.5A1.75 1.75 0 0 1 6 3.75Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
@@ -398,7 +398,7 @@
                             </svg>
                         </span>
                         <span>Simpan Iklan Sebagai Draft</span>
-                    </button>
+                    </button> --}}
                     <button type="button" class="submit-btn lba-primary-btn campaign-step-two__next" id="waLbaStepThreeNext" disabled>Lanjutkan</button>
                 </div>
             </section>

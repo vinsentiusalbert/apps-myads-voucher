@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 class RegisteredUserController extends Controller
 {
-    public function create(Request $request, MyadsApiClient $client): ViewContract
+    public function create(Request $request, MyadsApiClient $client): ViewContract|RedirectResponse
     {
         $merchantId = trim((string) $request->query('merchant_id', ''));
         $partnerId = trim((string) ($request->query('partner_id') ?? $request->query('parent_id', '')));
@@ -27,22 +27,37 @@ class RegisteredUserController extends Controller
             abort(422, 'Merchant ID atau Partner ID terlalu panjang.');
         }
 
+        $contextResp = [];
+        $contextMessage = null;
+
         try {
-            $contextResp = $client->registrationContext(
-                $merchantId,
-                $partnerId
-            );
+            $contextResp = $client->registrationContext($merchantId, $partnerId);
         } catch (\Throwable $e) {
-            abort(422, $e->getMessage());
+            $contextMessage = $this->cleanApiMessage($e->getMessage());
         }
 
-        if (! (bool) data_get($contextResp, 'success', false)) {
-            abort(422, (string) (data_get($contextResp, 'message') ?: 'Konteks register tidak valid.'));
+        if ($contextResp !== [] && ! (bool) data_get($contextResp, 'success', false)) {
+            $contextMessage = $this->cleanApiMessage((string) (data_get($contextResp, 'message') ?: 'Konteks register tidak valid.'));
+        }
+
+        $resolvedMerchantId = (string) data_get($contextResp, 'data.merchant_id', $merchantId);
+        $resolvedPartnerId = (string) data_get($contextResp, 'data.partner_id', $partnerId);
+        $hasExistingSsoUser = User::query()
+            ->where('merchant_id', $resolvedMerchantId)
+            ->where('partner_id', $resolvedPartnerId)
+            ->exists();
+
+        if ($hasExistingSsoUser) {
+            return redirect()
+                ->route('login')
+                ->with('status', 'Akun partner sudah terdaftar. Silakan masuk melalui login biasa.');
         }
 
         return view('auth.register', [
-            'merchantId' => (string) data_get($contextResp, 'data.merchant_id', $merchantId),
-            'partnerId' => (string) data_get($contextResp, 'data.partner_id', $partnerId),
+            'merchantId' => $resolvedMerchantId,
+            'partnerId' => $resolvedPartnerId,
+            'contextMessage' => $contextMessage,
+            'hasExistingSsoUser' => $hasExistingSsoUser,
         ]);
     }
 
@@ -57,23 +72,6 @@ class RegisteredUserController extends Controller
         ]);
 
         try {
-            $contextResp = $client->registrationContext(
-                $validated['merchant_id'],
-                $validated['partner_id']
-            );
-        } catch (\Throwable $e) {
-            throw ValidationException::withMessages([
-                'merchant_id' => $e->getMessage(),
-            ]);
-        }
-
-        if (! (bool) data_get($contextResp, 'success', false)) {
-            throw ValidationException::withMessages([
-                'merchant_id' => (string) (data_get($contextResp, 'message') ?: 'Konteks register tidak valid.'),
-            ]);
-        }
-
-        try {
             $registerResp = $client->register(
                 $validated['email'],
                 $validated['password'],
@@ -83,12 +81,12 @@ class RegisteredUserController extends Controller
             );
         } catch (\Throwable $e) {
             throw ValidationException::withMessages([
-                'email' => $e->getMessage(),
+                'email' => $this->cleanApiMessage($e->getMessage()),
             ]);
         }
 
         if (! (bool) data_get($registerResp, 'success', false)) {
-            $message = (string) (data_get($registerResp, 'message') ?: 'Register gagal.');
+            $message = $this->cleanApiMessage((string) (data_get($registerResp, 'message') ?: 'Register gagal.'));
 
             throw ValidationException::withMessages([
                 'email' => $message,
@@ -99,12 +97,12 @@ class RegisteredUserController extends Controller
             $loginResp = $client->login($validated['email'], $validated['password']);
         } catch (\Throwable $e) {
             throw ValidationException::withMessages([
-                'email' => $e->getMessage(),
+                'email' => $this->cleanApiMessage($e->getMessage()),
             ]);
         }
 
         if (! (bool) data_get($loginResp, 'success', false)) {
-            $message = (string) (data_get($loginResp, 'message') ?: 'Email atau password belum sesuai.');
+            $message = $this->cleanApiMessage((string) (data_get($loginResp, 'message') ?: 'Email atau password belum sesuai.'));
 
             throw ValidationException::withMessages([
                 'email' => $message,
@@ -135,7 +133,7 @@ class RegisteredUserController extends Controller
         ]);
 
         try {
-            $gwResp = $client->getGatewayToken();
+            $gwResp = $client->getGatewayToken((string) data_get($loginResp, 'data.access_token'));
             $gwToken = $client->extractGatewayToken($gwResp);
 
             if ($gwToken === '') {
@@ -149,10 +147,17 @@ class RegisteredUserController extends Controller
             $request->session()->regenerateToken();
 
             throw ValidationException::withMessages([
-                'email' => $e->getMessage(),
+                'email' => $this->cleanApiMessage($e->getMessage()),
             ]);
         }
 
         return redirect()->route('dashboard');
+    }
+
+    private function cleanApiMessage(string $message): string
+    {
+        $message = trim(strip_tags($message));
+
+        return $message !== '' ? $message : 'Request tidak dapat diproses.';
     }
 }

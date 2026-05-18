@@ -13,6 +13,13 @@
         @stack('styles')
     </head>
     <body class="{{ $bodyClass ?? '' }}">
+        <div class="portal-page-loader" id="portalPageLoader" role="status" aria-live="polite">
+            <div class="portal-page-loader__card">
+                <span class="portal-page-loader__spinner" aria-hidden="true"></span>
+                <strong>Memuat halaman...</strong>
+            </div>
+        </div>
+
         <main class="portal-shell">
             <button type="button" class="portal-overlay" data-menu-close aria-label="Tutup menu"></button>
 
@@ -37,6 +44,26 @@
 
         @include('partials.portal-campaign-category-modal')
         @include('partials.portal-menu-script')
+        <script>
+            (() => {
+                const loader = document.getElementById('portalPageLoader');
+                if (!loader) {
+                    return;
+                }
+
+                const hideLoader = () => {
+                    loader.classList.add('portal-page-loader--hidden');
+                    window.setTimeout(() => loader.remove(), 250);
+                };
+
+                if (document.readyState === 'complete') {
+                    hideLoader();
+                } else {
+                    window.addEventListener('load', hideLoader, { once: true });
+                    window.setTimeout(hideLoader, 3500);
+                }
+            })();
+        </script>
         @stack('scripts')
     </body>
 </html>

@@ -99,7 +99,6 @@
                 <select name="category">
                     <option value="">All Category</option>
                     <option value="Single Banner" @selected(request('category') === 'Single Banner')>Single Banner</option>
-                    <option value="Carousel" @selected(request('category') === 'Carousel')>Carousel</option>
                 </select>
             </label>
 
@@ -130,19 +129,25 @@
                     @forelse ($templateRows as $row)
                         <tr>
                             <td>
-                                <a href="{{ route('campaign-template.show', $row) }}">{{ $row->name }}</a>
+                                @if (!empty($row['gw_template_id']) || !empty($row['name']))
+                                    <a href="{{ route('campaign-template.api-show', ['template_id' => $row['gw_template_id'] ?? '', 'name' => $row['name']]) }}">{{ $row['name'] }}</a>
+                                @elseif (!empty($row['id']))
+                                    <a href="{{ route('campaign-template.show', $row['id']) }}">{{ $row['name'] }}</a>
+                                @else
+                                    <span>{{ $row['name'] }}</span>
+                                @endif
                             </td>
                             <td>
-                                <strong>{{ $row->created_at->format('d M Y') }}</strong>
-                                <span>{{ $row->created_at->format('H:i') }} WIB</span>
+                                <strong>{{ $row['created_at']->format('d M Y') }}</strong>
+                                <span>{{ $row['created_at']->format('H:i') }} WIB</span>
                             </td>
-                            <td>{{ $row->category }}</td>
+                            <td>{{ $row['category'] }}</td>
                             <td>
-                                <strong>{{ $row->language }}</strong>
-                                <span>{{ \Illuminate\Support\Str::limit($row->body ?? '-', 80) }}</span>
+                                <strong>{{ $row['language'] }}</strong>
+                                <span>{{ \Illuminate\Support\Str::limit($row['body'] ?? '-', 80) }}</span>
                             </td>
                             <td>
-                                <span class="template-library-status">{{ $row->status }}</span>
+                                <span class="template-library-status">{{ $row['status'] }}</span>
                             </td>
                         </tr>
                     @empty

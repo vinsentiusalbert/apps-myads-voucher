@@ -1,6 +1,11 @@
 @php
     $templateValue = fn (string $field, mixed $default = null) => old($field, $isWaTemplateRead ? $templateRow->{$field} : $default);
     $templatePayloadValue = fn (string $field, mixed $default = null) => old($field, $isWaTemplateRead ? data_get($templateRow->gw_payload ?? [], $field, $default) : $default);
+    $previewButtons = collect(data_get($templateRow ?? null, 'buttons', data_get($templateRow ?? null, 'gw_payload.buttons', [])))
+        ->filter(fn ($button) => is_array($button) && trim((string) ($button['label'] ?? '')) !== '')
+        ->values();
+    $previewHeaderType = strtoupper((string) $templateValue('header_type', 'TEXT'));
+    $previewHeaderLabel = trim((string) $templatePayloadValue('headerLabel', $templateValue('name', '')));
 @endphp
 
 @if ($errors->any())
@@ -22,42 +27,25 @@
 @endif
     <div class="template-builder-main">
         <article class="template-builder-card">
-            <h2>Template Preview</h2>
-            <p>Choose the category that best describes your message template. Then, select the type of message that you want to send.</p>
-
-            <label class="template-builder-choice {{ $templateValue('template_type', 'simple_message') === 'simple_message' ? 'template-builder-choice--active' : '' }}">
-                <input type="radio" name="template_type" value="simple_message" @checked($templateValue('template_type', 'simple_message') === 'simple_message') @disabled($isWaTemplateRead)>
-                <span class="template-builder-choice__dot"></span>
-                <span>
-                    <strong>Simple Message</strong>
-                    <small>Custom send promotions with only have 1 upload image Capability</small>
-                </span>
-            </label>
-
-            <label class="template-builder-choice {{ $templateValue('template_type') === 'carousel_cards' ? 'template-builder-choice--active' : '' }}">
-                <input type="radio" name="template_type" value="carousel_cards" @checked($templateValue('template_type') === 'carousel_cards') @disabled($isWaTemplateRead)>
-                <span class="template-builder-choice__dot"></span>
-                <span>
-                    <strong>Carousel Cards</strong>
-                    <small>Send promotion with custom multiple image using carousel component</small>
-                </span>
-            </label>
-        </article>
-
-        <article class="template-builder-card">
             <h2>Template name and language</h2>
+            @unless ($isWaTemplateRead)
+                <input type="hidden" name="template_type" value="{{ $templateValue('template_type', 'simple_message') }}">
+            @endunless
             <div class="template-builder-field">
                 <label>Name your template</label>
-                <input type="text" name="name" value="{{ $templateValue('name', 'campaign_whatsapp') }}" required @readonly($isWaTemplateRead)>
+                <input type="text" name="name" value="" required @readonly($isWaTemplateRead)>
             </div>
 
-            <div class="template-builder-field">
-                <label>Category Template</label>
-                <select name="category" required @disabled($isWaTemplateRead)>
-                    <option value="Single Banner" @selected($templateValue('category', 'Single Banner') === 'Single Banner')>Single Banner</option>
-                    <option value="Carousel" @selected($templateValue('category') === 'Carousel')>Carousel</option>
-                </select>
-            </div>
+            @unless ($isWaTemplateRead)
+                <input type="hidden" name="category" value="{{ $templateValue('category', 'Single Banner') }}">
+            @else
+                <div class="template-builder-field">
+                    <label>Category Template</label>
+                    <select name="category" required disabled>
+                        <option value="Single Banner" @selected($templateValue('category', 'Single Banner') === 'Single Banner')>Single Banner</option>
+                    </select>
+                </div>
+            @endunless
 
             <div class="template-builder-field">
                 <label>Language</label>
@@ -67,15 +55,21 @@
                 </select>
             </div>
 
-            <div class="template-builder-field">
-                <label>WABA Account ID</label>
-                <input type="text" name="waba_account_id" value="{{ $templatePayloadValue('wabaAccountId') }}" placeholder="3735503976689341" @readonly($isWaTemplateRead)>
-            </div>
-
-            <div class="template-builder-field">
-                <label>Phone Number ID</label>
-                <input type="text" name="phone_number_id" value="{{ $templatePayloadValue('phoneNumberId') }}" placeholder="337795902761255" @readonly($isWaTemplateRead)>
-            </div>
+            @unless ($isWaTemplateRead)
+                <div class="template-builder-field" data-waba-display-name-field data-list-url="{{ route('campaign-template.display-name-list') }}">
+                    <label>Display Name</label>
+                    <select id="wabaDisplayNameSelect" name="display_name" required>
+                        <option value="">Memuat display name...</option>
+                    </select>
+                    <input type="hidden" id="wabaAccountIdInput" name="waba_account_id" value="{{ old('waba_account_id') }}">
+                    <input type="hidden" id="phoneNumberIdInput" name="phone_number_id" value="{{ old('phone_number_id') }}">
+                </div>
+            @else
+                <div class="template-builder-field">
+                    <label>Display Name</label>
+                    <input type="text" value="{{ $templatePayloadValue('verifiedName', $templatePayloadValue('displayName')) }}" readonly>
+                </div>
+            @endunless
         </article>
 
         <article class="template-builder-card">
@@ -84,56 +78,49 @@
 
             <div class="template-builder-field">
                 <label>Header Type</label>
-                <select name="header_type" @disabled($isWaTemplateRead)>
-                    <option value="TEXT" @selected(in_array($templateValue('header_type', 'TEXT'), ['TEXT', 'none'], true))>TEXT</option>
-                    <option value="IMAGE" @selected(in_array($templateValue('header_type'), ['IMAGE', 'image'], true))>IMAGE</option>
-                    <option value="VIDEO" @selected(in_array($templateValue('header_type'), ['VIDEO', 'video'], true))>VIDEO</option>
-                    <option value="DOCUMENT" @selected(in_array($templateValue('header_type'), ['DOCUMENT', 'document'], true))>DOCUMENT</option>
+                <select name="header_type" id="templateHeaderTypeSelect" @disabled($isWaTemplateRead)>
+                    <option value="none" @selected(in_array($templateValue('header_type', 'none'), ['none', ''], true))>Tidak menggunakan Header</option>
+                    <option value="TEXT" @selected($templateValue('header_type') === 'TEXT')>Teks</option>
+                    <option value="IMAGE" @selected(in_array($templateValue('header_type'), ['IMAGE', 'image'], true))>Gambar</option>
                 </select>
             </div>
 
-            <div class="template-builder-field">
-                <label>Header Label</label>
-                <input type="text" name="header_label" value="{{ $templatePayloadValue('headerLabel') }}" maxlength="255" placeholder="Test" @readonly($isWaTemplateRead)>
+            <div class="template-builder-field" data-template-header-label-field @hidden($templateValue('header_type') !== 'TEXT')>
+                <label>Header Text</label>
+                <input type="text" name="header_label" value="{{ $templatePayloadValue('headerLabel') }}" maxlength="60" placeholder="Teks header" data-template-header-label-input @readonly($isWaTemplateRead)>
+                <span class="template-builder-button-card__meta" data-template-header-label-count>0/60 Karakter</span>
             </div>
 
-            <div class="template-builder-field">
+            <div class="template-builder-field" data-template-asset-field @hidden(! in_array($templateValue('header_type'), ['IMAGE', 'image'], true))>
                 <label>Asset</label>
-                <p class="template-builder-field__hint">You can upload videos, images, PDFs, or locations.</p>
+                <p class="template-builder-field__hint">Upload gambar untuk header template.</p>
                 <label class="template-builder-upload" for="templateAssetInput">
-                    <input type="file" id="templateAssetInput" name="asset" class="template-builder-upload__input" accept="image/*,application/pdf,video/mp4" @disabled($isWaTemplateRead)>
-                    <span class="template-builder-upload__icon">☁</span>
+                    <input type="file" id="templateAssetInput" name="asset" class="template-builder-upload__input" accept="image/*" @disabled($isWaTemplateRead)>
+                    <span class="template-builder-upload__icon">Upload</span>
                     <strong id="templateAssetLabel">{{ $isWaTemplateRead && $templateRow->asset_path ? basename($templateRow->asset_path) : 'Upload an asset' }}</strong>
                     <small>(Ensure your asset meets the format and size requirement)</small>
                     <span class="template-builder-upload__link">Learn more about supported format assets</span>
                 </label>
             </div>
-
-            <div class="template-builder-editor">
-                <div class="template-builder-editor__toolbar">
-                    <select>
-                        <option>Paragraph</option>
-                    </select>
-                    <button type="button">B</button>
-                    <button type="button"><i>I</i></button>
-                    <button type="button"><u>U</u></button>
-                    <button type="button">S</button>
-                    <button type="button">•</button>
-                    <button type="button">1.</button>
-                </div>
-                <textarea id="templateBodyInput" name="body" maxlength="1024" placeholder="Write something awesome..." required @readonly($isWaTemplateRead)>{{ $templateValue('body') }}</textarea>
-                <span class="template-builder-editor__count" id="templateBodyCount">0 / 1024</span>
-            </div>
-
-            <div class="template-builder-inline-actions">
-                <button type="button" class="template-builder-ai">Creating body content with AI <span>Token quota: 0</span></button>
-                <button type="button" class="template-builder-secondary">Add Body Variable</button>
-            </div>
-
             <div class="template-builder-field">
-                <label>Footer (optional)</label>
-                <input type="text" name="footer" value="{{ $templateValue('footer') }}" maxlength="60" @readonly($isWaTemplateRead)>
+                <label>Body</label>
+                <div class="template-builder-editor">
+                    <div class="template-builder-editor__toolbar">
+                        <select>
+                            <option>Paragraph</option>
+                        </select>
+                        <button type="button">B</button>
+                        <button type="button"><i>I</i></button>
+                        <button type="button"><u>U</u></button>
+                        <button type="button">S</button>
+                        <button type="button">-</button>
+                        <button type="button">1.</button>
+                    </div>
+                    <textarea id="templateBodyInput" name="body" maxlength="550" placeholder="Isi Pesan" required @readonly($isWaTemplateRead)>{{ $templateValue('body') }}</textarea>
+                    <span class="template-builder-editor__count" id="templateBodyCount">0/550 Karakter</span>
+                </div>
             </div>
+
         </article>
 
         <article class="template-builder-card">
@@ -142,7 +129,7 @@
                 <span>+</span>
                 <span>Add Button</span>
             </button>
-            <p class="template-builder-button-warning" id="templateButtonWarning" hidden>Button hanya bisa 2.</p>
+            <p class="template-builder-button-warning" id="templateButtonWarning" hidden>Button hanya bisa 10.</p>
 
             <div class="template-builder-button-list" id="templateButtonList"></div>
 
@@ -167,21 +154,13 @@
             <h2>Template Preview</h2>
             <div class="template-builder-phone">
                 <div class="template-builder-phone__message">
-                    <img src="{{ $isWaTemplateRead && $templateRow->asset_path ? asset('storage/' . $templateRow->asset_path) : asset('assets/logo.png') }}" alt="Preview asset" class="template-builder-phone__image" id="templatePreviewImage">
-                    <div class="template-builder-phone__body" id="templatePreviewBody">
-                        Halo Pelanggan Setia ComboFit, kamu mendapatkan akses Exercise Plan GRATIS selama 30 hari 🔥
-
-                        ✅ Akses ke program latihan fisik oleh Coach profesional
-                        ✅ Panduan video latihan yang mudah diikuti
-                        ✅ Tips dan trik kebugaran
-
-                        Aktifkan akunmu di link ini
-                        https://bit.ly/Fita_Combofit
-
-                        #SehatMakinNikmat bersama Fita!
-                    </div>
+                    <strong class="template-builder-phone__header-text" id="templatePreviewHeaderText" @hidden($previewHeaderType !== 'TEXT' || $previewHeaderLabel === '')>{{ $previewHeaderLabel }}</strong>
+                    <img src="{{ $isWaTemplateRead && $templateRow->asset_path ? asset('storage/' . $templateRow->asset_path) : asset('assets/logo.png') }}" alt="Preview asset" class="template-builder-phone__image" id="templatePreviewImage" @hidden($previewHeaderType !== 'IMAGE')>
+                    <div class="template-builder-phone__body" id="templatePreviewBody">{{ $templateValue('body') }}</div>
                     <div class="template-builder-phone__actions" id="templatePreviewActions">
-                        <div class="template-builder-phone__cta">Coba Sekarang</div>
+                        @foreach ($previewButtons as $button)
+                            <div class="template-builder-phone__cta">{{ $button['label'] }}</div>
+                        @endforeach
                     </div>
                 </div>
             </div>

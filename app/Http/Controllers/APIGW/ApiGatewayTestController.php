@@ -132,10 +132,9 @@ class ApiGatewayTestController extends Controller
                     ]);
 
                     $result = $client->uploadFile(
-                        $gwToken,
+                        (string) $request->session()->get('myads.access_token', ''),
                         $request->file('file'),
-                        'FILE',
-                        $refreshGatewayToken
+                        'MULTIMEDIA'
                     );
 
                     break;

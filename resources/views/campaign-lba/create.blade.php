@@ -90,7 +90,7 @@
 
 <section class="campaign-info-banner">
     <span class="campaign-info-banner__icon">i</span>
-    <p>Pelajari cara membuat iklan Anda agar lebih menarik. <a href="#">Pelajari Selengkapnya.</a></p>
+    <p>Pelajari cara membuat iklan Anda agar lebih menarik. <a href="https://www.youtube.com/watch?v=0JDF-U6Yze0">Pelajari Selengkapnya.</a></p>
 </section>
 
 @if (session('status'))
@@ -393,7 +393,7 @@
 
                 <div class="campaign-form-actions campaign-form-actions--step-two campaign-form-actions--targeted">
                     <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="campaignStepTwoBack">Sebelumnya</button>
-                    <button type="button" class="campaign-draft-btn">
+                    {{-- <button type="button" class="campaign-draft-btn">
                         <span class="campaign-draft-btn__icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24">
                                 <path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
@@ -401,7 +401,7 @@
                             </svg>
                         </span>
                         <span>Simpan Iklan Sebagai Draft</span>
-                    </button>
+                    </button> --}}
                     <button type="button" class="submit-btn lba-primary-btn campaign-step-two__next" id="campaignStepTwoNext" disabled>Lanjutkan</button>
                 </div>
             </section>

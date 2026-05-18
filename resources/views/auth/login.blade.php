@@ -46,24 +46,21 @@
                 <div class="auth-panel">
                     <div class="panel-card">
                         <div class="panel-topbar">
-                            <p class="panel-register">Belum memiliki akun? Daftar melalui tautan partner.</p>
+                            <p class="panel-register">Akses portal menggunakan akun MyAds.</p>
                         </div>
-                        <h2 class="panel-title">Masuk ke MyAds</h2>
-                        <p class="panel-copy">Isi form di bawah untuk masuk ke akun Anda</p>
+                        <h2 class="panel-title">Masuk akun MyAds</h2>
+                        <p class="panel-copy">Masukkan ID atau email dan password untuk melanjutkan ke portal.</p>
 
                         @if (session('status'))
                             <div class="status-box status-box--success">{{ session('status') }}</div>
                         @endif
 
-                    
-
                         <form method="POST" action="{{ route('login.store') }}" class="login-form">
                             @csrf
 
                             <div class="field-group">
-                                <label for="email" class="field-label">Alamat Email / Nomor Telepon</label>
-                                <p class="field-helper">Masukkan alamat email / nomor telepon yang sudah terdaftar</p>
-                                <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus placeholder="nama@company.com" class="text-input">
+                                <label for="email" class="field-label">ID / Email</label>
+                                <input id="email" name="email" type="text" value="{{ old('email') }}" required autofocus class="text-input">
                                 @error('email')
                                     <p class="error-text">{{ $message }}</p>
                                 @enderror
@@ -72,9 +69,9 @@
                             <div class="field-group">
                                 <div class="field-label-row">
                                     <label for="password" class="field-label">Password</label>
+                                    <a href="{{ route('password.request') }}" class="field-link">Lupa password?</a>
                                 </div>
-                                <p class="field-helper">Masukkan password Anda</p>
-                                <input id="password" name="password" type="password" required placeholder="Masukkan password" class="text-input">
+                                <input id="password" name="password" type="password" required class="text-input">
                                 @error('password')
                                     <p class="error-text">{{ $message }}</p>
                                 @enderror
@@ -82,10 +79,9 @@
 
                             <div class="field-actions">
                                 <label class="checkbox-label">
-                                    <input type="checkbox" name="remember" value="1" @checked(old('remember'))>
-                                    Ingat saya
+                                    <input type="checkbox" name="remember" value="1">
+                                    <span>Ingat saya</span>
                                 </label>
-                                <a href="{{ route('password.request') }}" class="field-link">Lupa password</a>
                             </div>
 
                             <button type="submit" class="submit-btn">Masuk</button>

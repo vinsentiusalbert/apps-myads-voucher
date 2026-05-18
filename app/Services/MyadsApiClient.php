@@ -6,15 +6,19 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
+use stdClass;
 
 class MyadsApiClient
 {
     public function __construct(
-        private string $baseUrl = 'http://api.goto-myads.com'
+        private string $baseUrl = '',
+        private string $directBaseUrl = ''
     ) {
-        $this->baseUrl = $this->baseUrl !== '' ? $this->baseUrl : (string) config('myads.api_base_url');
+        $this->baseUrl = $this->baseUrl !== '' ? $this->baseUrl : (string) config('myads.api_base_url', 'http://api.goto-myads.com');
+        $this->directBaseUrl = $this->directBaseUrl !== '' ? $this->directBaseUrl : (string) config('myads.direct_api_base_url', 'https://api.digitalcore.telkomsel.com');
     }
 
     private function client(): PendingRequest
@@ -33,6 +37,42 @@ class MyadsApiClient
         }
 
         return $this->client()->withToken($accessToken);
+    }
+
+    private function directClient(string $accessToken): PendingRequest
+    {
+        $accessToken = trim($accessToken);
+        if ($accessToken === '') {
+            throw new RuntimeException('Token akses tidak ditemukan. Silakan login ulang.');
+        }
+
+        if (! $this->hasDirectApiConfig()) {
+            throw new RuntimeException('Konfigurasi direct API WABA belum lengkap.');
+        }
+
+        $apiKey = trim((string) config('myads.direct_api_key', ''));
+        $apiSecret = trim((string) config('myads.direct_api_secret', ''));
+        $perUserKey = trim((string) config('myads.direct_per_user_key', ''));
+
+        $today = Carbon::now(config('app.timezone'))->format('Ymd');
+        $timestamp = (string) time();
+
+        return Http::baseUrl($this->directBaseUrl)
+            ->acceptJson()
+            ->timeout(30)
+            ->withToken($accessToken)
+            ->withHeaders([
+                'X-API-SECRET' => base64_encode($perUserKey . ':' . $today),
+                'api_key' => $apiKey,
+                'X-signature' => md5($apiKey . $apiSecret . $timestamp),
+            ]);
+    }
+
+    private function hasDirectApiConfig(): bool
+    {
+        return trim((string) config('myads.direct_api_key', '')) !== ''
+            && trim((string) config('myads.direct_api_secret', '')) !== ''
+            && trim((string) config('myads.direct_per_user_key', '')) !== '';
     }
 
     /**
@@ -154,10 +194,16 @@ class MyadsApiClient
     /**
      * @return array{success:bool, data?:array}
      */
-    public function getGatewayToken(): array
+    public function getGatewayToken(?string $accessToken = null): array
     {
         try {
-            $response = $this->client()->post('/api/gw/get-token', []);
+            $request = $this->client();
+            $accessToken = is_string($accessToken) ? trim($accessToken) : '';
+            if ($accessToken !== '') {
+                $request = $request->withToken($accessToken);
+            }
+
+            $response = $request->post('/api/gw/get-token', []);
         } catch (ConnectionException $e) {
             throw new RuntimeException('Tidak bisa konek ke API gateway: ' . $e->getMessage(), previous: $e);
         }
@@ -247,7 +293,7 @@ class MyadsApiClient
      */
     public function campaignReport(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
     {
-        return $this->postGw('/api/gw//scrt/myads/api/v1/report/view', $gatewayToken, $payload, $refreshGatewayToken);
+        return $this->postGw('/api/gw/report/view', $gatewayToken, $payload, $refreshGatewayToken);
     }
 
     /**
@@ -269,25 +315,135 @@ class MyadsApiClient
     /**
      * @return array{success:bool, data?:array}
      */
-    public function wabaTemplateAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    public function wabaLbaAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
     {
-        return $this->postGw('/api/gw/waba-template-add', $gatewayToken, $payload, $refreshGatewayToken);
+        return $this->postGw('/api/gw/waba-lba-add', $gatewayToken, $payload, $refreshGatewayToken);
     }
 
     /**
      * @return array{success:bool, data?:array}
      */
-    public function wabaTemplateList(string $gatewayToken, array $payload = ['templateId' => null], ?callable $refreshGatewayToken = null): array
+    public function wabaTargetedAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
     {
-        return $this->postGw('/api/gw/waba-template-list', $gatewayToken, $payload, $refreshGatewayToken);
+        return $this->postGw('/api/gw/waba-targeted-add', $gatewayToken, $payload, $refreshGatewayToken);
     }
 
     /**
      * @return array{success:bool, data?:array}
      */
-    public function wabaDisplayNameList(string $gatewayToken, array $payload = [], ?callable $refreshGatewayToken = null): array
+    public function wabaTemplateAdd(string $accessToken, array $payload, ?string $gatewayToken = null, ?callable $refreshGatewayToken = null): array
     {
-        return $this->postGw('/api/gw/waba-display-name-list', $gatewayToken, $payload, $refreshGatewayToken);
+        if (! $this->hasDirectApiConfig()) {
+            if ($gatewayToken === null || trim($gatewayToken) === '') {
+                throw new RuntimeException('Konfigurasi direct API WABA belum lengkap.');
+            }
+
+            return $this->postGw('/api/gw/waba-template-add', $gatewayToken, $payload, $refreshGatewayToken);
+        }
+
+        try {
+            $response = $this->directClient($accessToken)->asJson()->post('/scrt/myads/api/v1/waba/template/add', $payload);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API WABA template add: ' . $e->getMessage(), previous: $e);
+        } catch (RuntimeException $e) {
+            throw $e;
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal kirim WABA template'));
+        }
+
+        $json = (array) $response->json();
+        $code = $json['code'] ?? null;
+        if (is_numeric($code) && (int) $code !== 0) {
+            $desc = $json['desc'] ?? null;
+            throw new RuntimeException(is_string($desc) && trim($desc) !== '' ? $desc : 'Gagal kirim WABA template');
+        }
+
+        return [
+            'success' => true,
+            'data' => $json,
+        ];
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function wabaTemplateList(string $accessToken, array $payload = [], ?string $gatewayToken = null, ?callable $refreshGatewayToken = null): array
+    {
+        $requestPayload = $payload === [] ? new stdClass() : $payload;
+
+        if (! $this->hasDirectApiConfig()) {
+            if ($gatewayToken === null || trim($gatewayToken) === '') {
+                throw new RuntimeException('Konfigurasi direct API WABA belum lengkap.');
+            }
+
+            return $this->postGw('/api/gw/waba-template-list', $gatewayToken, is_array($requestPayload) ? $requestPayload : [], $refreshGatewayToken);
+        }
+
+        try {
+            $response = $this->directClient($accessToken)->asJson()->post('/scrt/myads/api/v1/waba/template/list', $requestPayload);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API WABA template list: ' . $e->getMessage(), previous: $e);
+        } catch (RuntimeException $e) {
+            throw $e;
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal ambil WABA template list'));
+        }
+
+        $json = (array) $response->json();
+        $code = $json['code'] ?? null;
+        if (is_numeric($code) && (int) $code !== 0) {
+            $desc = $json['desc'] ?? null;
+            throw new RuntimeException(is_string($desc) && trim($desc) !== '' ? $desc : 'Gagal ambil WABA template list');
+        }
+
+        return [
+            'success' => true,
+            'data' => $json,
+        ];
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function wabaDisplayNameList(string $accessToken, array $payload = [], ?string $gatewayToken = null, ?callable $refreshGatewayToken = null): array
+    {
+        $requestPayload = $payload === [] ? new stdClass() : $payload;
+
+        if (! $this->hasDirectApiConfig()) {
+            if ($gatewayToken === null || trim($gatewayToken) === '') {
+                throw new RuntimeException('Konfigurasi direct API WABA belum lengkap.');
+            }
+
+            return $this->postGw('/api/gw/waba-display-name-list', $gatewayToken, is_array($requestPayload) ? $requestPayload : [], $refreshGatewayToken);
+        }
+
+        try {
+            $response = $this->directClient($accessToken)->asJson()->post('/scrt/myads/api/v1/waba/display-name/list', $requestPayload);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API WABA display name list: ' . $e->getMessage(), previous: $e);
+        } catch (RuntimeException $e) {
+            throw $e;
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal ambil WABA display name list'));
+        }
+
+        $json = (array) $response->json();
+        $code = $json['code'] ?? null;
+        if (is_numeric($code) && (int) $code !== 0) {
+            $desc = $json['desc'] ?? null;
+            throw new RuntimeException(is_string($desc) && trim($desc) !== '' ? $desc : 'Gagal ambil WABA display name list');
+        }
+
+        return [
+            'success' => true,
+            'data' => $json,
+        ];
     }
 
     /**
@@ -334,12 +490,14 @@ class MyadsApiClient
      */
     private function sendPostGw(string $path, string $gatewayToken, array $payload): array
     {
+        $requestPayload = $payload === [] ? new stdClass() : $payload;
+
         try {
             $response = $this->client()
                 ->withHeaders([
                     'x-api-gw-token' => $gatewayToken,
                 ])
-                ->post($path, $payload);
+                ->post($path, $requestPayload);
         } catch (ConnectionException $e) {
             throw new RuntimeException('Tidak bisa konek ke API GW proxy: ' . $e->getMessage(), previous: $e);
         }
@@ -369,7 +527,9 @@ class MyadsApiClient
             }
         }
 
-        return $fallback;
+        $body = trim(strip_tags($response->body()));
+
+        return $body !== '' ? $body : $fallback;
     }
 
     /**
@@ -397,38 +557,21 @@ class MyadsApiClient
      * Upload file via gateway if needed by MMS flows.
      * Kept here because ApiGatewayTestController references it.
      */
-    public function uploadFile(string $gatewayToken, UploadedFile $file, string $type = 'FILE', ?callable $refreshGatewayToken = null): array
+    public function uploadFile(string $accessToken, UploadedFile $file, string $type = 'MULTIMEDIA', ?string $gatewayToken = null, ?callable $refreshGatewayToken = null): array
     {
-        try {
-            return $this->sendUploadFile($gatewayToken, $file, $type);
-        } catch (RuntimeException $e) {
-            if ($refreshGatewayToken === null || ! $this->isGatewayAuthorizationCacheMiss($e->getMessage())) {
-                throw $e;
-            }
-
-            $freshToken = (string) $refreshGatewayToken();
-            if (trim($freshToken) === '') {
-                throw $e;
-            }
-
-            return $this->sendUploadFile($freshToken, $file, $type);
-        }
+        return $this->sendUploadFile($accessToken, $file, $type);
     }
 
-    private function sendUploadFile(string $gatewayToken, UploadedFile $file, string $type): array
+    private function sendUploadFile(string $accessToken, UploadedFile $file, string $type): array
     {
         try {
-            $response = Http::baseUrl($this->baseUrl)
-                ->acceptJson()
+            $response = $this->directClient($accessToken)
                 ->timeout(60)
-                ->withHeaders([
-                    'x-api-gw-token' => $gatewayToken,
-                ])
                 ->attach('file', file_get_contents($file->getRealPath()), $file->getClientOriginalName())
-                ->post('/api/gw/upload', [
+                ->post('/scrt/myads/api/v1/content/upload', [
                     'type' => $type,
                 ]);
-        } catch (ConnectionException $e) {
+        } catch (ConnectionException | RuntimeException $e) {
             throw new RuntimeException('Tidak bisa konek ke API upload: ' . $e->getMessage(), previous: $e);
         }
 
@@ -437,6 +580,15 @@ class MyadsApiClient
         }
 
         $json = (array) $response->json();
-        return $this->assertGatewayOk($json, 'Upload gagal');
+        $code = $json['code'] ?? null;
+        if (is_numeric($code) && (int) $code !== 0) {
+            $desc = $json['desc'] ?? null;
+            throw new RuntimeException(is_string($desc) && trim($desc) !== '' ? $desc : 'Upload gagal');
+        }
+
+        return [
+            'success' => true,
+            'data' => $json,
+        ];
     }
 }
