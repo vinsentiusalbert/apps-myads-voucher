@@ -333,37 +333,11 @@ class MyadsApiClient
      */
     public function wabaTemplateAdd(string $accessToken, array $payload, ?string $gatewayToken = null, ?callable $refreshGatewayToken = null): array
     {
-        if (! $this->hasDirectApiConfig()) {
-            if ($gatewayToken === null || trim($gatewayToken) === '') {
-                throw new RuntimeException('Konfigurasi direct API WABA belum lengkap.');
-            }
-
-            return $this->postGw('/api/gw/waba-template-add', $gatewayToken, $payload, $refreshGatewayToken);
+        if ($gatewayToken === null || trim($gatewayToken) === '') {
+            throw new RuntimeException('Token API GW tidak tersedia.');
         }
 
-        try {
-            $response = $this->directClient($accessToken)->asJson()->post('/scrt/myads/api/v1/waba/template/add', $payload);
-        } catch (ConnectionException $e) {
-            throw new RuntimeException('Tidak bisa konek ke API WABA template add: ' . $e->getMessage(), previous: $e);
-        } catch (RuntimeException $e) {
-            throw $e;
-        }
-
-        if ($response->failed()) {
-            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal kirim WABA template'));
-        }
-
-        $json = (array) $response->json();
-        $code = $json['code'] ?? null;
-        if (is_numeric($code) && (int) $code !== 0) {
-            $desc = $json['desc'] ?? null;
-            throw new RuntimeException(is_string($desc) && trim($desc) !== '' ? $desc : 'Gagal kirim WABA template');
-        }
-
-        return [
-            'success' => true,
-            'data' => $json,
-        ];
+        return $this->postGw('/api/gw/waba-template-add', $gatewayToken, $payload, $refreshGatewayToken);
     }
 
     /**
@@ -371,39 +345,11 @@ class MyadsApiClient
      */
     public function wabaTemplateList(string $accessToken, array $payload = [], ?string $gatewayToken = null, ?callable $refreshGatewayToken = null): array
     {
-        $requestPayload = $payload === [] ? new stdClass() : $payload;
-
-        if (! $this->hasDirectApiConfig()) {
-            if ($gatewayToken === null || trim($gatewayToken) === '') {
-                throw new RuntimeException('Konfigurasi direct API WABA belum lengkap.');
-            }
-
-            return $this->postGw('/api/gw/waba-template-list', $gatewayToken, is_array($requestPayload) ? $requestPayload : [], $refreshGatewayToken);
+        if ($gatewayToken === null || trim($gatewayToken) === '') {
+            throw new RuntimeException('Token API GW tidak tersedia.');
         }
 
-        try {
-            $response = $this->directClient($accessToken)->asJson()->post('/scrt/myads/api/v1/waba/template/list', $requestPayload);
-        } catch (ConnectionException $e) {
-            throw new RuntimeException('Tidak bisa konek ke API WABA template list: ' . $e->getMessage(), previous: $e);
-        } catch (RuntimeException $e) {
-            throw $e;
-        }
-
-        if ($response->failed()) {
-            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal ambil WABA template list'));
-        }
-
-        $json = (array) $response->json();
-        $code = $json['code'] ?? null;
-        if (is_numeric($code) && (int) $code !== 0) {
-            $desc = $json['desc'] ?? null;
-            throw new RuntimeException(is_string($desc) && trim($desc) !== '' ? $desc : 'Gagal ambil WABA template list');
-        }
-
-        return [
-            'success' => true,
-            'data' => $json,
-        ];
+        return $this->postGw('/api/gw/waba-template-list', $gatewayToken, $payload, $refreshGatewayToken);
     }
 
     /**
