@@ -1,7 +1,6 @@
 @php
     $templateValue = fn (string $field, mixed $default = null) => old($field, $isWaTemplateRead ? $templateRow->{$field} : $default);
     $templatePayloadValue = fn (string $field, mixed $default = null) => old($field, $isWaTemplateRead ? data_get($templateRow->gw_payload ?? [], $field, $default) : $default);
-    $defaultPreviewBody = "Halo Pelanggan Setia ComboFit, kamu mendapatkan akses Exercise Plan GRATIS selama 30 hari\n\n- Akses ke program latihan fisik oleh Coach profesional\n- Panduan video latihan yang mudah diikuti\n- Tips dan trik kebugaran\n\nAktifkan akunmu di link ini\nhttps://bit.ly/Fita_Combofit\n\n#SehatMakinNikmat bersama Fita!";
     $previewButtons = collect(data_get($templateRow ?? null, 'buttons', data_get($templateRow ?? null, 'gw_payload.buttons', [])))
         ->filter(fn ($button) => is_array($button) && trim((string) ($button['label'] ?? '')) !== '')
         ->values();
@@ -34,15 +33,19 @@
             @endunless
             <div class="template-builder-field">
                 <label>Name your template</label>
-                <input type="text" name="name" value="{{ $templateValue('name', 'campaign_whatsapp') }}" required @readonly($isWaTemplateRead)>
+                <input type="text" name="name" value="" required @readonly($isWaTemplateRead)>
             </div>
 
-            <div class="template-builder-field">
-                <label>Category Template</label>
-                <select name="category" required @disabled($isWaTemplateRead)>
-                    <option value="Single Banner" @selected($templateValue('category', 'Single Banner') === 'Single Banner')>Single Banner</option>
-                </select>
-            </div>
+            @unless ($isWaTemplateRead)
+                <input type="hidden" name="category" value="{{ $templateValue('category', 'Single Banner') }}">
+            @else
+                <div class="template-builder-field">
+                    <label>Category Template</label>
+                    <select name="category" required disabled>
+                        <option value="Single Banner" @selected($templateValue('category', 'Single Banner') === 'Single Banner')>Single Banner</option>
+                    </select>
+                </div>
+            @endunless
 
             <div class="template-builder-field">
                 <label>Language</label>
@@ -75,55 +78,49 @@
 
             <div class="template-builder-field">
                 <label>Header Type</label>
-                <select name="header_type" @disabled($isWaTemplateRead)>
-                    <option value="TEXT" @selected(in_array($templateValue('header_type', 'TEXT'), ['TEXT', 'none'], true))>TEXT</option>
-                    <option value="IMAGE" @selected(in_array($templateValue('header_type'), ['IMAGE', 'image'], true))>IMAGE</option>
-                    <option value="VIDEO" @selected(in_array($templateValue('header_type'), ['VIDEO', 'video'], true))>VIDEO</option>
-                    <option value="DOCUMENT" @selected(in_array($templateValue('header_type'), ['DOCUMENT', 'document'], true))>DOCUMENT</option>
+                <select name="header_type" id="templateHeaderTypeSelect" @disabled($isWaTemplateRead)>
+                    <option value="none" @selected(in_array($templateValue('header_type', 'none'), ['none', ''], true))>Tidak menggunakan Header</option>
+                    <option value="TEXT" @selected($templateValue('header_type') === 'TEXT')>Teks</option>
+                    <option value="IMAGE" @selected(in_array($templateValue('header_type'), ['IMAGE', 'image'], true))>Gambar</option>
                 </select>
             </div>
 
-            <div class="template-builder-field">
-                <label>Header Label</label>
-                <input type="text" name="header_label" value="{{ $templatePayloadValue('headerLabel') }}" maxlength="255" placeholder="Test" @readonly($isWaTemplateRead)>
+            <div class="template-builder-field" data-template-header-label-field @hidden($templateValue('header_type') !== 'TEXT')>
+                <label>Header Text</label>
+                <input type="text" name="header_label" value="{{ $templatePayloadValue('headerLabel') }}" maxlength="60" placeholder="Teks header" data-template-header-label-input @readonly($isWaTemplateRead)>
+                <span class="template-builder-button-card__meta" data-template-header-label-count>0/60 Karakter</span>
             </div>
 
-            <div class="template-builder-field">
+            <div class="template-builder-field" data-template-asset-field @hidden(! in_array($templateValue('header_type'), ['IMAGE', 'image'], true))>
                 <label>Asset</label>
-                <p class="template-builder-field__hint">You can upload videos, images, PDFs, or locations.</p>
+                <p class="template-builder-field__hint">Upload gambar untuk header template.</p>
                 <label class="template-builder-upload" for="templateAssetInput">
-                    <input type="file" id="templateAssetInput" name="asset" class="template-builder-upload__input" accept="image/*,application/pdf,video/mp4" @disabled($isWaTemplateRead)>
-                    <span class="template-builder-upload__icon">☁</span>
+                    <input type="file" id="templateAssetInput" name="asset" class="template-builder-upload__input" accept="image/*" @disabled($isWaTemplateRead)>
+                    <span class="template-builder-upload__icon">Upload</span>
                     <strong id="templateAssetLabel">{{ $isWaTemplateRead && $templateRow->asset_path ? basename($templateRow->asset_path) : 'Upload an asset' }}</strong>
                     <small>(Ensure your asset meets the format and size requirement)</small>
                     <span class="template-builder-upload__link">Learn more about supported format assets</span>
                 </label>
             </div>
-
-            <div class="template-builder-editor">
-                <div class="template-builder-editor__toolbar">
-                    <select>
-                        <option>Paragraph</option>
-                    </select>
-                    <button type="button">B</button>
-                    <button type="button"><i>I</i></button>
-                    <button type="button"><u>U</u></button>
-                    <button type="button">S</button>
-                    <button type="button">•</button>
-                    <button type="button">1.</button>
-                </div>
-                <textarea id="templateBodyInput" name="body" maxlength="1024" placeholder="Write something awesome..." required @readonly($isWaTemplateRead)>{{ $templateValue('body') }}</textarea>
-                <span class="template-builder-editor__count" id="templateBodyCount">0 / 1024</span>
-            </div>
-
-            <div class="template-builder-inline-actions">
-                <button type="button" class="template-builder-secondary">Add Body Variable</button>
-            </div>
-
             <div class="template-builder-field">
-                <label>Footer (optional)</label>
-                <input type="text" name="footer" value="{{ $templateValue('footer') }}" maxlength="60" @readonly($isWaTemplateRead)>
+                <label>Body</label>
+                <div class="template-builder-editor">
+                    <div class="template-builder-editor__toolbar">
+                        <select>
+                            <option>Paragraph</option>
+                        </select>
+                        <button type="button">B</button>
+                        <button type="button"><i>I</i></button>
+                        <button type="button"><u>U</u></button>
+                        <button type="button">S</button>
+                        <button type="button">-</button>
+                        <button type="button">1.</button>
+                    </div>
+                    <textarea id="templateBodyInput" name="body" maxlength="550" placeholder="Isi Pesan" required @readonly($isWaTemplateRead)>{{ $templateValue('body') }}</textarea>
+                    <span class="template-builder-editor__count" id="templateBodyCount">0/550 Karakter</span>
+                </div>
             </div>
+
         </article>
 
         <article class="template-builder-card">
@@ -132,7 +129,7 @@
                 <span>+</span>
                 <span>Add Button</span>
             </button>
-            <p class="template-builder-button-warning" id="templateButtonWarning" hidden>Button hanya bisa 2.</p>
+            <p class="template-builder-button-warning" id="templateButtonWarning" hidden>Button hanya bisa 10.</p>
 
             <div class="template-builder-button-list" id="templateButtonList"></div>
 
@@ -157,30 +154,13 @@
             <h2>Template Preview</h2>
             <div class="template-builder-phone">
                 <div class="template-builder-phone__message">
-                    @if ($previewHeaderType === 'TEXT' && $previewHeaderLabel !== '')
-                        <strong class="template-builder-phone__header-text">{{ $previewHeaderLabel }}</strong>
-                        <img src="{{ $isWaTemplateRead && $templateRow->asset_path ? asset('storage/' . $templateRow->asset_path) : asset('assets/logo.png') }}" alt="Preview asset" class="template-builder-phone__image" id="templatePreviewImage" hidden>
-                    @else
-                        <img src="{{ $isWaTemplateRead && $templateRow->asset_path ? asset('storage/' . $templateRow->asset_path) : asset('assets/logo.png') }}" alt="Preview asset" class="template-builder-phone__image" id="templatePreviewImage">
-                    @endif
-                    <div class="template-builder-phone__body" id="templatePreviewBody">{{ trim((string) $templateValue('body', '')) !== '' ? $templateValue('body') : $defaultPreviewBody }}@if(false)
-                        Halo Pelanggan Setia ComboFit, kamu mendapatkan akses Exercise Plan GRATIS selama 30 hari 🔥
-
-                        ✅ Akses ke program latihan fisik oleh Coach profesional
-                        ✅ Panduan video latihan yang mudah diikuti
-                        ✅ Tips dan trik kebugaran
-
-                        Aktifkan akunmu di link ini
-                        https://bit.ly/Fita_Combofit
-
-                        #SehatMakinNikmat bersama Fita!
-                    @endif</div>
+                    <strong class="template-builder-phone__header-text" id="templatePreviewHeaderText" @hidden($previewHeaderType !== 'TEXT' || $previewHeaderLabel === '')>{{ $previewHeaderLabel }}</strong>
+                    <img src="{{ $isWaTemplateRead && $templateRow->asset_path ? asset('storage/' . $templateRow->asset_path) : asset('assets/logo.png') }}" alt="Preview asset" class="template-builder-phone__image" id="templatePreviewImage" @hidden($previewHeaderType !== 'IMAGE')>
+                    <div class="template-builder-phone__body" id="templatePreviewBody">{{ $templateValue('body') }}</div>
                     <div class="template-builder-phone__actions" id="templatePreviewActions">
-                        @forelse ($previewButtons as $button)
+                        @foreach ($previewButtons as $button)
                             <div class="template-builder-phone__cta">{{ $button['label'] }}</div>
-                        @empty
-                            <div class="template-builder-phone__cta">Coba Sekarang</div>
-                        @endforelse
+                        @endforeach
                     </div>
                 </div>
             </div>

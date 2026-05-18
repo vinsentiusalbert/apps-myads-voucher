@@ -56,6 +56,7 @@
     ];
     $activeNav = 'wa-business';
     $activeSubnav = 'wa-location-based-area';
+    $autoCampaignName = 'gotoads_waba_lba_' . now()->format('YmdHis');
     $waTemplates = collect($waTemplates ?? []);
 @endphp
 
@@ -75,6 +76,8 @@
 @endpush
 
 @section('content')
+    @include('partials.waba-template-suggestion-modal', ['flowLabel' => 'WA Business LBA'])
+
     <section class="campaign-page-intro">
         <p class="campaign-page-intro__crumb">Dashboard / Buat Iklan WA Business LBA</p>
         <h1 class="campaign-page-intro__title">Buat Iklan WA Business LBA</h1>
@@ -116,6 +119,15 @@
                             @endforeach
                         </select>
                     </div>
+                    @if ($waTemplates->isEmpty())
+                        <div class="campaign-template-empty-state">
+                            <strong>Belum ada template pesan.</strong>
+                            <p>Buat template pesan terlebih dahulu agar bisa dipilih untuk iklan WA Business LBA.</p>
+                            <a href="{{ route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'campaign-template', 'view' => 'create']) }}" class="campaign-inline-link campaign-inline-link--fit">
+                                Buat Template Pesan
+                            </a>
+                        </div>
+                    @endif
 
                     <div class="campaign-wa-lba-template" id="waLbaTemplateDetails" hidden>
                         <p class="campaign-wa-lba-template__note" id="waLbaPriceNote"></p>
@@ -184,7 +196,7 @@
             </div>
 
             <div class="campaign-form-actions campaign-form-actions--wa-lba">
-                <button type="button" class="campaign-draft-btn">
+                {{-- <button type="button" class="campaign-draft-btn">
                     <span class="campaign-draft-btn__icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none">
                             <path d="M6 3.75h8.75L19.5 8.5v11a1.75 1.75 0 0 1-1.75 1.75H6A1.75 1.75 0 0 1 4.25 19.5V5.5A1.75 1.75 0 0 1 6 3.75Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
@@ -193,7 +205,7 @@
                         </svg>
                     </span>
                     <span>Simpan Iklan Sebagai Draft</span>
-                </button>
+                </button> --}}
 
                 <button type="button" class="submit-btn lba-primary-btn campaign-step-nav-btn" id="waLbaNextButton" disabled>
                     Lanjutkan
@@ -389,7 +401,7 @@
 
                 <div class="campaign-form-actions campaign-form-actions--step-two">
                     <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="waLbaStepThreeBack">Sebelumnya</button>
-                    <button type="button" class="campaign-draft-btn">
+                    {{-- <button type="button" class="campaign-draft-btn">
                         <span class="campaign-draft-btn__icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" fill="none">
                                 <path d="M6 3.75h8.75L19.5 8.5v11a1.75 1.75 0 0 1-1.75 1.75H6A1.75 1.75 0 0 1 4.25 19.5V5.5A1.75 1.75 0 0 1 6 3.75Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
@@ -398,7 +410,7 @@
                             </svg>
                         </span>
                         <span>Simpan Iklan Sebagai Draft</span>
-                    </button>
+                    </button> --}}
                     <button type="button" class="submit-btn lba-primary-btn campaign-step-two__next" id="waLbaStepThreeNext" disabled>Lanjutkan</button>
                 </div>
             </section>
@@ -422,7 +434,7 @@
                     <article class="campaign-review-card" data-wa-lba-review-card="content">
                         <div class="campaign-review-card__header">
                             <div class="campaign-review-card__head">
-                                <span class="campaign-review-card__icon">💬</span>
+                                <span class="campaign-review-card__icon campaign-review-card__icon--content" aria-hidden="true"></span>
                                 <h3>Konten Iklan</h3>
                             </div>
                             <div class="campaign-review-card__actions">
@@ -451,7 +463,7 @@
                     <article class="campaign-review-card" data-wa-lba-review-card="recipient">
                         <div class="campaign-review-card__header">
                             <div class="campaign-review-card__head">
-                                <span class="campaign-review-card__icon">👥</span>
+                                <span class="campaign-review-card__icon campaign-review-card__icon--recipient" aria-hidden="true"></span>
                                 <h3>Profil Penerima</h3>
                             </div>
                             <div class="campaign-review-card__actions">
@@ -492,7 +504,7 @@
                     <article class="campaign-review-card" data-wa-lba-review-card="delivery">
                         <div class="campaign-review-card__header">
                             <div class="campaign-review-card__head">
-                                <span class="campaign-review-card__icon">⏰</span>
+                                <span class="campaign-review-card__icon campaign-review-card__icon--delivery" aria-hidden="true"></span>
                                 <h3>Waktu Pengiriman</h3>
                             </div>
                             <div class="campaign-review-card__actions">
@@ -555,7 +567,45 @@
                                     <strong class="campaign-cost-card__danger" id="waLbaReviewPayment">Rp 5.500</strong>
                                 </div>
                             </div>
-                            <button type="button" class="campaign-cost-card__cta">Bayar & Kirim Iklan</button>
+                            <p class="campaign-payment-error" id="waLbaPaymentError" hidden></p>
+                            <p class="campaign-payment-hint" id="waLbaPaymentHint" hidden></p>
+                            <button type="button" class="campaign-cost-card__cta" id="waLbaGwSubmitButton">Bayar & Kirim Iklan</button>
+                            <div class="campaign-cost-card__section" id="waLbaPaymentPanel" hidden>
+                                <span class="campaign-cost-card__section-title">Pembayaran QRIS</span>
+                                <div class="campaign-cost-card__row">
+                                    <span>Status</span>
+                                    <strong id="waLbaPaymentStatus">-</strong>
+                                </div>
+                                <div class="campaign-cost-card__row">
+                                    <span>Transaction ID</span>
+                                    <strong id="waLbaPaymentTransaction">-</strong>
+                                </div>
+                                <div class="campaign-cost-card__row" style="display:block">
+                                    <img id="waLbaPaymentQr" alt="QRIS" style="max-width: 100%; height: auto; display: block; margin-top: 10px;" />
+                                    <a id="waLbaPaymentQrLink" class="campaign-inline-link campaign-inline-link--fit" href="#" target="_blank" rel="noreferrer" style="margin-top: 8px; display: inline-block">Buka QRIS</a>
+                                </div>
+                            </div>
+                            <form id="waLbaGwSubmitForm" method="POST" action="{{ route('campaign.waba-lba.send') }}" hidden>
+                                @csrf
+                                <input type="hidden" name="payment_transaction_id" id="waLbaPaymentTransactionId" value="">
+                                <input type="hidden" name="campaign_name" id="waLbaGwCampaignName" value="{{ $autoCampaignName }}">
+                                <input type="hidden" name="waba_user_template_id" id="waLbaGwTemplateId" value="">
+                                <input type="hidden" name="recipient_total" id="waLbaGwRecipientTotal" value="">
+                                <input type="hidden" name="delivery_start_date" id="waLbaGwDeliveryStartDate" value="">
+                                <input type="hidden" name="delivery_end_date" id="waLbaGwDeliveryEndDate" value="">
+                                <input type="hidden" name="delivery_start_time" id="waLbaGwDeliveryStartTime" value="">
+                                <input type="hidden" name="delivery_end_time" id="waLbaGwDeliveryEndTime" value="">
+                                <input type="hidden" name="control_number" id="waLbaGwControlNumber" value="">
+                                <input type="hidden" name="location_name" id="waLbaGwLocationName" value="">
+                                <input type="hidden" name="location_lat" id="waLbaGwLocationLat" value="">
+                                <input type="hidden" name="location_lng" id="waLbaGwLocationLng" value="">
+                                <input type="hidden" name="location_radius" id="waLbaGwLocationRadius" value="">
+                                <input type="hidden" name="location_type" id="waLbaGwLocationType" value="ALL">
+                                <input type="hidden" name="recipient_max" id="waLbaGwRecipientMax" value="">
+                                <input type="hidden" name="profile_gender" id="waLbaGwProfileGender" value="">
+                                <input type="hidden" name="profile_age" id="waLbaGwProfileAge" value="">
+                                <input type="hidden" name="profile_religion" id="waLbaGwProfileReligion" value="">
+                            </form>
                             <p class="campaign-cost-card__footnote">
                                 Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim. Detil mengenai jumlah iklan terkirim/tidak terkirim akan diinformasikan pada menu laporan setelah iklan Anda tayang.
                             </p>
@@ -671,11 +721,29 @@
             const testRecipient = document.getElementById('waLbaTestRecipient');
             const estimateRange = document.getElementById('waLbaRecipientEstimateRange');
             const reviewSchedules = document.getElementById('waLbaReviewSchedules');
-            const locationState = {
-                name: 'Bundaran HI, Jakarta',
-                audience: 2400,
+            const waLbaGwSubmitButton = document.getElementById('waLbaGwSubmitButton');
+            const waLbaGwSubmitForm = document.getElementById('waLbaGwSubmitForm');
+            const waLbaPaymentTransactionId = document.getElementById('waLbaPaymentTransactionId');
+            const waLbaPaymentPanel = document.getElementById('waLbaPaymentPanel');
+            const waLbaPaymentStatus = document.getElementById('waLbaPaymentStatus');
+            const waLbaPaymentTransaction = document.getElementById('waLbaPaymentTransaction');
+            const waLbaPaymentQr = document.getElementById('waLbaPaymentQr');
+            const waLbaPaymentQrLink = document.getElementById('waLbaPaymentQrLink');
+            const waLbaPaymentError = document.getElementById('waLbaPaymentError');
+            const waLbaPaymentHint = document.getElementById('waLbaPaymentHint');
+            const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
+            const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
+            const csrfToken = "{{ csrf_token() }}";
+            const waLbaUnitPrice = 1100;
+            const defaultMapCenter = {
                 lat: -6.1944491,
                 lng: 106.8229198,
+            };
+            const locationState = {
+                name: '',
+                audience: 0,
+                lat: null,
+                lng: null,
             };
             let liveMap = null;
             let liveMarker = null;
@@ -818,6 +886,239 @@
 
             const formatCurrency = (value) => `Rp ${new Intl.NumberFormat('id-ID').format(Number(value || 0))}`;
 
+            const normalizeMsisdn = (value) => {
+                const digits = String(value || '').replace(/\D/g, '');
+                if (digits === '') {
+                    return '';
+                }
+                if (digits.startsWith('62')) {
+                    return digits;
+                }
+                if (digits.startsWith('0')) {
+                    return `62${digits.slice(1)}`;
+                }
+                return `62${digits}`;
+            };
+
+            const setHiddenValue = (id, value) => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.value = String(value ?? '');
+                }
+            };
+
+            const pickScheduleValue = (selector) => {
+                const element = document.querySelector(selector);
+                return element && typeof element.value === 'string' ? element.value : '';
+            };
+
+            const selectedValues = (select) => Array.from(select?.selectedOptions || [])
+                .map((option) => option.value)
+                .filter(Boolean);
+
+            const mapProfileValues = (values, map = {}) => values
+                .map((value) => map[value] ?? value)
+                .filter((value) => value !== '' && value !== 'all')
+                .join('|');
+
+            const setPaymentError = (message = '') => {
+                if (!waLbaPaymentError) {
+                    return;
+                }
+
+                waLbaPaymentError.textContent = message;
+                waLbaPaymentError.hidden = message === '';
+            };
+
+            const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+            const setPaymentUi = ({ status, transactionId, qrisUrl } = {}) => {
+                if (waLbaPaymentPanel) {
+                    waLbaPaymentPanel.hidden = false;
+                }
+                if (waLbaPaymentStatus) {
+                    waLbaPaymentStatus.textContent = status || '-';
+                }
+                if (waLbaPaymentTransaction) {
+                    waLbaPaymentTransaction.textContent = transactionId || '-';
+                }
+                if (waLbaPaymentQr && qrisUrl) {
+                    waLbaPaymentQr.src = qrisUrl;
+                }
+                if (waLbaPaymentQrLink) {
+                    waLbaPaymentQrLink.href = qrisUrl || '#';
+                    waLbaPaymentQrLink.hidden = !qrisUrl;
+                }
+            };
+
+            const getPaymentReadinessMessage = () => {
+                const recipientCount = Number(recipientCountInput?.value || 0);
+                const selectedTemplate = templates.find((template) => String(template.id) === String(templateSelect?.value));
+
+                if (!selectedTemplate) {
+                    return 'Pilih template pesan terlebih dahulu.';
+                }
+                if (!openLocationModalButton?.classList.contains('campaign-outline-button--applied')) {
+                    return 'Pilih lokasi target penerima terlebih dahulu.';
+                }
+                if (!recipientCount || recipientCount < 5) {
+                    return 'Jumlah penerima minimal 5 pesan.';
+                }
+                if (!testRecipient?.value) {
+                    return 'Pilih nomor test iklan terlebih dahulu.';
+                }
+                if (!termsCheck?.checked) {
+                    return 'Centang persetujuan Syarat dan Ketentuan terlebih dahulu.';
+                }
+
+                return '';
+            };
+
+            const syncPaymentSubmitState = () => {
+                if (!waLbaGwSubmitButton) {
+                    return;
+                }
+
+                const message = getPaymentReadinessMessage();
+                waLbaGwSubmitButton.disabled = message !== '';
+                waLbaGwSubmitButton.title = message;
+                if (waLbaPaymentHint) {
+                    waLbaPaymentHint.textContent = message;
+                    waLbaPaymentHint.hidden = message === '';
+                }
+            };
+
+            const pollPaymentUntilSuccess = async (transactionId) => {
+                const statusUrl = paymentStatusUrlTemplate.replace('__TRANSACTION_ID__', encodeURIComponent(transactionId));
+                const startedAt = Date.now();
+                const timeoutMs = 10 * 60 * 1000;
+
+                while ((Date.now() - startedAt) < timeoutMs) {
+                    let status = '';
+
+                    try {
+                        const response = await fetch(statusUrl, {
+                            headers: { Accept: 'application/json' },
+                        });
+                        const payload = await response.json().catch(() => null);
+                        status = String(payload?.data?.status || '').toUpperCase();
+                    } catch (error) {
+                        // keep polling
+                    }
+
+                    if (status) {
+                        setPaymentUi({ status, transactionId });
+                    }
+
+                    if (status === 'SUCCESS') {
+                        return;
+                    }
+
+                    if (status === 'FAILED' || status === 'EXPIRED') {
+                        throw new Error('Pembayaran gagal. Status: ' + status);
+                    }
+
+                    await sleep(3000);
+                }
+
+                throw new Error('Timeout menunggu pembayaran. Silakan coba lagi.');
+            };
+
+            const initiatePayment = async (amount, phone, detail) => {
+                const response = await fetch(paymentInitiateUrl, {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                    },
+                    body: JSON.stringify({
+                        transaction_amount: amount,
+                        customer_phone: phone,
+                        product_category: 'MYADS',
+                        product_type: 'ADVERTISEMENT',
+                        product_detail: detail,
+                    }),
+                });
+                const payload = await response.json().catch(() => null);
+
+                if (!response.ok || !payload || payload.success !== true) {
+                    throw new Error(payload?.message || 'Gagal initiate pembayaran.');
+                }
+
+                return payload;
+            };
+
+            const submitWabaLbaAfterPayment = async () => {
+                if (!waLbaGwSubmitForm || !waLbaPaymentTransactionId || !waLbaGwSubmitButton) {
+                    return;
+                }
+
+                setPaymentError('');
+
+                const selectedTemplate = templates.find((template) => String(template.id) === String(templateSelect?.value));
+                const templateId = Number(selectedTemplate?.id || templateSelect?.value || 0);
+                const campaignName = `gotoads_waba_lba_${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`;
+                const recipientCount = Number(recipientCountInput?.value || 0);
+                const phone = normalizeMsisdn(testRecipient?.value || '');
+                const totalCost = recipientCount * waLbaUnitPrice;
+                const scheduleId = '1';
+                const startHour = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
+                const startMinute = pickScheduleValue(`[data-schedule-time-start-minute="${scheduleId}"]`);
+                const endHour = pickScheduleValue(`[data-schedule-time-end-hour="${scheduleId}"]`);
+                const endMinute = pickScheduleValue(`[data-schedule-time-end-minute="${scheduleId}"]`);
+
+                if (!templateId) {
+                    throw new Error('Template pesan belum dipilih.');
+                }
+                if (!phone) {
+                    throw new Error('Nomor test iklan belum dipilih.');
+                }
+                if (!totalCost || totalCost <= 0) {
+                    throw new Error('Total biaya tidak valid.');
+                }
+
+                waLbaGwSubmitButton.disabled = true;
+                waLbaGwSubmitButton.classList.add('is-loading');
+                waLbaGwSubmitButton.textContent = 'Menyiapkan pembayaran...';
+
+                const initiateResp = await initiatePayment(totalCost, phone, `WABA LBA - ${campaignName}`);
+                const transactionId = String(initiateResp?.data?.transaction_id || '').trim();
+                const qrisUrl = String(initiateResp?.data?.qris_url || '').trim();
+
+                if (!transactionId) {
+                    throw new Error('Transaction ID tidak ditemukan dari response pembayaran.');
+                }
+
+                waLbaPaymentTransactionId.value = transactionId;
+                setPaymentUi({ status: 'PENDING', transactionId, qrisUrl });
+                waLbaGwSubmitButton.textContent = 'Menunggu pembayaran...';
+
+                await pollPaymentUntilSuccess(transactionId);
+
+                waLbaGwSubmitButton.textContent = 'Pembayaran sukses. Mengirim campaign...';
+
+                setHiddenValue('waLbaGwCampaignName', campaignName);
+                setHiddenValue('waLbaGwRecipientTotal', recipientCount);
+                setHiddenValue('waLbaGwTemplateId', templateId);
+                setHiddenValue('waLbaGwDeliveryStartDate', document.querySelector(`[data-schedule-date-start="${scheduleId}"]`)?.value || '');
+                setHiddenValue('waLbaGwDeliveryEndDate', document.querySelector(`[data-schedule-date-end="${scheduleId}"]`)?.value || '');
+                setHiddenValue('waLbaGwDeliveryStartTime', startHour && startMinute ? `${startHour}:${startMinute}` : '');
+                setHiddenValue('waLbaGwDeliveryEndTime', endHour && endMinute ? `${endHour}:${endMinute}` : '');
+                setHiddenValue('waLbaGwControlNumber', phone);
+                setHiddenValue('waLbaGwLocationName', locationState.name || 'Lokasi dipilih');
+                setHiddenValue('waLbaGwLocationLat', locationState.lat ?? '');
+                setHiddenValue('waLbaGwLocationLng', locationState.lng ?? '');
+                setHiddenValue('waLbaGwLocationRadius', Number(locationRadiusInput?.value || 0));
+                setHiddenValue('waLbaGwLocationType', 'ALL');
+                setHiddenValue('waLbaGwRecipientMax', estimateRange?.textContent || '');
+                setHiddenValue('waLbaGwProfileGender', mapProfileValues(selectedValues(genderSelect), { male: 'm', female: 'f' }));
+                setHiddenValue('waLbaGwProfileAge', mapProfileValues(selectedValues(ageSelect)));
+                setHiddenValue('waLbaGwProfileReligion', mapProfileValues(selectedValues(religionSelect)));
+
+                waLbaGwSubmitForm.submit();
+            };
+
             const collapseReviewCards = () => {
                 document.querySelectorAll('[data-wa-lba-review-card]').forEach((card) => {
                     card.classList.remove('campaign-review-card--open');
@@ -833,7 +1134,7 @@
             };
 
             const syncReviewSummary = () => {
-                const selected = templates.find((template) => template.id === templateSelect?.value);
+                const selected = templates.find((template) => String(template.id) === String(templateSelect?.value));
                 const recipientCount = Number(recipientCountInput?.value || 0);
                 const radius = Number(locationRadiusInput?.value || 0);
                 const totalCost = recipientCount * 1100;
@@ -1094,6 +1395,11 @@
             };
 
             window.applyCampaignLocationSelection = function () {
+                if (locationState.lat === null || locationState.lng === null) {
+                    locationState.lat = defaultMapCenter.lat;
+                    locationState.lng = defaultMapCenter.lng;
+                    locationState.name = 'Bundaran HI, Jakarta';
+                }
                 updateLocationSummary();
                 syncStepTwoState();
                 window.closeCampaignLocationModal && window.closeCampaignLocationModal();
@@ -1110,15 +1416,17 @@
                 }
 
                 if (!liveMap) {
-                    liveMap = L.map(locationCanvas, { zoomControl: true }).setView([locationState.lat, locationState.lng], 14);
+                    const initialLat = locationState.lat ?? defaultMapCenter.lat;
+                    const initialLng = locationState.lng ?? defaultMapCenter.lng;
+                    liveMap = L.map(locationCanvas, { zoomControl: true }).setView([initialLat, initialLng], 14);
 
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; OpenStreetMap'
                     }).addTo(liveMap);
 
-                    liveMarker = L.marker([locationState.lat, locationState.lng]).addTo(liveMap);
-                    liveCircle = L.circle([locationState.lat, locationState.lng], {
+                    liveMarker = L.marker([initialLat, initialLng]).addTo(liveMap);
+                    liveCircle = L.circle([initialLat, initialLng], {
                         radius: Number(locationRadiusInput?.value || 300),
                         color: '#ff3b4d',
                         weight: 2,
@@ -1243,6 +1551,7 @@
                 if (!stepThreeNext.disabled) {
                     syncReviewSummary();
                     collapseReviewCards();
+                    syncPaymentSubmitState();
                     syncStepState(4);
                 }
             });
@@ -1323,6 +1632,18 @@
             recipientCountInput?.addEventListener('input', syncStepThreeState);
             termsCheck?.addEventListener('change', syncStepThreeState);
             testRecipient?.addEventListener('change', syncStepThreeState);
+            waLbaGwSubmitButton?.addEventListener('click', async () => {
+                try {
+                    await submitWabaLbaAfterPayment();
+                } catch (error) {
+                    const message = error?.message ? String(error.message) : 'Gagal memproses pembayaran.';
+                    setPaymentUi({ status: 'FAILED' });
+                    setPaymentError(message);
+                    waLbaGwSubmitButton.classList.remove('is-loading');
+                    waLbaGwSubmitButton.disabled = false;
+                    waLbaGwSubmitButton.textContent = 'Bayar & Kirim Iklan';
+                }
+            });
             document.addEventListener('click', (event) => {
                 if (!event.target.closest('[data-time-picker]')) {
                     document.querySelectorAll('[data-time-picker]').forEach((picker) => {
@@ -1341,6 +1662,7 @@
             syncStepState(1);
             syncStepTwoState();
             syncStepThreeState();
+            syncPaymentSubmitState();
         });
     </script>
 @endpush

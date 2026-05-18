@@ -35,6 +35,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/campaign/{channel}/targeted/profile-dropdown-list', [ApiGatewayController::class, 'profileDropdownList'])->name('campaign.targeted.profile-dropdown-list');
     Route::post('/campaign/payment/initiate', [ApiGatewayController::class, 'paymentInitiate'])->name('campaign.payment.initiate');
     Route::get('/campaign/payment/{transactionId}', [ApiGatewayController::class, 'paymentStatus'])->name('campaign.payment.status');
+    Route::post('/campaign/wa-business/targeted/send', [ApiGatewayController::class, 'wabaTargetedAdd'])->name('campaign.waba-targeted.send');
+    Route::post('/campaign/wa-business/location-based-area/send', [ApiGatewayController::class, 'wabaLbaAdd'])->name('campaign.waba-lba.send');
     Route::post('/campaign/{channel}/targeted/send', [ApiGatewayController::class, 'targetedAdd'])->name('campaign.targeted.send');
     Route::post('/campaign/{channel}/location-based-area/send', [ApiGatewayController::class, 'lbaAdd'])->name('campaign.lba.send');
 

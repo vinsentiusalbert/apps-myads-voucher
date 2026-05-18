@@ -22,24 +22,49 @@ class SessionController extends Controller
     public function store(Request $request, MyadsApiClient $client): RedirectResponse
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
             'remember' => ['nullable', 'boolean'],
+            'merchant_id' => ['nullable', 'string', 'max:128'],
+            'partner_id' => ['nullable', 'string', 'max:128'],
         ]);
 
         $remember = (bool) ($credentials['remember'] ?? false);
         unset($credentials['remember']);
 
+        $merchantId = trim((string) ($credentials['merchant_id'] ?? ''));
+        $partnerId = trim((string) ($credentials['partner_id'] ?? ''));
+        unset($credentials['merchant_id'], $credentials['partner_id']);
+
+        if (($merchantId !== '' || $partnerId !== '') && ($merchantId === '' || $partnerId === '')) {
+            throw ValidationException::withMessages([
+                'email' => 'Merchant ID dan Partner ID wajib lengkap untuk login SSO.',
+            ]);
+        }
+
+        if ($merchantId !== '' && $partnerId !== '') {
+            $hasExistingSsoUser = User::query()
+                ->where('merchant_id', $merchantId)
+                ->where('partner_id', $partnerId)
+                ->exists();
+
+            if (! $hasExistingSsoUser) {
+                throw ValidationException::withMessages([
+                    'email' => 'Akun SSO belum terdaftar. Silakan lengkapi registrasi terlebih dahulu.',
+                ]);
+            }
+        }
+
         try {
             $loginResp = $client->login($credentials['email'], $credentials['password']);
         } catch (\Throwable $e) {
             throw ValidationException::withMessages([
-                'email' => $e->getMessage(),
+                'email' => $this->cleanApiMessage($e->getMessage()),
             ]);
         }
 
         if (! (bool) data_get($loginResp, 'success', false)) {
-            $message = (string) (data_get($loginResp, 'message') ?: 'Email atau password belum sesuai.');
+            $message = $this->cleanApiMessage((string) (data_get($loginResp, 'message') ?: 'Email atau password belum sesuai.'));
 
             throw ValidationException::withMessages([
                 'email' => $message,
@@ -51,13 +76,31 @@ class SessionController extends Controller
         $userEmail = (string) ($apiUser['email'] ?? $credentials['email']);
         $userName = (string) ($apiUser['name'] ?? $userEmail);
 
-        $user = User::query()->updateOrCreate(
-            ['email' => $userEmail],
-            [
+        if ($merchantId !== '' && $partnerId !== '') {
+            $user = User::query()
+                ->where('email', $userEmail)
+                ->where('merchant_id', $merchantId)
+                ->where('partner_id', $partnerId)
+                ->first();
+
+            if (! $user) {
+                throw ValidationException::withMessages([
+                    'email' => 'ID tidak sesuai dengan akun SSO yang sudah terdaftar.',
+                ]);
+            }
+
+            $user->forceFill([
                 'name' => $userName,
-                'password' => Str::random(32),
-            ]
-        );
+            ])->save();
+        } else {
+            $user = User::query()->updateOrCreate(
+                ['email' => $userEmail],
+                [
+                    'name' => $userName,
+                    'password' => Str::random(32),
+                ]
+            );
+        }
 
         Auth::login($user, $remember);
 
@@ -83,7 +126,7 @@ class SessionController extends Controller
             $request->session()->regenerateToken();
 
             throw ValidationException::withMessages([
-                'email' => $e->getMessage(),
+                'email' => $this->cleanApiMessage($e->getMessage()),
             ]);
         }
 
@@ -104,5 +147,12 @@ class SessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()->route('login');
+    }
+
+    private function cleanApiMessage(string $message): string
+    {
+        $message = trim(strip_tags($message));
+
+        return $message !== '' ? $message : 'Request tidak dapat diproses.';
     }
 }

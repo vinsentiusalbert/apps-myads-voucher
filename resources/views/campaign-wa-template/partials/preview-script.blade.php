@@ -2,6 +2,7 @@
     (() => {
         const templateBodyInput = document.getElementById('templateBodyInput');
         const templateBodyCount = document.getElementById('templateBodyCount');
+        const templatePreviewHeaderText = document.getElementById('templatePreviewHeaderText');
         const templatePreviewBody = document.getElementById('templatePreviewBody');
         const templateAssetInput = document.getElementById('templateAssetInput');
         const templatePreviewImage = document.getElementById('templatePreviewImage');
@@ -10,6 +11,11 @@
         const templateButtonList = document.getElementById('templateButtonList');
         const templatePreviewActions = document.getElementById('templatePreviewActions');
         const templateButtonWarning = document.getElementById('templateButtonWarning');
+        const templateHeaderTypeSelect = document.getElementById('templateHeaderTypeSelect');
+        const templateHeaderLabelField = document.querySelector('[data-template-header-label-field]');
+        const templateHeaderLabelInput = document.querySelector('[data-template-header-label-input]');
+        const templateHeaderLabelCount = document.querySelector('[data-template-header-label-count]');
+        const templateAssetField = document.querySelector('[data-template-asset-field]');
         const wabaDisplayNameField = document.querySelector('[data-waba-display-name-field]');
         const wabaDisplayNameSelect = document.getElementById('wabaDisplayNameSelect');
         const wabaAccountIdInput = document.getElementById('wabaAccountIdInput');
@@ -18,36 +24,24 @@
         const oldPhoneNumberId = @json(old('phone_number_id'));
         const oldDisplayName = @json(old('display_name'));
         const isTemplateRead = @json($isWaTemplateRead);
-        const fallbackWabaDisplayName = {
-            verifiedName: 'Telkomsel Promo & Rewards',
-            wabaAccountId: '754609787733489',
-            phoneNumberId: '857922274060319',
-        };
+        const buttonUrlPrefix = 'https://gofood/';
         let templateButtonIndex = 0;
-
-        const defaultPreviewBody = `Halo Pelanggan Setia ComboFit, kamu mendapatkan akses Exercise Plan GRATIS selama 30 hari
-
-- Akses ke program latihan fisik oleh Coach profesional
-- Panduan video latihan yang mudah diikuti
-- Tips dan trik kebugaran
-
-Aktifkan akunmu di link ini
-https://bit.ly/Fita_Combofit
-
-#SehatMakinNikmat bersama Fita!`;
 
         const syncTemplateBodyPreview = () => {
             if (!templateBodyInput || !templatePreviewBody || !templateBodyCount) {
+                if (templateBodyInput && templateBodyCount) {
+                    templateBodyCount.textContent = `${templateBodyInput.value.length}/550 Karakter`;
+                }
                 return;
             }
             if (isTemplateRead) {
-                templateBodyCount.textContent = `${templateBodyInput.value.length} / 1024`;
+                templateBodyCount.textContent = `${templateBodyInput.value.length}/550 Karakter`;
                 return;
             }
 
             const value = templateBodyInput.value.trim();
-            templatePreviewBody.textContent = value || defaultPreviewBody;
-            templateBodyCount.textContent = `${templateBodyInput.value.length} / 1024`;
+            templatePreviewBody.textContent = value;
+            templateBodyCount.textContent = `${templateBodyInput.value.length}/550 Karakter`;
         };
 
         const syncTemplateAssetPreview = () => {
@@ -57,8 +51,8 @@ https://bit.ly/Fita_Combofit
 
             const [file] = templateAssetInput.files || [];
             if (!file) {
-                templatePreviewImage.src = "{{ asset('assets/logo.png') }}";
                 templateAssetLabel.textContent = 'Upload an asset';
+                templatePreviewImage.hidden = true;
                 return;
             }
 
@@ -67,13 +61,14 @@ https://bit.ly/Fita_Combofit
             reader.onload = (event) => {
                 if (typeof event.target?.result === 'string') {
                     templatePreviewImage.src = event.target.result;
+                    templatePreviewImage.hidden = templateHeaderTypeSelect?.value !== 'IMAGE';
                 }
             };
             reader.readAsDataURL(file);
         };
 
         const syncTemplateButtons = () => {
-            if (!templateButtonList || !templatePreviewActions || !templateAddButton || !templateButtonWarning) {
+            if (!templateButtonList || !templateAddButton || !templateButtonWarning) {
                 return;
             }
             if (isTemplateRead) {
@@ -81,44 +76,66 @@ https://bit.ly/Fita_Combofit
             }
 
             const cards = Array.from(templateButtonList.querySelectorAll('[data-template-button-card]'));
-            templateButtonWarning.hidden = cards.length < 2;
-            templateAddButton.disabled = cards.length >= 2;
+            templateButtonWarning.hidden = cards.length < 10;
+            templateAddButton.disabled = cards.length >= 10;
 
-            if (!cards.length) {
-                templatePreviewActions.innerHTML = '<div class="template-builder-phone__cta">Coba Sekarang</div>';
+            if (!templatePreviewActions) {
                 return;
             }
 
+            if (!cards.length) {
+                templatePreviewActions.innerHTML = '';
+                return;
+            }
+
+            const escapeHtml = (value) => String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#039;');
+
             templatePreviewActions.innerHTML = cards.map((card) => {
-                const label = card.querySelector('[data-template-button-text]')?.value?.trim() || 'Visit website';
-                return `<div class="template-builder-phone__cta">${label}</div>`;
+                const label = card.querySelector('[data-template-button-text]')?.value?.trim() || 'Quick Reply';
+                return `<div class="template-builder-phone__cta">${escapeHtml(label)}</div>`;
             }).join('');
         };
 
         const bindTemplateButtonCard = (card) => {
             const textInput = card.querySelector('[data-template-button-text]');
             const urlInput = card.querySelector('[data-template-button-url]');
+            const urlSuffixInput = card.querySelector('[data-template-button-url-suffix]');
             const actionInput = card.querySelector('[data-template-button-action]');
             const replayInput = card.querySelector('[data-template-button-replay]');
             const removeButton = card.querySelector('[data-template-button-remove]');
             const textMeta = card.querySelector('[data-template-button-meta]');
             const urlMeta = card.querySelector('[data-template-url-meta]');
+            const urlField = card.querySelector('[data-template-url-field]');
+            const urlTypeField = card.querySelector('[data-template-url-type-field]');
 
             const syncCard = () => {
                 if (textMeta && textInput) {
                     textMeta.textContent = `${textInput.value.length} / 25`;
                 }
-                if (urlMeta && urlInput) {
-                    urlMeta.textContent = `${urlInput.value.length} / 2000`;
-                }
                 if (replayInput && textInput) {
                     replayInput.value = textInput.value;
+                }
+                if (actionInput && urlField && urlTypeField) {
+                    const isUrl = actionInput.value === 'URL';
+                    urlField.hidden = !isUrl;
+                    urlTypeField.hidden = !isUrl;
+                    if (urlInput && urlSuffixInput) {
+                        urlInput.value = isUrl ? `${buttonUrlPrefix}${urlSuffixInput.value.replace(/^\/+/, '')}` : '';
+                    }
+                }
+                if (urlMeta && urlInput) {
+                    urlMeta.textContent = `${urlInput.value.length} / 2000`;
                 }
                 syncTemplateButtons();
             };
 
             textInput?.addEventListener('input', syncCard);
-            urlInput?.addEventListener('input', syncCard);
+            urlSuffixInput?.addEventListener('input', syncCard);
             actionInput?.addEventListener('change', syncCard);
             removeButton?.addEventListener('click', () => {
                 card.remove();
@@ -126,6 +143,47 @@ https://bit.ly/Fita_Combofit
             });
 
             syncCard();
+        };
+
+        const syncHeaderFields = (resetHeader = false) => {
+            if (!templateHeaderTypeSelect || !templateHeaderLabelField || !templateAssetField) {
+                return;
+            }
+
+            if (resetHeader) {
+                if (templateHeaderLabelInput) {
+                    templateHeaderLabelInput.value = '';
+                }
+                if (templateAssetInput) {
+                    templateAssetInput.value = '';
+                }
+                if (templateAssetLabel) {
+                    templateAssetLabel.textContent = 'Upload an asset';
+                }
+                if (templatePreviewImage) {
+                    templatePreviewImage.removeAttribute('src');
+                    templatePreviewImage.hidden = true;
+                }
+            }
+
+            const headerType = templateHeaderTypeSelect.value;
+            templateHeaderLabelField.hidden = headerType !== 'TEXT';
+            templateAssetField.hidden = headerType !== 'IMAGE';
+
+            if (templateHeaderLabelInput && templateHeaderLabelCount) {
+                templateHeaderLabelCount.textContent = `${templateHeaderLabelInput.value.length}/60 Karakter`;
+            }
+
+            if (templatePreviewHeaderText) {
+                const headerText = templateHeaderLabelInput?.value?.trim() || '';
+                templatePreviewHeaderText.textContent = headerText;
+                templatePreviewHeaderText.hidden = headerType !== 'TEXT' || headerText === '';
+            }
+
+            if (templatePreviewImage) {
+                const hasImage = Boolean(templateAssetInput?.files?.length);
+                templatePreviewImage.hidden = headerType !== 'IMAGE' || (!isTemplateRead && !hasImage);
+            }
         };
 
         const valueFrom = (row, keys) => {
@@ -170,12 +228,16 @@ https://bit.ly/Fita_Combofit
             phoneNumberIdInput.value = selected?.dataset.phoneNumberId || '';
         };
 
-        const applyWabaDisplayNameOptions = (rows, placeholder = 'Pilih display name', useFallback = false) => {
+        const applyWabaDisplayNameOptions = (rows, placeholder = 'Pilih display name') => {
             if (!wabaDisplayNameSelect) {
                 return;
             }
 
-            wabaDisplayNameSelect.replaceChildren(new Option(placeholder, ''));
+            const placeholderOption = new Option(placeholder, '');
+            placeholderOption.disabled = true;
+            placeholderOption.hidden = true;
+            placeholderOption.selected = true;
+            wabaDisplayNameSelect.replaceChildren(placeholderOption);
 
             rows.forEach((row) => {
                 const verifiedName = valueFrom(row, ['verifiedName', 'verified_name', 'displayName', 'display_name', 'name']);
@@ -195,15 +257,12 @@ https://bit.ly/Fita_Combofit
                 wabaDisplayNameSelect.appendChild(option);
             });
 
-            if (wabaDisplayNameSelect.options.length === 1 && useFallback) {
-                const fallbackOption = new Option(fallbackWabaDisplayName.verifiedName, fallbackWabaDisplayName.verifiedName);
-                fallbackOption.dataset.wabaAccountId = fallbackWabaDisplayName.wabaAccountId;
-                fallbackOption.dataset.phoneNumberId = fallbackWabaDisplayName.phoneNumberId;
-                fallbackOption.selected = true;
-                wabaDisplayNameSelect.appendChild(fallbackOption);
-            } else if (wabaDisplayNameSelect.options.length === 1) {
-                wabaDisplayNameSelect.replaceChildren(new Option('Display name tidak tersedia', ''));
-            } else if (!wabaDisplayNameSelect.value && wabaDisplayNameSelect.options.length === 2) {
+            if (wabaDisplayNameSelect.options.length === 1) {
+                const emptyOption = new Option('Display name tidak tersedia', '');
+                emptyOption.disabled = true;
+                emptyOption.selected = true;
+                wabaDisplayNameSelect.replaceChildren(emptyOption);
+            } else if (!wabaDisplayNameSelect.value) {
                 wabaDisplayNameSelect.selectedIndex = 1;
             }
 
@@ -241,7 +300,7 @@ https://bit.ly/Fita_Combofit
                 const rows = extractWabaDisplayNameRows(payload);
                 applyWabaDisplayNameOptions(rows, 'Pilih display name');
             } catch (error) {
-                applyWabaDisplayNameOptions([fallbackWabaDisplayName], 'Gagal memuat display name', true);
+                applyWabaDisplayNameOptions([], 'Gagal memuat display name');
             } finally {
                 wabaDisplayNameSelect.disabled = false;
             }
@@ -253,13 +312,16 @@ https://bit.ly/Fita_Combofit
 
         if (!isTemplateRead) {
             syncTemplateAssetPreview();
+            syncHeaderFields();
             templateAssetInput?.addEventListener('change', syncTemplateAssetPreview);
+            templateHeaderTypeSelect?.addEventListener('change', () => syncHeaderFields(true));
+            templateHeaderLabelInput?.addEventListener('input', () => syncHeaderFields());
             wabaDisplayNameSelect?.addEventListener('change', syncSelectedWabaDisplayName);
             loadWabaDisplayNames();
         }
 
         templateAddButton?.addEventListener('click', () => {
-            if (!templateButtonList || templateButtonList.querySelectorAll('[data-template-button-card]').length >= 2) {
+            if (!templateButtonList || templateButtonList.querySelectorAll('[data-template-button-card]').length >= 10) {
                 syncTemplateButtons();
                 return;
             }
@@ -271,31 +333,35 @@ https://bit.ly/Fita_Combofit
             card.dataset.templateButtonCard = String(templateButtonIndex);
             card.innerHTML = `
                 <div class="template-builder-button-card__head">
-                    <h3>Call to Action</h3>
+                    <h3>Button ${templateButtonIndex}</h3>
                 </div>
                 <div class="template-builder-button-card__grid">
                     <div class="template-builder-button-card__field">
-                        <label>Type of action</label>
+                        <label>Label</label>
+                        <input type="text" name="${inputName}[label]" value="" maxlength="25" placeholder="Label" data-template-button-text>
+                        <span class="template-builder-button-card__meta" data-template-button-meta>0 / 25</span>
+                    </div>
+                    <div class="template-builder-button-card__field">
+                        <label>Aksi</label>
                         <select name="${inputName}[action]" data-template-button-action>
-                            <option value="URL">Visit website</option>
-                            <option value="QUICK_REPLY">Quick reply</option>
+                            <option value="QUICK_REPLY">Quick Reply</option>
+                            <option value="URL">Visit Website</option>
                         </select>
                     </div>
-                    <div class="template-builder-button-card__field">
-                        <label>Button Text</label>
-                        <input type="text" name="${inputName}[label]" value="Visit website" maxlength="25" data-template-button-text>
-                        <span class="template-builder-button-card__meta" data-template-button-meta>13 / 25</span>
-                    </div>
-                    <div class="template-builder-button-card__field">
+                    <div class="template-builder-button-card__field" data-template-url-type-field hidden>
                         <label>Url Type</label>
                         <select name="${inputName}[show_modal_short_url]">
-                            <option value="0">static</option>
-                            <option value="1">short URL</option>
+                            <option value="0">Static</option>
+                            <option value="1">Short URL</option>
                         </select>
                     </div>
-                    <div class="template-builder-button-card__field">
+                    <div class="template-builder-button-card__field" data-template-url-field hidden>
                         <label>Website URL</label>
-                        <input type="text" name="${inputName}[action_url_target]" value="" maxlength="2000" placeholder="Website URL" data-template-button-url>
+                        <div class="template-builder-url-lock">
+                            <span>${buttonUrlPrefix}</span>
+                            <input type="text" value="" maxlength="1985" placeholder="path" data-template-button-url-suffix>
+                        </div>
+                        <input type="hidden" name="${inputName}[action_url_target]" value="${buttonUrlPrefix}" data-template-button-url>
                         <span class="template-builder-button-card__meta" data-template-url-meta>0 / 2000</span>
                     </div>
                     <input type="hidden" name="${inputName}[action_replay]" value="" data-template-button-replay>
@@ -303,10 +369,6 @@ https://bit.ly/Fita_Combofit
                     <input type="hidden" name="${inputName}[short_url]" value="">
                     <input type="hidden" name="${inputName}[action_voucher_code]" value="">
                     <button type="button" class="template-builder-button-card__remove" data-template-button-remove aria-label="Hapus tombol">x</button>
-                </div>
-                <div class="template-builder-button-card__alert">
-                    <span>!</span>
-                    <p>Direct WhatsApp links are not allowed in CTA buttons as per Meta's policy. Please place the link (e.g. wa.me/6281xxx) in the message body instead</p>
                 </div>
             `;
 

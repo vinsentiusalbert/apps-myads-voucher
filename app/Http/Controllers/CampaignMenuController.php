@@ -233,11 +233,11 @@ class CampaignMenuController extends Controller
             'category' => ['required', 'string', 'max:100'],
             'language' => ['required', 'string', 'max:100'],
             'header_type' => ['required', 'string', 'max:50'],
-            'header_label' => ['nullable', 'string', 'max:255'],
-            'asset' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,pdf,mp4', 'max:10240'],
-            'body' => ['required', 'string', 'max:1024'],
+            'header_label' => ['nullable', 'required_if:header_type,TEXT', 'string', 'max:60'],
+            'asset' => ['nullable', 'required_if:header_type,IMAGE', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'body' => ['required', 'string', 'max:550'],
             'footer' => ['nullable', 'string', 'max:60'],
-            'display_name' => ['nullable', 'string', 'max:255'],
+            'display_name' => ['required', 'string', 'max:255'],
             'waba_account_id' => ['nullable', 'string', 'max:32'],
             'phone_number_id' => ['nullable', 'string', 'max:32'],
             'buttons' => ['nullable', 'array'],
@@ -249,6 +249,11 @@ class CampaignMenuController extends Controller
             'buttons.*.action_url_target' => ['nullable', 'string', 'max:255'],
             'buttons.*.short_url' => ['nullable', 'string', 'max:255'],
             'buttons.*.action_voucher_code' => ['nullable', 'string', 'max:50'],
+        ], [
+            'header_label.required_if' => 'Header Text wajib diisi jika Header Type adalah Teks.',
+            'asset.required_if' => 'Upload gambar wajib diisi jika Header Type adalah Gambar.',
+            'asset.mimes' => 'Format gambar header harus jpg, jpeg, png, atau webp.',
+            'asset.max' => 'Ukuran gambar header maksimal 5MB.',
         ]);
 
         try {
@@ -256,7 +261,7 @@ class CampaignMenuController extends Controller
             $headerPathFile = '';
             $gwToken = $this->requireGatewayToken($request);
 
-            if ($request->hasFile('asset') && $this->mapWabaHeaderType($validated['header_type']) !== 'TEXT') {
+            if ($request->hasFile('asset') && $this->mapWabaHeaderType($validated['header_type']) === 'IMAGE') {
                 $uploadResp = $client->uploadFile($accessToken, $request->file('asset'), 'MULTIMEDIA', $gwToken, $this->gatewayRefreshCallback($request, $client));
                 $headerPathFile = $this->extractUploadedFileValue($uploadResp);
             }
@@ -365,11 +370,11 @@ class CampaignMenuController extends Controller
         $buttons = $this->mapWabaTemplateButtons($validated['buttons'] ?? []);
 
         return [
-            'templateName' => $validated['name'],
+            'templateName' => trim((string) $validated['name']),
             'language' => $this->mapWabaTemplateLanguage((string) $validated['language']),
             'headerType' => $headerType,
-            'headerLabel' => trim((string) ($validated['header_label'] ?? '')),
-            'headerPathFile' => $headerPathFile,
+            'headerLabel' => $headerType === 'TEXT' ? trim((string) ($validated['header_label'] ?? '')) : '',
+            'headerPathFile' => $headerType === 'IMAGE' ? $headerPathFile : '',
             'bodyMessage' => $validated['body'],
             'bodyType' => 'STATIC',
             'bodyPathFile' => '',
@@ -391,15 +396,16 @@ class CampaignMenuController extends Controller
                 }
 
                 $label = trim((string) ($button['label'] ?? ''));
+                $isUrlAction = $action === 'URL';
 
                 return [
-                    'showModalShortUrl' => (bool) ($button['show_modal_short_url'] ?? false),
+                    'showModalShortUrl' => $isUrlAction ? (bool) ($button['show_modal_short_url'] ?? false) : false,
                     'label' => $label,
                     'action' => $action,
                     'actionReplay' => trim((string) ($button['action_replay'] ?? '')),
                     'actionNumber' => trim((string) ($button['action_number'] ?? '')),
-                    'actionUrlTarget' => trim((string) ($button['action_url_target'] ?? '')),
-                    'shortUrl' => $button['short_url'] ?? null,
+                    'actionUrlTarget' => $isUrlAction ? trim((string) ($button['action_url_target'] ?? '')) : '',
+                    'shortUrl' => $isUrlAction ? ($button['short_url'] ?? null) : null,
                     'actionVoucherCode' => trim((string) ($button['action_voucher_code'] ?? '')),
                 ];
             })
@@ -422,9 +428,9 @@ class CampaignMenuController extends Controller
         $headerType = strtolower(trim($headerType));
 
         return match ($headerType) {
+            'none' => 'NONE',
             'image' => 'IMAGE',
-            'video' => 'VIDEO',
-            'document' => 'DOCUMENT',
+            'text' => 'TEXT',
             default => 'TEXT',
         };
     }
@@ -437,19 +443,16 @@ class CampaignMenuController extends Controller
         $wabaAccountId = trim((string) ($validated['waba_account_id'] ?? ''));
         $phoneNumberId = trim((string) ($validated['phone_number_id'] ?? ''));
 
-        if ($wabaAccountId === '') {
-            $wabaAccountId = trim((string) config('myads.waba_account_id', ''));
-        }
-
-        if ($phoneNumberId === '') {
-            $phoneNumberId = trim((string) config('myads.waba_phone_number_id', ''));
-        }
-
         if ($wabaAccountId !== '' && $phoneNumberId !== '') {
             return [
                 'wabaAccountId' => $this->normalizeNumericId($wabaAccountId),
                 'phoneNumberId' => $this->normalizeNumericId($phoneNumberId),
             ];
+        }
+
+        $displayName = trim((string) ($validated['display_name'] ?? ''));
+        if ($displayName === '') {
+            throw new RuntimeException('Display name wajib dipilih dari list API.');
         }
 
         $resp = $client->wabaDisplayNameList($this->requireAccessToken($request), [], $gatewayToken, $this->gatewayRefreshCallback($request, $client));
@@ -462,17 +465,20 @@ class CampaignMenuController extends Controller
             ?? [];
 
         if (is_array($items) && array_is_list($items)) {
-            $selected = collect($items)->first(function ($row): bool {
+            $selected = collect($items)->first(function ($row) use ($displayName): bool {
                 if (! is_array($row)) {
                     return false;
                 }
 
-                $status = strtoupper((string) (data_get($row, 'status') ?? ''));
-                $displayNameStatus = strtoupper((string) (data_get($row, 'displayNameStatus') ?? ''));
+                $apiDisplayName = trim((string) (data_get($row, 'verifiedName')
+                    ?? data_get($row, 'verified_name')
+                    ?? data_get($row, 'displayName')
+                    ?? data_get($row, 'display_name')
+                    ?? data_get($row, 'name')
+                    ?? ''));
 
-                return in_array($status, ['READY', 'APPROVED'], true)
-                    || in_array($displayNameStatus, ['APPROVED', 'VERIFIED'], true);
-            }) ?? collect($items)->first(fn ($row): bool => is_array($row));
+                return $apiDisplayName !== '' && hash_equals($displayName, $apiDisplayName);
+            });
 
             if (is_array($selected)) {
                 $wabaAccountId = (string) (data_get($selected, 'wabaAccountId') ?? '');
@@ -481,7 +487,7 @@ class CampaignMenuController extends Controller
         }
 
         if ($wabaAccountId === '' || $phoneNumberId === '') {
-            throw new RuntimeException('WABA Account ID dan Phone Number ID belum tersedia. Isi MYADS_WABA_ACCOUNT_ID/MYADS_WABA_PHONE_NUMBER_ID atau pastikan display-name/list mengembalikan data.');
+            throw new RuntimeException('WABA Account ID dan Phone Number ID belum tersedia untuk display name yang dipilih dari API.');
         }
 
         return [
@@ -530,7 +536,9 @@ class CampaignMenuController extends Controller
         $isCarousel = $template->template_type === 'carousel_cards' || str_contains(strtolower((string) $template->category), 'carousel');
 
         return [
-            'id' => (string) $template->id,
+            'id' => (string) ($template->gw_template_id ?: $template->id),
+            'local_id' => (string) $template->id,
+            'gw_template_id' => (string) ($template->gw_template_id ?? ''),
             'name' => $template->name,
             'account_name' => 'Telkomsel Promo & Rewards',
             'template_kind' => ucfirst(str_replace('_', ' ', (string) $template->template_type)),
@@ -1086,7 +1094,6 @@ class CampaignMenuController extends Controller
                         'Atur Profil Penerima',
                         'Atur Pengiriman',
                         'Review & Pembayaran',
-                        'Menunggu Persetujuan',
                     ],
                     'screenshots' => $targetedShots,
                 ],
@@ -1128,7 +1135,6 @@ class CampaignMenuController extends Controller
                         'Atur Profil Penerima',
                         'Atur Pengiriman',
                         'Review & Pembayaran',
-                        'Menunggu Persetujuan',
                     ],
                     'screenshots' => $targetedShots,
                 ],

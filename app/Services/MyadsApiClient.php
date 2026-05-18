@@ -293,7 +293,7 @@ class MyadsApiClient
      */
     public function campaignReport(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
     {
-        return $this->postGw('/api/gw//scrt/myads/api/v1/report/view', $gatewayToken, $payload, $refreshGatewayToken);
+        return $this->postGw('/api/gw/report/view', $gatewayToken, $payload, $refreshGatewayToken);
     }
 
     /**
@@ -310,6 +310,22 @@ class MyadsApiClient
     public function campaignLbaAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
     {
         return $this->postGw('/api/gw/lba-add', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function wabaLbaAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/waba-lba-add', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function wabaTargetedAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/waba-targeted-add', $gatewayToken, $payload, $refreshGatewayToken);
     }
 
     /**
@@ -402,7 +418,7 @@ class MyadsApiClient
                 throw new RuntimeException('Konfigurasi direct API WABA belum lengkap.');
             }
 
-            return $this->postGw('/api/gw//scrt/myads/api/v1/waba/display-name/list', $gatewayToken, is_array($requestPayload) ? $requestPayload : [], $refreshGatewayToken);
+            return $this->postGw('/api/gw/waba-display-name-list', $gatewayToken, is_array($requestPayload) ? $requestPayload : [], $refreshGatewayToken);
         }
 
         try {
@@ -511,7 +527,9 @@ class MyadsApiClient
             }
         }
 
-        return $fallback;
+        $body = trim(strip_tags($response->body()));
+
+        return $body !== '' ? $body : $fallback;
     }
 
     /**

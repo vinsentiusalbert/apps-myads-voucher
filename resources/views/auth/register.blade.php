@@ -17,10 +17,62 @@
                 <a href="{{ route('login') }}" class="back-link">Kembali ke login</a>
 
                 <div class="simple-header">
-                    <h1 class="simple-title">Daftar akun MyAds</h1>
-                    <p class="simple-copy">Buat akun baru dengan auth bawaan Laravel untuk mulai masuk ke dashboard iklan.</p>
+                    <h1 class="simple-title">{{ $hasExistingSsoUser ? 'Masuk akun MyAds' : 'Daftar akun MyAds' }}</h1>
+                    <p class="simple-copy">
+                        {{ $hasExistingSsoUser
+                            ? 'Akun SSO partner sudah terdaftar. Masukkan ID dan password untuk masuk.'
+                            : 'Lengkapi data akun untuk melanjutkan akses partner melalui SSO.' }}
+                    </p>
                 </div>
 
+                @if (! empty($contextMessage))
+                    <div class="status-box status-box--warning">
+                        {{ $contextMessage }}
+                    </div>
+                @endif
+
+                @if ($hasExistingSsoUser)
+                <form method="POST" action="{{ route('login.store') }}" class="login-form">
+                    @csrf
+
+                    <input name="merchant_id" type="hidden" value="{{ $merchantId }}">
+                    <input name="partner_id" type="hidden" value="{{ $partnerId }}">
+
+                    <div class="field-group">
+                        <label for="merchant_id" class="field-label">Merchant ID</label>
+                        <input id="merchant_id" type="text" value="{{ $merchantId }}" readonly class="text-input">
+                        @error('merchant_id')
+                            <p class="error-text">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="field-group">
+                        <label for="partner_id" class="field-label">Partner ID</label>
+                        <input id="partner_id" type="text" value="{{ $partnerId }}" readonly class="text-input">
+                        @error('partner_id')
+                            <p class="error-text">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="field-group">
+                        <label for="email" class="field-label">ID / Email</label>
+                        <input id="email" name="email" type="text" value="{{ old('email') }}" required autofocus class="text-input">
+                        @error('email')
+                            <p class="error-text">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="field-group">
+                        <label for="password" class="field-label">Password</label>
+                        <input id="password" name="password" type="password" required class="text-input">
+                        @error('password')
+                            <p class="error-text">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <button type="submit" class="submit-btn">Masuk</button>
+                </form>
+                @else
                 <form method="POST" action="{{ route('register.store') }}" class="login-form">
                     @csrf
 
@@ -71,6 +123,7 @@
 
                     <button type="submit" class="submit-btn">Daftar</button>
                 </form>
+                @endif
             </section>
         </main>
     </body>

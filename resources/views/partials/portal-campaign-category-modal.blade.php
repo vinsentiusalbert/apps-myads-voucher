@@ -33,12 +33,6 @@
                 <strong>Targeted</strong>
                 <small data-campaign-price-key="sms_targeted">{{ $portalSmsTargetedPrice }}</small>
             </a>
-            <a href="{{ route('campaign-template.index') }}" class="portal-category-card">
-                <span class="portal-category-card__icon portal-category-card__icon--wa">TMP</span>
-                <span class="portal-category-card__channel">WA Business</span>
-                <strong>Campaign Template</strong>
-                <small>Kelola template</small>
-            </a>
             <a href="{{ route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'location-based-area', 'view' => 'create']) }}" class="portal-category-card">
                 <span class="portal-category-card__icon portal-category-card__icon--wa">LBA</span>
                 <span class="portal-category-card__channel">WA Business</span>

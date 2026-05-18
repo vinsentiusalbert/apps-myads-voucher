@@ -497,6 +497,211 @@ class ApiGatewayController extends Controller
 		}
 	}
 
+	public function wabaLbaAdd(Request $request, MyadsApiClient $client): RedirectResponse
+	{
+		$validated = $request->validate([
+			'payment_transaction_id' => ['required', 'string', 'max:128'],
+			'campaign_name' => ['nullable', 'string', 'max:255'],
+			'recipient_total' => ['required', 'integer', 'min:1', 'max:100000'],
+			'waba_user_template_id' => ['required', 'integer', 'min:1'],
+			'delivery_start_date' => ['required', 'date_format:Y-m-d'],
+			'delivery_end_date' => ['required', 'date_format:Y-m-d'],
+			'delivery_start_time' => ['required', 'date_format:H:i'],
+			'delivery_end_time' => ['required', 'date_format:H:i'],
+			'control_number' => ['required', 'string', 'max:32'],
+			'location_name' => ['required', 'string', 'max:255'],
+			'location_lat' => ['required', 'numeric'],
+			'location_lng' => ['required', 'numeric'],
+			'location_radius' => ['required', 'integer', 'min:1', 'max:50000'],
+			'location_type' => ['nullable', 'string', 'in:ALL,HOME,MALL'],
+			'recipient_max' => ['nullable', 'string', 'max:64'],
+			'profile_gender' => ['nullable', 'string', 'max:255'],
+			'profile_age' => ['nullable', 'string', 'max:255'],
+			'profile_religion' => ['nullable', 'string', 'max:255'],
+		]);
+
+		try {
+			$paymentTransactionId = trim((string) ($validated['payment_transaction_id'] ?? ''));
+			$paymentResp = $client->paymentStatus($this->requireAccessToken($request), $paymentTransactionId);
+			$paymentStatus = strtoupper(trim((string) data_get($paymentResp, 'data.status')));
+			if ($paymentStatus !== 'SUCCESS') {
+				$label = $paymentStatus !== '' ? $paymentStatus : 'PENDING';
+				throw new RuntimeException('Pembayaran belum berhasil. Status: ' . $label);
+			}
+
+			$campaignName = trim((string) ($validated['campaign_name'] ?? ''));
+			if ($campaignName === '') {
+				$campaignName = $this->generateWabaLbaCampaignName();
+			}
+			$recipientTotal = (int) ($validated['recipient_total'] ?? 0);
+			$wabaUserTemplateId = (int) ($validated['waba_user_template_id'] ?? 0);
+			$startDate = $this->formatDateYmd($validated['delivery_start_date'] ?? null);
+			$endDate = $this->formatDateYmd($validated['delivery_end_date'] ?? null);
+			$startTime = $this->formatTimeHiToHmm($validated['delivery_start_time'] ?? null);
+			$endTime = $this->formatTimeHiToHmm($validated['delivery_end_time'] ?? null);
+			$controlNumber = $this->normalizeMsisdn((string) ($validated['control_number'] ?? ''));
+			$locationName = trim((string) ($validated['location_name'] ?? ''));
+			$lat = (float) ($validated['location_lat'] ?? 0);
+			$lng = (float) ($validated['location_lng'] ?? 0);
+			$radius = (int) ($validated['location_radius'] ?? 0);
+			$locationType = trim((string) ($validated['location_type'] ?? 'ALL'));
+			$recipientMax = str_replace('.', '', trim((string) ($validated['recipient_max'] ?? '')));
+
+			if ($locationType === '') {
+				$locationType = 'ALL';
+			}
+
+			if ($campaignName === '' || $recipientTotal <= 0 || $wabaUserTemplateId <= 0 || $controlNumber === null || $startDate === null || $endDate === null || $startTime === null || $endTime === null || $locationName === '' || $radius <= 0 || $locationType === '') {
+				throw new RuntimeException('Data belum lengkap. Mohon lengkapi semua field sebelum mengirim campaign WABA LBA.');
+			}
+
+			$payload = [
+				'campaignName' => $campaignName,
+				'recepientTotal' => $recipientTotal,
+				'wabaUserTemplateId' => $wabaUserTemplateId,
+				'deliveries' => [
+					'deliveryEndDate' => $endDate,
+					'deliveryEndTime' => $endTime,
+					'deliveryStartDate' => $startDate,
+					'deliveryStartTime' => $startTime,
+				],
+				'controlNumbers' => [$controlNumber],
+				'contents' => [
+					'locations' => [
+						'address' => $locationName,
+						'latitude' => $lat,
+						'longitude' => $lng,
+						'locationNameMap' => $locationName,
+						'locationNameUser' => $locationName,
+						'radius' => $radius,
+						'locationType' => $locationType,
+						'recepientMax' => $recipientMax,
+					],
+					'profileGender' => trim((string) ($validated['profile_gender'] ?? '')),
+					'profileAge' => trim((string) ($validated['profile_age'] ?? '')),
+					'profileMobileDataSubs' => '',
+					'profileArpu' => '0-10000000',
+					'profileArpuMin' => '0',
+					'profileArpuMax' => '10000000',
+					'profileReligion' => trim((string) ($validated['profile_religion'] ?? '')),
+					'profileOs' => '',
+					'profileCardType' => '',
+					'profileHometown' => '',
+					'profileMaritalStatus' => '',
+					'profileLifeStyleSegment' => '',
+				],
+			];
+
+			$resp = $client->wabaLbaAdd($this->requireGatewayToken($request), $payload, $this->gatewayRefreshCallback($request, $client));
+			$campaignId = (string) (data_get($resp, 'data.data.campaignId')
+				?? data_get($resp, 'data.data.data.campaignId')
+				?? data_get($resp, 'data.campaignId')
+				?? '');
+			$suffix = $campaignId !== '' ? " (campaignId: {$campaignId})" : '';
+
+			return redirect()
+				->route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'location-based-area'])
+				->with('status', 'Campaign WABA LBA berhasil dibuat.' . $suffix);
+		} catch (Throwable $e) {
+			return back()->withErrors([
+				'gw' => $e->getMessage(),
+			])->withInput();
+		}
+	}
+
+	public function wabaTargetedAdd(Request $request, MyadsApiClient $client): RedirectResponse
+	{
+		$validated = $request->validate([
+			'payment_transaction_id' => ['required', 'string', 'max:128'],
+			'campaign_name' => ['nullable', 'string', 'max:255'],
+			'waba_user_template_id' => ['required', 'integer', 'min:1'],
+			'recipient_total' => ['required', 'integer', 'min:1', 'max:100000'],
+			'delivery_date' => ['required', 'date_format:Y-m-d'],
+			'delivery_time' => ['required', 'date_format:H:i'],
+			'control_number' => ['required', 'string', 'max:32'],
+			'profile_gender' => ['nullable', 'string', 'max:500'],
+			'profile_age' => ['nullable', 'string', 'max:500'],
+			'profile_mobile_data_subs' => ['nullable', 'string', 'max:500'],
+			'profile_arpu' => ['nullable', 'string', 'max:500'],
+			'profile_os' => ['nullable', 'string', 'max:500'],
+			'profile_marital_status' => ['nullable', 'string', 'max:500'],
+			'profile_lifestyle_segment' => ['nullable', 'string', 'max:500'],
+			'profile_religion' => ['nullable', 'string', 'max:500'],
+			'profile_card_type' => ['nullable', 'string', 'max:500'],
+			'profile_hometown' => ['nullable', 'string', 'max:500'],
+			'profile_work' => ['nullable', 'string', 'max:500'],
+		]);
+
+		try {
+			$paymentTransactionId = trim((string) ($validated['payment_transaction_id'] ?? ''));
+			$paymentResp = $client->paymentStatus($this->requireAccessToken($request), $paymentTransactionId);
+			$paymentStatus = strtoupper(trim((string) data_get($paymentResp, 'data.status')));
+			if ($paymentStatus !== 'SUCCESS') {
+				$label = $paymentStatus !== '' ? $paymentStatus : 'PENDING';
+				throw new RuntimeException('Pembayaran belum berhasil. Status: ' . $label);
+			}
+
+			$campaignName = trim((string) ($validated['campaign_name'] ?? ''));
+			if ($campaignName === '') {
+				$campaignName = $this->generateWabaTargetedCampaignName();
+			}
+
+			$deliveryDate = $this->formatDateYmd($validated['delivery_date'] ?? null);
+			$deliveryTime = $this->formatTimeHiToHmm($validated['delivery_time'] ?? null);
+			$controlNumber = $this->normalizeMsisdn((string) ($validated['control_number'] ?? ''));
+			$recipientTotal = (int) ($validated['recipient_total'] ?? 0);
+			$wabaUserTemplateId = (int) ($validated['waba_user_template_id'] ?? 0);
+
+			if ($campaignName === '' || $wabaUserTemplateId <= 0 || $recipientTotal <= 0 || $deliveryDate === null || $deliveryTime === null || $controlNumber === null) {
+				throw new RuntimeException('Data belum lengkap. Mohon lengkapi semua field sebelum mengirim campaign WABA Targeted.');
+			}
+
+			$emptyToNull = static function (?string $value): ?string {
+				$value = trim((string) $value);
+				return $value === '' ? null : $value;
+			};
+
+			$payload = [
+				'wabaUserTemplateId' => $wabaUserTemplateId,
+				'campaignName' => $campaignName,
+				'profileGender' => $emptyToNull($validated['profile_gender'] ?? null),
+				'profileAge' => $emptyToNull($validated['profile_age'] ?? null),
+				'profileMobileDataSubs' => $emptyToNull($validated['profile_mobile_data_subs'] ?? null),
+				'profileArpu' => $emptyToNull($validated['profile_arpu'] ?? null),
+				'profileOs' => $emptyToNull($validated['profile_os'] ?? null),
+				'profileMaritalStatus' => $emptyToNull($validated['profile_marital_status'] ?? null),
+				'profileLifestyleSegment' => $emptyToNull($validated['profile_lifestyle_segment'] ?? null),
+				'profileReligion' => $emptyToNull($validated['profile_religion'] ?? null),
+				'profileCardType' => trim((string) ($validated['profile_card_type'] ?? '')),
+				'profileHometown' => trim((string) ($validated['profile_hometown'] ?? '')),
+				'profileWork' => $emptyToNull($validated['profile_work'] ?? null),
+				'recepientTotal' => $recipientTotal,
+				'deliveries' => [
+					[
+						'deliveryDate' => $deliveryDate,
+						'deliveryTime' => $deliveryTime,
+					],
+				],
+				'controlNumbers' => [$controlNumber],
+			];
+
+			$resp = $client->wabaTargetedAdd($this->requireGatewayToken($request), $payload, $this->gatewayRefreshCallback($request, $client));
+			$campaignId = (string) (data_get($resp, 'data.data.campaignId')
+				?? data_get($resp, 'data.data.data.campaignId')
+				?? data_get($resp, 'data.campaignId')
+				?? '');
+			$suffix = $campaignId !== '' ? " (campaignId: {$campaignId})" : '';
+
+			return redirect()
+				->route('campaign.menu', ['channel' => 'wa-business', 'menu' => 'targeted'])
+				->with('status', 'Campaign WABA Targeted berhasil dibuat.' . $suffix);
+		} catch (Throwable $e) {
+			return back()->withErrors([
+				'gw' => $e->getMessage(),
+			])->withInput();
+		}
+	}
+
 	private function generateSmsLbaCampaignName(): string
 	{
 		return 'gotoads_sms_lba_' . now()->format('YmdHis');
@@ -505,6 +710,16 @@ class ApiGatewayController extends Controller
 	private function generateSmsTargetedCampaignName(): string
 	{
 		return 'gotoads_sms_targeted_' . now()->format('YmdHis');
+	}
+
+	private function generateWabaLbaCampaignName(): string
+	{
+		return 'gotoads_waba_lba_' . now()->format('YmdHis');
+	}
+
+	private function generateWabaTargetedCampaignName(): string
+	{
+		return 'gotoads_waba_targeted_' . now()->format('YmdHis');
 	}
 
 	private function campaignPrices(MyadsApiClient $client, string $gatewayToken, ?callable $refreshGatewayToken = null): array
