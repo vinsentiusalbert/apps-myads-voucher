@@ -257,7 +257,7 @@
                     </div>
                 </div>
 
-                <div class="campaign-send-grid">
+                {{-- <div class="campaign-send-grid">
                     <div class="campaign-step-two__section">
                         <h2 class="campaign-block__title">Hitung Estimasi Penerima Potensial</h2>
                         <p class="campaign-block__copy">Gunakan lokasi dan profil target di atas untuk melihat estimasi penerima potensial sebelum melanjutkan ke tahap pengiriman.</p>
@@ -266,7 +266,7 @@
                         <span class="campaign-estimate-card__label">Estimasi Penerima Potensial</span>
                         <strong id="campaignAudienceEstimate">0</strong>
                     </div>
-                </div>
+                </div> --}}
 
                 <div class="campaign-form-actions campaign-form-actions--step-two">
                     <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="waLbaStepTwoBack">Sebelumnya</button>
@@ -284,12 +284,12 @@
                             <label for="waLbaRecipientCount" class="field-label">Jumlah Penerima</label>
                             <input id="waLbaRecipientCount" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
                             <p class="campaign-step-two__alert">Minimal 5 jumlah penerima perhari</p>
-                            <p class="campaign-block__copy">Berdasarkan policy Meta, batas maksimum kuota pengiriman Anda dalam satu hari sebesar 100.000 pesan.</p>
+                            {{-- <p class="campaign-block__copy">Berdasarkan policy Meta, batas maksimum kuota pengiriman Anda dalam satu hari sebesar 100.000 pesan.</p> --}}
                         </div>
-                        <div class="campaign-estimate-card">
+                        {{-- <div class="campaign-estimate-card">
                             <span class="campaign-estimate-card__label">Estimasi Maksimal Penerima Potensial</span>
                             <strong id="waLbaRecipientEstimateRange">140.630-171.880</strong>
-                        </div>
+                        </div> --}}
                     </div>
                 </div>
 

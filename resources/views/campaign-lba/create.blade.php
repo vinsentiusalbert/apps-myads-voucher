@@ -417,10 +417,7 @@
                             <input id="campaignRecipientCount" name="recipient_total" form="campaignGwSubmitForm" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
                             <p class="campaign-step-two__alert" data-recipient-count-alert>Jumlah penerima minimal 5 perhari</p>
                         </div>
-                        <div class="campaign-estimate-card">
-                            <span class="campaign-estimate-card__label">Estimasi Penerima Potensial</span>
-                            <strong id="campaignStepTwoEstimate">-</strong>
-                        </div>
+                        <strong id="campaignStepTwoEstimate" hidden>-</strong>
                     </div>
                 </div>
 
@@ -1226,6 +1223,52 @@
             return `${day}/${month}/${year.slice(-2)}`;
         };
 
+        const toDateInputValue = (date) => {
+            const pad = (value) => String(value).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+        };
+
+        const defaultDeliverySchedule = () => {
+            const now = new Date();
+            const start = new Date(now);
+            start.setSeconds(0, 0);
+            start.setMinutes(Math.ceil(start.getMinutes() / 30) * 30);
+
+            const end = new Date(start);
+            end.setHours(end.getHours() + 4);
+
+            const startDate = new Date(now);
+            startDate.setDate(startDate.getDate() + 1);
+            const endDate = new Date(startDate);
+            const dayOffset = Math.floor((new Date(end.getFullYear(), end.getMonth(), end.getDate()) - new Date(start.getFullYear(), start.getMonth(), start.getDate())) / 86400000);
+            endDate.setDate(endDate.getDate() + Math.max(0, dayOffset));
+            const timeValue = (date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+            return {
+                startDate: toDateInputValue(startDate),
+                endDate: toDateInputValue(endDate),
+                startTime: timeValue(start),
+                endTime: timeValue(end),
+            };
+        };
+
+        const applyDefaultDeliverySchedule = (scheduleId) => {
+            const defaults = defaultDeliverySchedule();
+            const dateStart = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`);
+            const dateEnd = document.querySelector(`[data-schedule-date-end="${scheduleId}"]`);
+
+            if (dateStart) {
+                dateStart.value = defaults.startDate;
+            }
+            if (dateEnd) {
+                dateEnd.value = defaults.endDate;
+            }
+
+            initScheduleTimeSelects(scheduleId, defaults.startTime, defaults.endTime);
+            syncSchedulePreview(scheduleId);
+            return defaults;
+        };
+
         const getSelectedTexts = (selectId) => {
             const select = document.getElementById(selectId);
 
@@ -1444,9 +1487,7 @@
                 return;
             }
 
-            const pad = (n) => String(n).padStart(2, '0');
-            const now = new Date();
-            const defaultDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+            const defaults = defaultDeliverySchedule();
 
             scheduleIndex += 1;
 
@@ -1462,17 +1503,17 @@
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label" for="campaignScheduleDate${scheduleIndex}Start">Tgl Kirim</label>
                             <div class="campaign-range-field">
-                                <input id="campaignScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${defaultDate}" data-schedule-date-start="${scheduleIndex}">
+                                <input id="campaignScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${defaults.startDate}" data-schedule-date-start="${scheduleIndex}">
                                 <span class="campaign-range-field__separator">-</span>
-                                <input id="campaignScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${defaultDate}" data-schedule-date-end="${scheduleIndex}">
+                                <input id="campaignScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${defaults.endDate}" data-schedule-date-end="${scheduleIndex}">
                             </div>
-                            <p class="campaign-range-preview" id="campaignScheduleDatePreview${scheduleIndex}">${formatScheduleDate(defaultDate)} - ${formatScheduleDate(defaultDate)}</p>
+                            <p class="campaign-range-preview" id="campaignScheduleDatePreview${scheduleIndex}">${formatScheduleDate(defaults.startDate)} - ${formatScheduleDate(defaults.endDate)}</p>
                         </div>
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label" for="campaignScheduleTime${scheduleIndex}Start">Jam Kirim</label>
                             <div class="campaign-time-picker" data-time-picker="${scheduleIndex}">
                                 <button type="button" class="campaign-time-picker__trigger" data-time-trigger="${scheduleIndex}">
-                                    <span class="campaign-time-picker__value" id="campaignScheduleTimePreview${scheduleIndex}">09:30-10:00 WIB</span>
+                                    <span class="campaign-time-picker__value" id="campaignScheduleTimePreview${scheduleIndex}">${defaults.startTime}-${defaults.endTime} WIB</span>
                                     <span class="campaign-time-picker__clock">◷</span>
                                 </button>
                                 <div class="campaign-time-picker__panel" data-time-panel="${scheduleIndex}" hidden>
@@ -1505,7 +1546,7 @@
                 `;
 
             scheduleList.appendChild(item);
-            initScheduleTimeSelects(scheduleIndex, '09:30', '10:00');
+            initScheduleTimeSelects(scheduleIndex, defaults.startTime, defaults.endTime);
             syncScheduleRemoveState();
             syncSchedulePreview(scheduleIndex);
             syncStepTwoValidity();
@@ -1855,8 +1896,7 @@
         closeLocationModal();
         syncCampaignStep(1);
         syncScheduleRemoveState();
-        initScheduleTimeSelects(1, '09:30', '10:00');
-        syncSchedulePreview(1);
+        applyDefaultDeliverySchedule(1);
         syncTargetedProfileBuilder();
         syncStepTwoValidity();
 
