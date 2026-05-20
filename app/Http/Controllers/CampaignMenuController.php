@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\MyadsApiClient;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -11,6 +12,47 @@ use Throwable;
 
 class CampaignMenuController extends Controller
 {
+    public function termsAndConditions(): JsonResponse
+    {
+        $path = base_path('Syarat & ketentuan.docx');
+
+        if (! is_file($path) || ! class_exists(\ZipArchive::class)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dokumen syarat dan ketentuan tidak tersedia.',
+            ], 404);
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($path) !== true) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dokumen syarat dan ketentuan tidak dapat dibuka.',
+            ], 500);
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        if (! is_string($xml) || $xml === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Isi dokumen syarat dan ketentuan tidak ditemukan.',
+            ], 500);
+        }
+
+        $text = preg_replace('/<\/w:p[^>]*>/i', "\n", $xml) ?? $xml;
+        $text = preg_replace('/<[^>]+>/', '', $text) ?? $text;
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8');
+        $paragraphs = array_values(array_filter(array_map('trim', preg_split('/\R+/', $text) ?: [])));
+
+        return response()->json([
+            'success' => true,
+            'title' => 'Syarat & Ketentuan',
+            'paragraphs' => $paragraphs,
+        ]);
+    }
+
     public function show(Request $request, string $channel, string $menu): View
     {
         $pages = $this->pages();

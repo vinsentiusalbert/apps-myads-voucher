@@ -450,10 +450,12 @@
                     <label class="campaign-terms">
                         <input type="checkbox" id="waTargetedTermsCheck">
                         <span>
-                            Saya menyetujui <a href="#">Syarat dan Ketentuan</a> yang berlaku di website Telkomsel MyAds. Atas setiap pesan iklan yang dibuat oleh pengguna menggunakan produk dan/atau layanan melalui portal myAds, pengguna dilarang untuk mempergunakan kata-kata, komentar, gambar atau konten apapun yang mengandung unsur SARA atau diskriminasi terhadap pihak manapun, bersifat vulgar dan ancaman, atau hal-hal lain yang dapat dianggap tidak sesuai dengan nilai dan norma sosial.
+                            Saya menyetujui <a href="{{ route('campaign.terms') }}" data-campaign-terms-trigger>Syarat dan Ketentuan</a> yang berlaku di website Telkomsel MyAds. Atas setiap pesan iklan yang dibuat oleh pengguna menggunakan produk dan/atau layanan melalui portal myAds, pengguna dilarang untuk mempergunakan kata-kata, komentar, gambar atau konten apapun yang mengandung unsur SARA atau diskriminasi terhadap pihak manapun, bersifat vulgar dan ancaman, atau hal-hal lain yang dapat dianggap tidak sesuai dengan nilai dan norma sosial.
                         </span>
                     </label>
                 </div>
+
+                @include('partials.campaign-terms-modal')
 
                 <div class="campaign-form-actions campaign-form-actions--step-two campaign-form-actions--targeted">
                     <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="waTargetedStepThreeBack">Sebelumnya</button>
@@ -616,21 +618,16 @@
                             <p class="campaign-payment-error" id="waTargetedPaymentError" hidden></p>
                             <p class="campaign-payment-hint" id="waTargetedPaymentHint" hidden></p>
                             <button type="button" class="campaign-cost-card__cta" id="waTargetedGwSubmitButton">Bayar & Kirim Iklan</button>
-                            <div class="campaign-cost-card__section" id="waTargetedPaymentPanel" hidden>
-                                <span class="campaign-cost-card__section-title">Pembayaran QRIS</span>
-                                <div class="campaign-cost-card__row">
-                                    <span>Status</span>
-                                    <strong id="waTargetedPaymentStatus">-</strong>
-                                </div>
-                                <div class="campaign-cost-card__row">
-                                    <span>Transaction ID</span>
-                                    <strong id="waTargetedPaymentTransaction">-</strong>
-                                </div>
-                                <div class="campaign-cost-card__row" style="display:block">
-                                    <img id="waTargetedPaymentQr" alt="QRIS" style="max-width: 100%; height: auto; display: block; margin-top: 10px;" />
-                                    <a id="waTargetedPaymentQrLink" class="campaign-inline-link campaign-inline-link--fit" href="#" target="_blank" rel="noreferrer" style="margin-top: 8px; display: inline-block">Buka QRIS</a>
-                                </div>
-                            </div>
+                            @include('partials.payment-qris-modal', [
+                                'modalId' => 'waTargetedPaymentModal',
+                                'panelId' => 'waTargetedPaymentPanel',
+                                'statusId' => 'waTargetedPaymentStatus',
+                                'transactionId' => 'waTargetedPaymentTransaction',
+                                'qrId' => 'waTargetedPaymentQr',
+                                'qrLinkId' => 'waTargetedPaymentQrLink',
+                                'downloadId' => 'waTargetedPaymentQrDownload',
+                                'footnote' => 'Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim. Detil mengenai jumlah iklan terkirim/tidak terkirim akan diinformasikan pada menu laporan setelah iklan Anda tayang.',
+                            ])
                             <form id="waTargetedGwSubmitForm" method="POST" action="{{ route('campaign.waba-targeted.send') }}" hidden>
                                 @csrf
                                 <input type="hidden" name="payment_transaction_id" id="waTargetedPaymentTransactionId" value="">
@@ -652,9 +649,6 @@
                                 <input type="hidden" name="profile_hometown" id="waTargetedGwProfileHometown" value="">
                                 <input type="hidden" name="profile_work" id="waTargetedGwProfileWork" value="">
                             </form>
-                            <p class="campaign-cost-card__footnote">
-                                Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim. Detil mengenai jumlah iklan terkirim/tidak terkirim akan diinformasikan pada menu laporan setelah iklan Anda tayang.
-                            </p>
                         </div>
                     </div>
                 </aside>
@@ -664,6 +658,10 @@
             </section>
         </div>
     </section>
+@endsection
+
+@section('after_shell')
+    @include('partials.payment-qris-modal-assets')
 @endsection
 
 @push('scripts')
@@ -1576,7 +1574,14 @@
                 const paymentTransaction = document.getElementById('waTargetedPaymentTransaction');
                 const paymentQr = document.getElementById('waTargetedPaymentQr');
                 const paymentQrLink = document.getElementById('waTargetedPaymentQrLink');
+                const paymentModal = paymentPanel?.closest('.campaign-payment-modal');
+                const paymentQrDownload = paymentModal?.querySelector('[download]');
 
+                if (paymentModal) {
+                    paymentModal.hidden = false;
+                    paymentModal.setAttribute('aria-hidden', 'false');
+                    document.body.style.overflow = 'hidden';
+                }
                 if (paymentPanel) {
                     paymentPanel.hidden = false;
                 }
@@ -1590,8 +1595,17 @@
                     paymentQr.src = qrisUrl;
                 }
                 if (paymentQrLink) {
-                    paymentQrLink.href = qrisUrl || '#';
-                    paymentQrLink.hidden = !qrisUrl;
+                    if (qrisUrl) {
+                        paymentQrLink.href = qrisUrl;
+                        paymentQrLink.hidden = false;
+                    }
+                }
+                if (paymentQrDownload) {
+                    if (qrisUrl) {
+                        paymentQrDownload.href = qrisUrl;
+                        paymentQrDownload.download = `qris-${transactionId || 'payment'}.png`;
+                        paymentQrDownload.hidden = false;
+                    }
                 }
             };
 

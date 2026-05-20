@@ -526,10 +526,12 @@
                 <label class="campaign-terms">
                     <input type="checkbox" id="campaignTermsCheck">
                     <span>
-                        Saya menyetujui <a href="#">Syarat dan Ketentuan</a> yang berlaku di website Telkomsel MyAds. Atas setiap pesan iklan yang dibuat oleh pengguna menggunakan produk dan/atau layanan melalui portal myAds, pengguna dilarang untuk mempergunakan kata-kata, komentar, gambar atau konten apapun yang mengandung unsur SARA atau diskriminasi terhadap pihak manapun, bersifat vulgar dan ancaman, atau hal-hal lain yang dapat dianggap tidak sesuai dengan nilai dan norma sosial.
+                        Saya menyetujui <a href="{{ route('campaign.terms') }}" data-campaign-terms-trigger>Syarat dan Ketentuan</a> yang berlaku di website Telkomsel MyAds. Atas setiap pesan iklan yang dibuat oleh pengguna menggunakan produk dan/atau layanan melalui portal myAds, pengguna dilarang untuk mempergunakan kata-kata, komentar, gambar atau konten apapun yang mengandung unsur SARA atau diskriminasi terhadap pihak manapun, bersifat vulgar dan ancaman, atau hal-hal lain yang dapat dianggap tidak sesuai dengan nilai dan norma sosial.
                     </span>
                 </label>
             </div>
+
+            @include('partials.campaign-terms-modal')
 
             <div class="campaign-form-actions campaign-form-actions--step-two">
                 <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="campaignStepTwoBack">Sebelumnya</button>
@@ -683,21 +685,15 @@
                                 </div>
                             </div>
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
-                            <div class="campaign-cost-card__section" id="campaignPaymentPanel" hidden>
-                                <span class="campaign-cost-card__section-title">Pembayaran QRIS</span>
-                                <div class="campaign-cost-card__row">
-                                    <span>Status</span>
-                                    <strong id="campaignPaymentStatus">-</strong>
-                                </div>
-                                <div class="campaign-cost-card__row">
-                                    <span>Transaction ID</span>
-                                    <strong id="campaignPaymentTransaction">-</strong>
-                                </div>
-                                <div class="campaign-cost-card__row" style="display:block">
-                                    <img id="campaignPaymentQr" alt="QRIS" style="max-width: 100%; height: auto; display: block; margin-top: 10px;" />
-                                    <a id="campaignPaymentQrLink" class="campaign-inline-link campaign-inline-link--fit" href="#" target="_blank" rel="noreferrer" style="margin-top: 8px; display: inline-block">Buka QRIS</a>
-                                </div>
-                            </div>
+                            @include('partials.payment-qris-modal', [
+                                'modalId' => 'campaignPaymentModal',
+                                'panelId' => 'campaignPaymentPanel',
+                                'statusId' => 'campaignPaymentStatus',
+                                'transactionId' => 'campaignPaymentTransaction',
+                                'qrId' => 'campaignPaymentQr',
+                                'qrLinkId' => 'campaignPaymentQrLink',
+                                'downloadId' => 'campaignPaymentQrDownload',
+                            ])
                             <form id="campaignGwSubmitForm" method="POST" action="{{ route('campaign.lba.send', ['channel' => $channel]) }}" hidden>
                                 @csrf
                                 <input type="hidden" name="campaign_name" id="campaign_title" value="{{ $autoCampaignName }}">
@@ -710,9 +706,6 @@
                                 <input type="hidden" name="location_lng" id="gwLocationLng">
                                 <input type="hidden" name="payment_transaction_id" id="gwPaymentTransactionId" value="">
                             </form>
-                            <p class="campaign-cost-card__footnote">
-                                Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim.
-                            </p>
                         </div>
                     </div>
                 </aside>
@@ -725,6 +718,7 @@
 @endsection
 
 @section('after_shell')
+@include('partials.payment-qris-modal-assets')
 <div class="campaign-map-modal" id="campaignMapModal" hidden aria-hidden="true">
     <div class="campaign-map-modal__backdrop" data-location-close onclick="window.closeCampaignLocationModal && window.closeCampaignLocationModal()"></div>
     <div class="campaign-map-modal__card" role="dialog" aria-modal="true" aria-labelledby="campaignMapHeading">
@@ -1452,6 +1446,16 @@
             });
         };
 
+        const hasSelectedLocation = () => openLocationModalButton?.classList.contains('campaign-outline-button--applied');
+
+        const syncStepOneValidity = () => {
+            if (!stepOneNext) {
+                return;
+            }
+
+            stepOneNext.disabled = !isTargeted && !hasSelectedLocation();
+        };
+
         const syncStepTwoValidity = () => {
             if (stepTwoNext) {
                 const isRecipientScheduleValid = syncRecipientScheduleValidity();
@@ -1726,10 +1730,17 @@
             syncButtonLimitState();
         };
 
+        const sanitizeSmsBody = (value) => String(value || '').replace(/[\r\n\t]+/g, ' ');
+
         const syncMessagePreview = () => {
-            const message = messageInput.value.trim();
+            const sanitizedValue = sanitizeSmsBody(messageInput.value);
+            if (messageInput.value !== sanitizedValue) {
+                messageInput.value = sanitizedValue;
+            }
+
+            const message = sanitizedValue.trim();
             messagePreview.innerHTML = message ? linkifyMessage(message) : 'Preview pesan akan muncul di sini.';
-            const messageLength = messageInput.value.length;
+            const messageLength = sanitizedValue.length;
             const smsCount = Math.max(1, Math.ceil(messageLength / 160));
             messageCount.textContent = `${messageLength}/${smsCount * 160} karakter (${smsCount}SMS)`;
         };
@@ -1964,12 +1975,19 @@
         syncScheduleRemoveState();
         applyDefaultDeliverySchedule(1);
         syncTargetedProfileBuilder();
+        syncStepOneValidity();
         syncStepTwoValidity();
 
         openLocationModalButton?.addEventListener('click', openLocationModal);
         stepOneNext?.addEventListener('click', () => {
             if (isTargeted) {
                 syncCampaignStep(2);
+                return;
+            }
+
+            if (!hasSelectedLocation()) {
+                window.alert('Pilih lokasi target terlebih dahulu.');
+                syncStepOneValidity();
                 return;
             }
 
@@ -2126,6 +2144,8 @@
         applyLocationButton?.addEventListener('click', () => {
             calculateAudience();
             syncLocationButtonSummary();
+            syncStepOneValidity();
+            syncStepTwoValidity();
             closeLocationModal();
         });
 
@@ -2172,6 +2192,13 @@
         const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
         const setPaymentUi = ({ status, transactionId, qrisUrl } = {}) => {
+            const paymentModal = paymentPanel?.closest('.campaign-payment-modal');
+            const paymentQrDownload = paymentModal?.querySelector('[download]');
+            if (paymentModal) {
+                paymentModal.hidden = false;
+                paymentModal.setAttribute('aria-hidden', 'false');
+                document.body.style.overflow = 'hidden';
+            }
             if (paymentPanel) {
                 paymentPanel.hidden = false;
             }
@@ -2185,8 +2212,17 @@
                 paymentQr.src = qrisUrl;
             }
             if (paymentQrLink) {
-                paymentQrLink.href = qrisUrl || '#';
-                paymentQrLink.hidden = !qrisUrl;
+                if (qrisUrl) {
+                    paymentQrLink.href = qrisUrl;
+                    paymentQrLink.hidden = false;
+                }
+            }
+            if (paymentQrDownload) {
+                if (qrisUrl) {
+                    paymentQrDownload.href = qrisUrl;
+                    paymentQrDownload.download = `qris-${transactionId || 'payment'}.png`;
+                    paymentQrDownload.hidden = false;
+                }
             }
         };
 

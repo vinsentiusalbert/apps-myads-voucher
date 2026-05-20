@@ -3248,6 +3248,10 @@ a {
     grid-column: span 4;
 }
 
+.campaign-targeted-profile-grid .field-group:nth-child(9) {
+    grid-column: span 3;
+}
+
 .campaign-inline-link--fit {
     width: fit-content;
     justify-content: flex-start;

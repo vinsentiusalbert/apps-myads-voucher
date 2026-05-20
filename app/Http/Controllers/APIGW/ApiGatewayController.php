@@ -250,7 +250,7 @@ class ApiGatewayController extends Controller
 
 			$campaignName = $this->generateSmsTargetedCampaignName();
 			$senderName = trim((string) ($validated['sender_name'] ?? ''));
-			$message = trim((string) ($validated['message'] ?? ''));
+			$message = $this->sanitizeSmsMessage($validated['message'] ?? '');
 			$recipientTotal = (int) ($validated['recipient_total'] ?? 0);
 
 			$deliveryDate = $this->formatDateYmd($validated['delivery_date'] ?? null);
@@ -369,7 +369,7 @@ class ApiGatewayController extends Controller
 
 			$campaignName = $this->generateSmsLbaCampaignName();
 			$senderName = trim((string) ($validated['sender_name'] ?? ''));
-			$message = trim((string) ($validated['message'] ?? ''));
+			$message = $this->sanitizeSmsMessage($validated['message'] ?? '');
 			$contentName = trim((string) ($validated['content_name'] ?? ''));
 			if ($contentName === '') {
 				$contentName = $campaignName;
@@ -854,6 +854,12 @@ class ApiGatewayController extends Controller
 		if ($startAt->lt(Carbon::now(config('app.timezone'))->addHours(4))) {
 			throw new RuntimeException('Jadwal pengiriman minimal 4 jam dari waktu sekarang.');
 		}
+	}
+
+	private function sanitizeSmsMessage(mixed $value): string
+	{
+		$message = preg_replace('/[\r\n\t]+/', ' ', (string) $value) ?? (string) $value;
+		return trim($message);
 	}
 
 	private function pipeProfileValue(array $values, array $map = [], bool $uppercase = false): ?string
