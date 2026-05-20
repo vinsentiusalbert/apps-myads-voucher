@@ -408,7 +408,7 @@
                     <div class="field-group">
                         <label for="waTargetedDeliveryMethod" class="field-label">Metode Pengiriman Pesan</label>
                         <select id="waTargetedDeliveryMethod" class="text-input text-input--select">
-                            <option>Metode Pengiriman Pesan</option>
+                            <!-- <option>Metode Pengiriman Pesan</option> -->
                             <option>Secepatnya</option>
                             <option>Merata per jadwal</option>
                         </select>

@@ -488,7 +488,7 @@
                 <div class="field-group">
                     <label for="campaignDeliveryMethod" class="field-label">Metode Pengiriman Pesan</label>
                     <select id="campaignDeliveryMethod" class="text-input text-input--select">
-                        <option>Metode Pengiriman Pesan</option>
+                        {{-- <option>Metode Pengiriman Pesan</option> --}}
                         <option>Secepatnya</option>
                         <option>Merata per jadwal</option>
                     </select>
@@ -1432,16 +1432,25 @@
         };
 
         const getScheduleDurationMinutes = (scheduleId) => {
+            const startDate = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`)?.value || '';
+            const endDate = document.querySelector(`[data-schedule-date-end="${scheduleId}"]`)?.value || '';
             const startHour = Number(document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
             const startMinute = Number(document.querySelector(`[data-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
             const endHour = Number(document.querySelector(`[data-schedule-time-end-hour="${scheduleId}"]`)?.value || NaN);
             const endMinute = Number(document.querySelector(`[data-schedule-time-end-minute="${scheduleId}"]`)?.value || NaN);
 
-            if ([startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
+            if (!startDate || !endDate || [startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
                 return 0;
             }
 
-            return (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+            const startAt = new Date(`${startDate}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00`);
+            const endAt = new Date(`${endDate}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00`);
+
+            if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
+                return 0;
+            }
+
+            return Math.floor((endAt.getTime() - startAt.getTime()) / 60000);
         };
 
         const syncRecipientScheduleValidity = () => {

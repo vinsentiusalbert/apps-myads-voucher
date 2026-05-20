@@ -168,29 +168,29 @@
                             <div class="campaign-wa-lba-preview__profile">
                                 <span class="campaign-wa-lba-preview__avatar"></span>
                                 <div>
-                                    <strong id="waLbaPreviewName">Name</strong>
-                                    <span id="waLbaPreviewSubtitle">Business Account</span>
+                                    <strong id="waLbaPreviewName"></strong>
+                                    <span id="waLbaPreviewSubtitle"></span>
                                 </div>
                             </div>
                             <span class="campaign-wa-lba-preview__menu">⋮</span>
                         </div>
 
                         <div class="campaign-wa-lba-preview__chat">
-                            <div class="campaign-wa-lba-preview__bubble">
-                                <strong id="waLbaPreviewHeadline">-</strong>
-                                <p id="waLbaPreviewMessage">-</p>
+                            <div class="campaign-wa-lba-preview__bubble" id="waLbaPreviewBubble">
+                                <strong id="waLbaPreviewHeadline"></strong>
+                                <p id="waLbaPreviewMessage"></p>
                             </div>
 
-                            <div class="campaign-wa-lba-preview__carousel">
-                                <img src="{{ asset('assets/logo.png') }}" alt="Preview template" id="waLbaPreviewAsset">
+                            <div class="campaign-wa-lba-preview__carousel" id="waLbaPreviewCarousel" hidden>
+                                <img src="" alt="Preview template" id="waLbaPreviewAsset" hidden>
                                 <div class="campaign-wa-lba-preview__carousel-copy">
-                                    <span class="campaign-wa-lba-preview__brand">MyAds</span>
-                                    <strong id="waLbaPreviewCardTitle">Template Carousel</strong>
-                                    <p id="waLbaPreviewCardCaption">Detail card pertama akan tampil di sini.</p>
+                                    <span class="campaign-wa-lba-preview__brand"></span>
+                                    <strong id="waLbaPreviewCardTitle"></strong>
+                                    <p id="waLbaPreviewCardCaption"></p>
                                 </div>
                             </div>
 
-                            <div class="campaign-wa-lba-preview__action" id="waLbaPreviewCta">Coba Sekarang</div>
+                            <div class="campaign-wa-lba-preview__action" id="waLbaPreviewCta" hidden></div>
                         </div>
                     </div>
                 </aside>
@@ -710,6 +710,8 @@
             const previewSubtitle = document.getElementById('waLbaPreviewSubtitle');
             const previewHeadline = document.getElementById('waLbaPreviewHeadline');
             const previewMessage = document.getElementById('waLbaPreviewMessage');
+            const previewBubble = document.getElementById('waLbaPreviewBubble');
+            const previewCarousel = document.getElementById('waLbaPreviewCarousel');
             const previewAsset = document.getElementById('waLbaPreviewAsset');
             const previewCardTitle = document.getElementById('waLbaPreviewCardTitle');
             const previewCardCaption = document.getElementById('waLbaPreviewCardCaption');
@@ -943,16 +945,25 @@
             };
 
             const getScheduleDurationMinutes = (scheduleId) => {
+                const startDate = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`)?.value || '';
+                const endDate = document.querySelector(`[data-schedule-date-end="${scheduleId}"]`)?.value || '';
                 const startHour = Number(document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
                 const startMinute = Number(document.querySelector(`[data-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
                 const endHour = Number(document.querySelector(`[data-schedule-time-end-hour="${scheduleId}"]`)?.value || NaN);
                 const endMinute = Number(document.querySelector(`[data-schedule-time-end-minute="${scheduleId}"]`)?.value || NaN);
 
-                if ([startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
+                if (!startDate || !endDate || [startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
                     return 0;
                 }
 
-                return (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+                const startAt = new Date(`${startDate}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00`);
+                const endAt = new Date(`${endDate}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00`);
+
+                if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
+                    return 0;
+                }
+
+                return Math.floor((endAt.getTime() - startAt.getTime()) / 60000);
             };
 
             const syncStepThreeState = () => {
@@ -1715,6 +1726,18 @@
 
                 if (!selected) {
                     cardsAccordion.innerHTML = '';
+                    previewName.textContent = '';
+                    previewSubtitle.textContent = '';
+                    previewHeadline.textContent = '';
+                    previewMessage.textContent = '';
+                    previewAsset.removeAttribute('src');
+                    previewAsset.hidden = true;
+                    previewCardTitle.textContent = '';
+                    previewCardCaption.textContent = '';
+                    previewBubble.hidden = false;
+                    previewCarousel.hidden = true;
+                    previewCta.textContent = '';
+                    previewCta.hidden = true;
                     return;
                 }
 
@@ -1728,10 +1751,19 @@
                 previewSubtitle.textContent = selected.channel_kind === 'Carousel' ? 'Carousel Business Account' : 'Business Account';
                 previewHeadline.textContent = selected.bubble_headline || '-';
                 previewMessage.textContent = selected.bubble_message || '-';
-                previewAsset.src = selected.asset_url || @json(asset('assets/logo.png'));
-                previewCardTitle.textContent = (selected.cards && selected.cards[0] && selected.cards[0].title) || 'Template Carousel';
-                previewCardCaption.textContent = (selected.cards && selected.cards[0] && selected.cards[0].caption) || selected.bubble_message || 'Detail card pertama akan tampil di sini.';
-                previewCta.textContent = selected.cta || 'Coba Sekarang';
+                previewBubble.hidden = false;
+                if (selected.asset_url) {
+                    previewAsset.src = selected.asset_url;
+                    previewAsset.hidden = false;
+                } else {
+                    previewAsset.removeAttribute('src');
+                    previewAsset.hidden = true;
+                }
+                previewCardTitle.textContent = (selected.cards && selected.cards[0] && selected.cards[0].title) || '';
+                previewCardCaption.textContent = (selected.cards && selected.cards[0] && selected.cards[0].caption) || selected.bubble_message || '';
+                previewCarousel.hidden = !(selected.asset_url || (selected.cards && selected.cards.length));
+                previewCta.textContent = selected.cta || '';
+                previewCta.hidden = !selected.cta;
                 previewPhone?.classList.add(selected.cards && selected.cards.length ? 'campaign-wa-lba-preview__phone--carousel' : 'campaign-wa-lba-preview__phone--basic');
                 renderCards(selected.cards || []);
             };
