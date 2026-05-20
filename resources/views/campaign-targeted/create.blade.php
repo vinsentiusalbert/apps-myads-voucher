@@ -1875,6 +1875,17 @@
                 '<span class="campaign-phone__url">$1</span>'
             );
 
+            const ctaUrlPrefix = 'https://gofood/';
+            const normalizeCtaPath = (value) => String(value || '')
+                .trim()
+                .replace(/^https?:\/\/gofood\/?/i, '')
+                .replace(/^gofood\/?/i, '')
+                .replace(/^\/+/, '');
+            const buildCtaUrl = (value) => {
+                const path = normalizeCtaPath(value);
+                return path === '' ? '' : `${ctaUrlPrefix}${path}`;
+            };
+
             const syncUrlIntoMessage = (card) => {
                 if (!messageInput) {
                     return;
@@ -1882,15 +1893,15 @@
 
                 const websiteInput = card.querySelector('[data-action-url]');
                 const previousUrl = card.dataset.syncedUrl || '';
-                const nextUrl = websiteInput?.value?.trim() || '';
+                const nextUrl = buildCtaUrl(websiteInput?.value);
                 let message = messageInput.value;
 
                 if (previousUrl !== '') {
-                    message = message.replace(new RegExp(`\\n?${escapeRegExp(previousUrl)}`, 'g'), '');
+                    message = message.replace(new RegExp(`\\s*${escapeRegExp(previousUrl)}`, 'g'), '');
                 }
 
                 if (nextUrl !== '') {
-                    message = `${message.trimEnd()}${message.trim() === '' ? '' : '\n'}${nextUrl}`;
+                    message = `${message.trimEnd()}${message.trim() === '' ? '' : ' '}${nextUrl}`;
                 }
 
                 card.dataset.syncedUrl = nextUrl;
@@ -1901,8 +1912,14 @@
             const updateButtonCardMeta = (card) => {
                 const websiteInput = card.querySelector('[data-action-url]');
                 const urlMeta = card.querySelector('[data-url-meta]');
+                const normalizedPath = normalizeCtaPath(websiteInput.value);
 
-                urlMeta.innerHTML = `${websiteInput.value.length} / 2000`;
+                if (websiteInput.value !== normalizedPath) {
+                    websiteInput.value = normalizedPath;
+                }
+
+                const fullUrlLength = buildCtaUrl(normalizedPath).length;
+                urlMeta.innerHTML = `${fullUrlLength} / 2000`;
                 syncUrlIntoMessage(card);
                 renderPhoneActions();
             };
@@ -1938,7 +1955,10 @@
                         </div>
                         <div class="campaign-button-card__field">
                             <label>Website URL</label>
-                            <input type="text" class="text-input" data-action-url maxlength="2000" value="">
+                            <div class="campaign-prefixed-input">
+                                <span>${ctaUrlPrefix}</span>
+                                <input type="text" class="text-input" data-action-url maxlength="1985" value="" placeholder="path">
+                            </div>
                             <div class="campaign-button-card__meta" data-url-meta>0 / 2000</div>
                         </div>
                     </div>
