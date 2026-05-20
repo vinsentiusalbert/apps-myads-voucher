@@ -147,6 +147,25 @@ class MyadsApiClient
     }
 
     /**
+     * Fetch current authenticated user info from API
+     * @return array{success:bool, data?:array{user:array}}
+     */
+    public function getMe(string $accessToken): array
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->get('/api/auth/me');
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API getMe: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal fetch user info'));
+        }
+
+        return (array) $response->json();
+    }
+
+    /**
      * @return array{success:bool, message?:string, data?:array}
      */
     public function registrationContext(string $merchantId, string $partnerId): array

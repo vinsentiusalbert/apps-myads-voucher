@@ -28,21 +28,49 @@ class SsoController extends Controller
             abort(422, 'Merchant ID tidak ditemukan.');
         }
 
+        // 🔄 FETCH user data dari API (source of truth)
+        try {
+            $apiUserData = $client->getMe($accessToken);
+            $apiUser = $apiUserData['data']['user'] ?? null;
+        } catch (Throwable) {
+            $apiUser = null;
+        }
+
+        // Sync/create user di UI database dari API data
         $user = User::query()->where('merchant_id', $merchantId)->first();
 
+        if (! $user && $apiUser) {
+            // Create dari API data
+            $user = User::query()->create([
+                'name' => $apiUser['name'] ?? 'Merchant SSO',
+                'email' => $apiUser['email'] ?? 'sso-' . Str::random(8) . '@goto.local',
+                'password' => Str::random(32),
+                'merchant_id' => $merchantId,
+                'partner_id' => $partnerId !== '' ? $partnerId : null,
+            ]);
+        } elseif ($user) {
+            // Update existing user jika ada data baru dari API
+            $updateData = [];
+            if ($apiUser && isset($apiUser['name'])) {
+                $updateData['name'] = $apiUser['name'];
+            }
+            if ($partnerId !== '' && $user->partner_id !== $partnerId) {
+                $updateData['partner_id'] = $partnerId;
+            }
+            if (!empty($updateData)) {
+                $user->update($updateData);
+            }
+        }
+
+        // Fallback: create dengan default identity kalau masih tidak ada
         if (! $user) {
             [$name, $email] = $this->nextDefaultIdentity();
-
             $user = User::query()->create([
                 'name' => $name,
                 'email' => $email,
                 'password' => Str::random(32),
                 'merchant_id' => $merchantId,
                 'partner_id' => $partnerId !== '' ? $partnerId : null,
-            ]);
-        } elseif ($partnerId !== '' && $user->partner_id !== $partnerId) {
-            $user->update([
-                'partner_id' => $partnerId,
             ]);
         }
 
