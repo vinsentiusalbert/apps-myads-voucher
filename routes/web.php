@@ -7,11 +7,13 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\Auth\SsoController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/', [SessionController::class, 'create'])->name('login');
     Route::post('/login', [SessionController::class, 'store'])->name('login.store');
+    Route::get('/sso/complete', [SsoController::class, 'complete'])->name('sso.complete');
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
     Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');

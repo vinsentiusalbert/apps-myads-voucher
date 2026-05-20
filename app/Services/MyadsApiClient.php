@@ -226,6 +226,10 @@ class MyadsApiClient
             throw new RuntimeException('Tidak bisa konek ke API payment initiate: ' . $e->getMessage(), previous: $e);
         }
 
+        if ($response->status() === 401) {
+            throw new RuntimeException('Unauthorized');
+        }
+
         if ($response->failed()) {
             throw new RuntimeException($this->extractErrorMessage($response, 'Gagal initiate pembayaran'));
         }
@@ -247,6 +251,10 @@ class MyadsApiClient
             $response = $this->bearerClient($accessToken)->get('/api/payment/' . rawurlencode($transactionId));
         } catch (ConnectionException $e) {
             throw new RuntimeException('Tidak bisa konek ke API payment status: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->status() === 401) {
+            throw new RuntimeException('Unauthorized');
         }
 
         if ($response->failed()) {

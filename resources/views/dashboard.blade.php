@@ -80,6 +80,8 @@
         $campaignSmsLabel = $campaignSmsTotal === null ? '-' : (string) $campaignSmsTotal;
         $campaignWaLabel = $campaignWaTotal === null ? '-' : (string) $campaignWaTotal;
         $gwStatusLabel = session()->has('myads.gw_token') ? 'OK' : '-';
+        $clientId = (string) session()->get('myads.merchant_id', '');
+        $clientLabel = $clientId !== '' ? 'Client ID: ' . $clientId : null;
         $formatPrice = static fn ($value): string => is_numeric($value)
             ? 'Rp ' . number_format((float) $value, 0, ',', '.') . ' / pesan'
             : 'Harga belum tersedia';
@@ -93,6 +95,9 @@
         <div class="portal-welcome">
             <p class="portal-welcome__lead">Selamat Datang,</p>
             <h1 class="portal-welcome__name">{{ auth()->user()->name }}</h1>
+            @if ($clientLabel)
+                <p class="portal-welcome__meta">{{ $clientLabel }}</p>
+            @endif
         </div>
 
         <article class="portal-balance">
