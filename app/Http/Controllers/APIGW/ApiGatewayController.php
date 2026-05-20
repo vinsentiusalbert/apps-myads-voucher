@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\APIGW;
 
 use App\Http\Controllers\Controller;
-use App\Models\SmsLbaCampaign;
-use App\Models\SmsTargetedCampaign;
 use App\Services\MyadsApiClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -224,8 +222,6 @@ class ApiGatewayController extends Controller
 			'profile_work.*' => ['nullable', 'string', 'max:255'],
 		]);
 
-		$smsTargetedCampaign = null;
-
 		try {
 			$paymentTransactionId = trim((string) ($validated['payment_transaction_id'] ?? ''));
 			if ($paymentTransactionId === '') {
@@ -302,20 +298,6 @@ class ApiGatewayController extends Controller
 				'profileWork' => $this->pipeProfileValue($validated['profile_work'] ?? []),
 			]);
 
-			$smsTargetedCampaign = SmsTargetedCampaign::create([
-				'campaign_name' => $campaignName,
-				'sender_name' => $senderName,
-				'message' => $message,
-				'recipient_total' => $recipientTotal,
-				'delivery_date' => $deliveryDate,
-				'delivery_time' => $deliveryTime,
-				'control_number' => $controlNumber,
-				'channel' => $payload['channel'],
-				'mms_file' => $mmsFile !== '' ? $mmsFile : null,
-				'gw_payload' => $payload,
-				'status' => 'pending',
-			]);
-
 			$resp = $client->campaignTargetedAdd($gwToken, $payload, $this->gatewayRefreshCallback($request, $client));
 			$campaignId = (string) (data_get($resp, 'data.data.campaignId')
 				?? data_get($resp, 'data.data.data.campaignId')
@@ -323,25 +305,12 @@ class ApiGatewayController extends Controller
 				?? data_get($resp, 'data.data.campaign_id')
 				?? '');
 
-			$smsTargetedCampaign->update([
-				'gw_response' => $resp,
-				'gw_campaign_id' => $campaignId !== '' ? $campaignId : null,
-				'status' => 'sent',
-			]);
-
 			$suffix = $campaignId !== '' ? " (campaignId: {$campaignId})" : '';
 
 			return redirect()
 				->route('campaign.menu', ['channel' => 'sms', 'menu' => 'targeted'])
 				->with('status', 'Campaign Targeted berhasil dibuat.' . $suffix);
 		} catch (Throwable $e) {
-			if ($smsTargetedCampaign !== null) {
-				$smsTargetedCampaign->update([
-					'status' => 'failed',
-					'error_message' => $e->getMessage(),
-				]);
-			}
-
 			return back()->withErrors([
 				'gw' => $e->getMessage(),
 			])->withInput();
@@ -370,8 +339,6 @@ class ApiGatewayController extends Controller
 			'location_radius' => ['required', 'integer', 'min:1', 'max:50000'],
 			'location_type' => ['nullable', 'string', 'in:ALL,HOME,MALL'],
 		]);
-
-		$smsLbaCampaign = null;
 
 		try {
 			$paymentTransactionId = trim((string) ($validated['payment_transaction_id'] ?? ''));
@@ -446,37 +413,11 @@ class ApiGatewayController extends Controller
 				],
 			];
 
-			$smsLbaCampaign = SmsLbaCampaign::create([
-				'campaign_name' => $campaignName,
-				'sender_name' => $senderName,
-				'message' => $message,
-				'content_name' => $contentName,
-				'recipient_total' => $recipientTotal,
-				'delivery_start_date' => $startDate,
-				'delivery_end_date' => $endDate,
-				'delivery_start_time' => $startTime,
-				'delivery_end_time' => $endTime,
-				'control_number' => $controlNumber,
-				'location_name' => $locationName,
-				'location_lat' => $lat,
-				'location_lng' => $lng,
-				'location_radius' => $radius,
-				'location_type' => $locationType,
-				'gw_payload' => $payload,
-				'status' => 'pending',
-			]);
-
 			$resp = $client->campaignLbaAdd($gwToken, $payload, $this->gatewayRefreshCallback($request, $client));
 			$campaignId = (string) (data_get($resp, 'data.data.campaignId')
 				?? data_get($resp, 'data.data.data.campaignId')
 				?? data_get($resp, 'data.campaignId')
 				?? '');
-
-			$smsLbaCampaign->update([
-				'gw_response' => $resp,
-				'gw_campaign_id' => $campaignId !== '' ? $campaignId : null,
-				'status' => 'sent',
-			]);
 
 			$suffix = $campaignId !== '' ? " (campaignId: {$campaignId})" : '';
 
@@ -484,13 +425,6 @@ class ApiGatewayController extends Controller
 				->route('campaign.menu', ['channel' => 'sms', 'menu' => 'location-based-area'])
 				->with('status', 'Campaign LBA berhasil dibuat.' . $suffix);
 		} catch (Throwable $e) {
-			if ($smsLbaCampaign !== null) {
-				$smsLbaCampaign->update([
-					'status' => 'failed',
-					'error_message' => $e->getMessage(),
-				]);
-			}
-
 			return back()->withErrors([
 				'gw' => $e->getMessage(),
 			])->withInput();

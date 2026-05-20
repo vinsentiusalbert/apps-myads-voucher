@@ -3,12 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Services\MyadsApiClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -29,7 +26,6 @@ class SessionController extends Controller
             'partner_id' => ['nullable', 'string', 'max:128'],
         ]);
 
-        $remember = (bool) ($credentials['remember'] ?? false);
         unset($credentials['remember']);
 
         $merchantId = trim((string) ($credentials['merchant_id'] ?? ''));
@@ -40,19 +36,6 @@ class SessionController extends Controller
             throw ValidationException::withMessages([
                 'email' => 'Merchant ID dan Partner ID wajib lengkap untuk login SSO.',
             ]);
-        }
-
-        if ($merchantId !== '' && $partnerId !== '') {
-            $hasExistingSsoUser = User::query()
-                ->where('merchant_id', $merchantId)
-                ->where('partner_id', $partnerId)
-                ->exists();
-
-            if (! $hasExistingSsoUser) {
-                throw ValidationException::withMessages([
-                    'email' => 'Akun SSO belum terdaftar. Silakan lengkapi registrasi terlebih dahulu.',
-                ]);
-            }
         }
 
         try {
@@ -76,39 +59,18 @@ class SessionController extends Controller
         $userEmail = (string) ($apiUser['email'] ?? $credentials['email']);
         $userName = (string) ($apiUser['name'] ?? $userEmail);
 
-        if ($merchantId !== '' && $partnerId !== '') {
-            $user = User::query()
-                ->where('email', $userEmail)
-                ->where('merchant_id', $merchantId)
-                ->where('partner_id', $partnerId)
-                ->first();
-
-            if (! $user) {
-                throw ValidationException::withMessages([
-                    'email' => 'ID tidak sesuai dengan akun SSO yang sudah terdaftar.',
-                ]);
-            }
-
-            $user->forceFill([
-                'name' => $userName,
-            ])->save();
-        } else {
-            $user = User::query()->updateOrCreate(
-                ['email' => $userEmail],
-                [
-                    'name' => $userName,
-                    'password' => Str::random(32),
-                ]
-            );
-        }
-
-        Auth::login($user, $remember);
-
         $request->session()->regenerate();
 
         $request->session()->put([
             'myads.access_token' => data_get($loginResp, 'data.access_token'),
             'myads.refresh_token' => data_get($loginResp, 'data.refresh_token'),
+            'myads.user' => [
+                'id' => (string) ($apiUser['id'] ?? $apiUser['user_id'] ?? $userEmail),
+                'name' => $userName,
+                'email' => $userEmail,
+                'merchant_id' => (string) ($apiUser['merchant_id'] ?? $merchantId),
+                'partner_id' => (string) ($apiUser['partner_id'] ?? $partnerId),
+            ],
         ]);
 
         try {
@@ -121,7 +83,6 @@ class SessionController extends Controller
 
             $request->session()->put('myads.gw_token', $gwToken);
         } catch (\Throwable $e) {
-            Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
@@ -135,12 +96,11 @@ class SessionController extends Controller
 
     public function destroy(Request $request): RedirectResponse
     {
-        Auth::logout();
-
         $request->session()->forget([
             'myads.access_token',
             'myads.refresh_token',
             'myads.gw_token',
+            'myads.user',
         ]);
 
         $request->session()->invalidate();

@@ -3,9 +3,7 @@
 namespace Tests\Feature;
 
 use App\Http\Controllers\CampaignMenuController;
-use App\Models\User;
 use App\Services\MyadsApiClient;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Mockery;
@@ -13,8 +11,6 @@ use Tests\TestCase;
 
 class CampaignSmsReportTest extends TestCase
 {
-    use RefreshDatabase;
-
     public function test_sms_campaign_report_forwards_campaign_id_to_api_gateway(): void
     {
         $client = Mockery::mock(MyadsApiClient::class);
@@ -34,8 +30,15 @@ class CampaignSmsReportTest extends TestCase
             ]);
         $this->app->instance(MyadsApiClient::class, $client);
 
-        $response = $this->actingAs(User::factory()->create())
-            ->withSession(['myads.gw_token' => 'test-gw-token'])
+        $response = $this->withSession([
+                'myads.access_token' => 'test-access-token',
+                'myads.gw_token' => 'test-gw-token',
+                'myads.user' => [
+                    'id' => 'operator@myads.test',
+                    'name' => 'Ads Operator',
+                    'email' => 'operator@myads.test',
+                ],
+            ])
             ->get('/campaign/sms/report?campaignId=2171');
 
         $response->assertOk();
@@ -269,7 +272,7 @@ class CampaignSmsReportTest extends TestCase
 
         Http::assertSentCount(3);
         Http::assertSent(function ($request): bool {
-            return (string) $request->url() === 'http://example.test/api/gw//scrt/myads/api/v1/report/view'
+            return (string) $request->url() === 'http://example.test/api/gw/report/view'
                 && $request['campaignId'] === 2171;
         });
     }
