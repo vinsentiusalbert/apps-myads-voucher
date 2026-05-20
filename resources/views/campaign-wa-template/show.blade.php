@@ -13,7 +13,7 @@
         ],
         [
             'key' => 'sms',
-            'label' => 'SMS',
+            'label' => 'Daftar SMS',
             'icon' => 'sms',
             'children' => [
                 [
@@ -32,7 +32,7 @@
         ],
         [
             'key' => 'wa-business',
-            'label' => 'WA Business',
+            'label' => 'Daftar WA Business',
             'icon' => 'wa',
             'children' => [
                 [

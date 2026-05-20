@@ -11,7 +11,7 @@
         ],
         [
             'key' => 'sms',
-            'label' => 'SMS',
+            'label' => 'Daftar SMS',
             'icon' => 'sms',
             'children' => [
                 [
@@ -32,7 +32,7 @@
         ],
         [
             'key' => 'wa-business',
-            'label' => 'WA Business',
+            'label' => 'Daftar WA Business',
             'icon' => 'wa',
             'children' => [
                 [
@@ -103,18 +103,14 @@
                 </div>
             </div>
 
-            <div class="portal-balance__bottom">
-                <span><?php echo e($expiryLabel); ?></span>
-                <span><?php echo e($expiryLabel); ?></span>
-                <a href="#">Lihat Riwayat Saldo</a>
-            </div>
+            
         </article>
     </section>
 
     <section class="portal-card portal-card--insight">
         <div class="portal-card__header">
             <h2>Ringkasan Dashboard</h2>
-            <a href="<?php echo e(route('dashboard')); ?>">Refresh</a>
+            
         </div>
 
         <div class="portal-stats">
@@ -130,10 +126,7 @@
                 <p class="portal-stats__value"><?php echo e($campaignWaLabel); ?></p>
                 <p class="portal-stats__label">Campaign channel WA Business</p>
             </div>
-            <div class="portal-stats__item">
-                <p class="portal-stats__value"><?php echo e($gwStatusLabel); ?></p>
-                <p class="portal-stats__label">Token gateway di session</p>
-            </div>
+            
         </div>
     </section>
 

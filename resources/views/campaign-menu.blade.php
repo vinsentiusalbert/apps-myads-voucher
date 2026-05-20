@@ -58,8 +58,8 @@
 
                         @php
                             $menus = [
-                                'sms' => ['label' => 'SMS', 'items' => ['location-based-area' => 'Location Based Area', 'targeted' => 'Targeted']],
-                                'wa-business' => ['label' => 'WA Business', 'items' => ['campaign-template' => 'Campaign Template', 'location-based-area' => 'Location Based Area', 'targeted' => 'Targeted']],
+                                'sms' => ['label' => 'Daftar SMS', 'items' => ['location-based-area' => 'Location Based Area', 'targeted' => 'Targeted']],
+                                'wa-business' => ['label' => 'Daftar WA Business', 'items' => ['campaign-template' => 'Campaign Template', 'location-based-area' => 'Location Based Area', 'targeted' => 'Targeted']],
                             ];
                         @endphp
 

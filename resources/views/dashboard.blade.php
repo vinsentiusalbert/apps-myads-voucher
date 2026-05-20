@@ -11,7 +11,7 @@
         ],
         [
             'key' => 'sms',
-            'label' => 'SMS',
+            'label' => 'Daftar SMS',
             'icon' => 'sms',
             'children' => [
                 [
@@ -32,7 +32,7 @@
         ],
         [
             'key' => 'wa-business',
-            'label' => 'WA Business',
+            'label' => 'Daftar WA Business',
             'icon' => 'wa',
             'children' => [
                 [
@@ -103,18 +103,18 @@
                 </div>
             </div>
 
-            <div class="portal-balance__bottom">
+            {{-- <div class="portal-balance__bottom">
                 <span>{{ $expiryLabel }}</span>
                 <span>{{ $expiryLabel }}</span>
                 <a href="#">Lihat Riwayat Saldo</a>
-            </div>
+            </div> --}}
         </article>
     </section>
 
     <section class="portal-card portal-card--insight">
         <div class="portal-card__header">
             <h2>Ringkasan Dashboard</h2>
-            <a href="{{ route('dashboard') }}">Refresh</a>
+            {{-- <a href="{{ route('dashboard') }}">Refresh</a> --}}
         </div>
 
         <div class="portal-stats">
@@ -130,10 +130,10 @@
                 <p class="portal-stats__value">{{ $campaignWaLabel }}</p>
                 <p class="portal-stats__label">Campaign channel WA Business</p>
             </div>
-            <div class="portal-stats__item">
+            {{-- <div class="portal-stats__item">
                 <p class="portal-stats__value">{{ $gwStatusLabel }}</p>
                 <p class="portal-stats__label">Token gateway di session</p>
-            </div>
+            </div> --}}
         </div>
     </section>
 
