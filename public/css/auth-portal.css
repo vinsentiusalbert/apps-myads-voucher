@@ -2636,6 +2636,7 @@ a {
     cursor: text;
 }
 
+.campaign-multiselect__control:focus-within,
 .campaign-multiselect--open .campaign-multiselect__control {
     border-color: var(--brand-teal);
     box-shadow: 0 0 0 4px rgba(0, 166, 153, 0.12);
@@ -2707,7 +2708,7 @@ a {
 .campaign-multiselect__option {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 12px;
     width: 100%;
     padding: 10px 12px;
@@ -2720,21 +2721,76 @@ a {
     cursor: pointer;
 }
 
+.campaign-multiselect__option--all {
+    font-weight: 700;
+}
+
 .campaign-multiselect__option:hover,
 .campaign-multiselect__option--selected {
     background: rgba(0, 166, 153, 0.1);
     color: #0a4f4b;
 }
 
+.campaign-multiselect__checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--brand-teal);
+    pointer-events: none;
+}
+
 .campaign-multiselect__check {
-    color: var(--brand-teal);
-    font-weight: 800;
+    display: none;
 }
 
 .campaign-multiselect__empty {
     padding: 10px 12px;
     color: #64748b;
     font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+    .campaign-profile-grid,
+    .campaign-targeted-profile-grid {
+        grid-template-columns: minmax(0, 1fr) !important;
+        gap: 16px;
+    }
+
+    .campaign-profile-grid .field-group,
+    .campaign-targeted-profile-grid .field-group,
+    .campaign-targeted-profile-grid .field-group:nth-child(n) {
+        grid-column: 1 / -1 !important;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .campaign-multiselect,
+    .campaign-multiselect__control,
+    .campaign-multiselect__dropdown {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .campaign-multiselect__control {
+        min-height: 52px;
+        border-radius: 16px;
+    }
+
+    .campaign-multiselect__search {
+        min-width: 0;
+        font-size: 0.95rem;
+    }
+
+    .campaign-multiselect__chip {
+        max-width: 100%;
+    }
+
+    .campaign-multiselect__chip span:last-child,
+    .campaign-multiselect__option span:last-child {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
 
 .campaign-inline-link--strong {

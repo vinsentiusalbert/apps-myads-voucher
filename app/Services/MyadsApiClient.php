@@ -355,6 +355,27 @@ class MyadsApiClient
     /**
      * @return array{success:bool, data?:array}
      */
+    public function contentUpload(string $gatewayToken, UploadedFile $file, int|string $phoneNumberId, ?callable $refreshGatewayToken = null): array
+    {
+        try {
+            return $this->sendContentUpload($gatewayToken, $file, $phoneNumberId);
+        } catch (RuntimeException $e) {
+            if ($refreshGatewayToken === null || ! $this->isGatewayAuthorizationCacheMiss($e->getMessage())) {
+                throw $e;
+            }
+
+            $freshToken = (string) $refreshGatewayToken();
+            if (trim($freshToken) === '') {
+                throw $e;
+            }
+
+            return $this->sendContentUpload($freshToken, $file, $phoneNumberId);
+        }
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
     public function wabaDisplayNameList(string $accessToken, array $payload = [], ?string $gatewayToken = null, ?callable $refreshGatewayToken = null): array
     {
         $requestPayload = $payload === [] ? new stdClass() : $payload;
@@ -476,6 +497,122 @@ class MyadsApiClient
         $body = trim(strip_tags($response->body()));
 
         return $body !== '' ? $body : $fallback;
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    private function sendContentUpload(string $gatewayToken, UploadedFile $file, int|string $phoneNumberId): array
+    {
+        $phoneNumberId = trim((string) $phoneNumberId);
+        if ($phoneNumberId === '') {
+            throw new RuntimeException('Phone Number ID wajib tersedia untuk upload konten.');
+        }
+
+        @set_time_limit(120);
+        [$uploadPath, $uploadName, $cleanupPath] = $this->prepareContentUploadFile($file);
+
+        try {
+            $response = Http::baseUrl($this->baseUrl)
+                ->acceptJson()
+                ->timeout(60)
+                ->withHeaders([
+                    'x-api-gw-token' => $gatewayToken,
+                ])
+                ->asMultipart()
+                ->attach('file', fopen($uploadPath, 'r'), $uploadName)
+                ->post('/api/gw/content-upload', [
+                    [
+                        'name' => 'phone_number_id',
+                        'contents' => $phoneNumberId,
+                    ],
+                ]);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API GW content-upload: ' . $e->getMessage(), previous: $e);
+        } finally {
+            if ($cleanupPath !== null && is_file($cleanupPath)) {
+                @unlink($cleanupPath);
+            }
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Upload konten ke API GW gagal'));
+        }
+
+        $json = (array) $response->json();
+        return $this->assertGatewayOk($json, 'Upload konten ke API GW gagal');
+    }
+
+    /**
+     * @return array{0:string, 1:string, 2:?string}
+     */
+    private function prepareContentUploadFile(UploadedFile $file): array
+    {
+        $originalPath = (string) $file->getRealPath();
+        $originalName = $file->getClientOriginalName();
+        $mime = (string) $file->getMimeType();
+
+        if (! str_starts_with($mime, 'image/') || ! extension_loaded('gd')) {
+            return [$originalPath, $originalName, null];
+        }
+
+        $imageInfo = @getimagesize($originalPath);
+        if (! is_array($imageInfo)) {
+            return [$originalPath, $originalName, null];
+        }
+
+        [$width, $height] = $imageInfo;
+        if ($width <= 0 || $height <= 0) {
+            return [$originalPath, $originalName, null];
+        }
+
+        $source = match ($imageInfo['mime'] ?? $mime) {
+            'image/jpeg' => @imagecreatefromjpeg($originalPath),
+            'image/png' => @imagecreatefrompng($originalPath),
+            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($originalPath) : false,
+            default => false,
+        };
+
+        if (! $source) {
+            return [$originalPath, $originalName, null];
+        }
+
+        $maxSide = 1280;
+        $scale = min(1, $maxSide / max($width, $height));
+        $targetWidth = max(1, (int) round($width * $scale));
+        $targetHeight = max(1, (int) round($height * $scale));
+        $target = imagecreatetruecolor($targetWidth, $targetHeight);
+
+        if (! $target) {
+            imagedestroy($source);
+            return [$originalPath, $originalName, null];
+        }
+
+        $white = imagecolorallocate($target, 255, 255, 255);
+        imagefilledrectangle($target, 0, 0, $targetWidth, $targetHeight, $white);
+        imagecopyresampled($target, $source, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height);
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'waba-content-');
+        if ($tempPath === false) {
+            imagedestroy($target);
+            imagedestroy($source);
+            return [$originalPath, $originalName, null];
+        }
+
+        $compressedPath = $tempPath . '.jpg';
+        @rename($tempPath, $compressedPath);
+
+        $saved = imagejpeg($target, $compressedPath, 76);
+        imagedestroy($target);
+        imagedestroy($source);
+
+        if (! $saved || ! is_file($compressedPath)) {
+            @unlink($compressedPath);
+            return [$originalPath, $originalName, null];
+        }
+
+        $baseName = pathinfo($originalName, PATHINFO_FILENAME) ?: 'asset';
+        return [$compressedPath, $baseName . '.jpg', $compressedPath];
     }
 
     /**

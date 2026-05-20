@@ -191,12 +191,12 @@ class ApiGatewayController extends Controller
 		$validated = $request->validate([
 			'payment_transaction_id' => ['required', 'string', 'max:128'],
 			'campaign_name' => ['nullable', 'string', 'max:255'],
-			'sender_name' => ['required', 'string', 'max:255'],
+			'sender_name' => ['required', 'string', 'max:11'],
 			'message' => ['required', 'string', 'max:1024'],
 			'recipient_total' => ['required', 'integer', 'min:1', 'max:100000'],
 			'delivery_date' => ['nullable', 'date_format:Y-m-d'],
 			'delivery_time' => ['nullable', 'date_format:H:i'],
-			'control_number' => ['required', 'string', 'max:32'],
+			'control_number' => ['required', 'string', 'max:1000'],
 			'mms_file' => ['nullable', 'string', 'max:5000'],
 			'profile_gender' => ['nullable', 'array'],
 			'profile_gender.*' => ['nullable', 'string', 'max:255'],
@@ -244,11 +244,11 @@ class ApiGatewayController extends Controller
 			$deliveryDate = $this->formatDateYmd($validated['delivery_date'] ?? null);
 			$deliveryTime = $this->formatTimeHiToHmm($validated['delivery_time'] ?? null);
 
-			$controlNumber = $this->normalizeMsisdn((string) ($validated['control_number'] ?? ''));
+			$controlNumbers = $this->normalizeControlNumbers((string) ($validated['control_number'] ?? ''));
 
 			$mmsFile = trim((string) ($validated['mms_file'] ?? ''));
 
-			if ($campaignName === '' || $senderName === '' || $message === '' || $recipientTotal <= 0 || $controlNumber === null || $deliveryDate === null || $deliveryTime === null) {
+			if ($campaignName === '' || $senderName === '' || $message === '' || $recipientTotal <= 0 || $controlNumbers === [] || $deliveryDate === null || $deliveryTime === null) {
 				throw new RuntimeException('Data belum lengkap. Mohon lengkapi judul, pengirim, isi pesan, jumlah penerima, jadwal kirim, dan nomor kontrol.');
 			}
 
@@ -264,7 +264,7 @@ class ApiGatewayController extends Controller
 						'deliveryTime' => $deliveryTime,
 					],
 				],
-				'controlNumbers' => [$controlNumber],
+				'controlNumbers' => $controlNumbers,
 			];
 
 			if ($mmsFile !== '') {
@@ -324,7 +324,7 @@ class ApiGatewayController extends Controller
 		$validated = $request->validate([
 			'payment_transaction_id' => ['required', 'string', 'max:128'],
 			'campaign_name' => ['nullable', 'string', 'max:255'],
-			'sender_name' => ['required', 'string', 'max:255'],
+			'sender_name' => ['required', 'string', 'max:11'],
 			'message' => ['required', 'string', 'max:1024'],
 			'content_name' => ['nullable', 'string', 'max:255'],
 			'recipient_total' => ['required', 'integer', 'min:1', 'max:100000'],
@@ -332,7 +332,7 @@ class ApiGatewayController extends Controller
 			'delivery_end_date' => ['nullable', 'date_format:Y-m-d'],
 			'delivery_start_time' => ['nullable', 'date_format:H:i'],
 			'delivery_end_time' => ['nullable', 'date_format:H:i'],
-			'control_number' => ['required', 'string', 'max:32'],
+			'control_number' => ['required', 'string', 'max:1000'],
 			'location_name' => ['required', 'string', 'max:255'],
 			'location_lat' => ['required', 'numeric'],
 			'location_lng' => ['required', 'numeric'],
@@ -368,7 +368,7 @@ class ApiGatewayController extends Controller
 			$startTime = $this->formatTimeHiToHmm($validated['delivery_start_time'] ?? null);
 			$endTime = $this->formatTimeHiToHmm($validated['delivery_end_time'] ?? null);
 
-			$controlNumber = $this->normalizeMsisdn((string) ($validated['control_number'] ?? ''));
+			$controlNumbers = $this->normalizeControlNumbers((string) ($validated['control_number'] ?? ''));
 
 			$locationName = trim((string) ($validated['location_name'] ?? ''));
 			$lat = (float) ($validated['location_lat'] ?? 0);
@@ -379,7 +379,7 @@ class ApiGatewayController extends Controller
 				$locationType = 'ALL';
 			}
 
-			if ($campaignName === '' || $senderName === '' || $message === '' || $contentName === '' || $recipientTotal <= 0 || $controlNumber === null || $startDate === null || $endDate === null || $startTime === null || $endTime === null || $locationName === '' || $radius <= 0 || $locationType === '') {
+			if ($campaignName === '' || $senderName === '' || $message === '' || $contentName === '' || $recipientTotal <= 0 || $controlNumbers === [] || $startDate === null || $endDate === null || $startTime === null || $endTime === null || $locationName === '' || $radius <= 0 || $locationType === '') {
 				throw new RuntimeException('Data belum lengkap. Mohon lengkapi semua field sebelum mengirim campaign.');
 			}
 
@@ -397,7 +397,7 @@ class ApiGatewayController extends Controller
 						'deliveryEndTime' => $endTime,
 					],
 				],
-				'controlNumbers' => [$controlNumber],
+				'controlNumbers' => $controlNumbers,
 				'contents' => [
 					'contentName' => $contentName,
 					'message' => $message,
@@ -442,7 +442,7 @@ class ApiGatewayController extends Controller
 			'delivery_end_date' => ['required', 'date_format:Y-m-d'],
 			'delivery_start_time' => ['required', 'date_format:H:i'],
 			'delivery_end_time' => ['required', 'date_format:H:i'],
-			'control_number' => ['required', 'string', 'max:32'],
+			'control_number' => ['required', 'string', 'max:1000'],
 			'location_name' => ['required', 'string', 'max:255'],
 			'location_lat' => ['required', 'numeric'],
 			'location_lng' => ['required', 'numeric'],
@@ -473,7 +473,7 @@ class ApiGatewayController extends Controller
 			$endDate = $this->formatDateYmd($validated['delivery_end_date'] ?? null);
 			$startTime = $this->formatTimeHiToHmm($validated['delivery_start_time'] ?? null);
 			$endTime = $this->formatTimeHiToHmm($validated['delivery_end_time'] ?? null);
-			$controlNumber = $this->normalizeMsisdn((string) ($validated['control_number'] ?? ''));
+			$controlNumbers = $this->normalizeControlNumbers((string) ($validated['control_number'] ?? ''));
 			$locationName = trim((string) ($validated['location_name'] ?? ''));
 			$lat = (float) ($validated['location_lat'] ?? 0);
 			$lng = (float) ($validated['location_lng'] ?? 0);
@@ -485,7 +485,7 @@ class ApiGatewayController extends Controller
 				$locationType = 'ALL';
 			}
 
-			if ($campaignName === '' || $recipientTotal <= 0 || $wabaUserTemplateId <= 0 || $controlNumber === null || $startDate === null || $endDate === null || $startTime === null || $endTime === null || $locationName === '' || $radius <= 0 || $locationType === '') {
+			if ($campaignName === '' || $recipientTotal <= 0 || $wabaUserTemplateId <= 0 || $controlNumbers === [] || $startDate === null || $endDate === null || $startTime === null || $endTime === null || $locationName === '' || $radius <= 0 || $locationType === '') {
 				throw new RuntimeException('Data belum lengkap. Mohon lengkapi semua field sebelum mengirim campaign WABA LBA.');
 			}
 
@@ -499,7 +499,7 @@ class ApiGatewayController extends Controller
 					'deliveryStartDate' => $startDate,
 					'deliveryStartTime' => $startTime,
 				],
-				'controlNumbers' => [$controlNumber],
+				'controlNumbers' => $controlNumbers,
 				'contents' => [
 					'locations' => [
 						'address' => $locationName,
@@ -552,7 +552,7 @@ class ApiGatewayController extends Controller
 			'recipient_total' => ['required', 'integer', 'min:1', 'max:100000'],
 			'delivery_date' => ['required', 'date_format:Y-m-d'],
 			'delivery_time' => ['required', 'date_format:H:i'],
-			'control_number' => ['required', 'string', 'max:32'],
+			'control_number' => ['required', 'string', 'max:1000'],
 			'profile_gender' => ['nullable', 'string', 'max:500'],
 			'profile_age' => ['nullable', 'string', 'max:500'],
 			'profile_mobile_data_subs' => ['nullable', 'string', 'max:500'],
@@ -582,11 +582,11 @@ class ApiGatewayController extends Controller
 
 			$deliveryDate = $this->formatDateYmd($validated['delivery_date'] ?? null);
 			$deliveryTime = $this->formatTimeHiToHmm($validated['delivery_time'] ?? null);
-			$controlNumber = $this->normalizeMsisdn((string) ($validated['control_number'] ?? ''));
+			$controlNumbers = $this->normalizeControlNumbers((string) ($validated['control_number'] ?? ''));
 			$recipientTotal = (int) ($validated['recipient_total'] ?? 0);
 			$wabaUserTemplateId = (int) ($validated['waba_user_template_id'] ?? 0);
 
-			if ($campaignName === '' || $wabaUserTemplateId <= 0 || $recipientTotal <= 0 || $deliveryDate === null || $deliveryTime === null || $controlNumber === null) {
+			if ($campaignName === '' || $wabaUserTemplateId <= 0 || $recipientTotal <= 0 || $deliveryDate === null || $deliveryTime === null || $controlNumbers === []) {
 				throw new RuntimeException('Data belum lengkap. Mohon lengkapi semua field sebelum mengirim campaign WABA Targeted.');
 			}
 
@@ -616,7 +616,7 @@ class ApiGatewayController extends Controller
 						'deliveryTime' => $deliveryTime,
 					],
 				],
-				'controlNumbers' => [$controlNumber],
+				'controlNumbers' => $controlNumbers,
 			];
 
 			$resp = $client->wabaTargetedAdd($this->requireGatewayToken($request), $payload, $this->gatewayRefreshCallback($request, $client));
@@ -832,6 +832,15 @@ class ApiGatewayController extends Controller
 		}, $values), static fn (string $value): bool => $value !== '')));
 
 		return $cleaned === [] ? null : implode('|', $cleaned);
+	}
+
+	private function normalizeControlNumbers(string $value): array
+	{
+		$numbers = preg_split('/[,|]+/', $value) ?: [];
+
+		return array_values(array_unique(array_filter(array_map(function ($number): ?string {
+			return $this->normalizeMsisdn((string) $number);
+		}, $numbers), static fn (?string $number): bool => $number !== null && $number !== '')));
 	}
 
 	private function normalizeMsisdn(string $value): ?string

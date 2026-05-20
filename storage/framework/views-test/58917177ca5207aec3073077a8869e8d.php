@@ -289,7 +289,7 @@
                                 </div>
                             </div>
                         </div>
-                        <a href="#" class="campaign-inline-link campaign-inline-link--strong campaign-inline-link--arrow campaign-inline-link--fit">Gunakan Pengaturan Audience</a>
+                        <!-- <a href="#" class="campaign-inline-link campaign-inline-link--strong campaign-inline-link--arrow campaign-inline-link--fit">Gunakan Pengaturan Audience</a> -->
 
                         <div class="campaign-targeted-location-group">
                             <div class="campaign-targeted-location-group__head">

@@ -259,16 +259,21 @@ class CampaignMenuController extends Controller
             $accessToken = $this->requireAccessToken($request);
             $headerPathFile = '';
             $gwToken = $this->requireGatewayToken($request);
+            $accountIds = $this->resolveWabaAccountIds($request, $client, $gwToken, $validated);
 
             if ($request->hasFile('asset') && $this->mapWabaHeaderType($validated['header_type']) === 'IMAGE') {
-                $uploadResp = $client->uploadFile($accessToken, $request->file('asset'), 'MULTIMEDIA', $gwToken, $this->gatewayRefreshCallback($request, $client));
+                $uploadResp = $client->contentUpload($gwToken, $request->file('asset'), $accountIds['phoneNumberId'], $this->gatewayRefreshCallback($request, $client));
                 $headerPathFile = $this->extractUploadedFileValue($uploadResp);
+
+                if ($headerPathFile === '') {
+                    throw new RuntimeException('Upload asset berhasil dipanggil, tetapi pathFile tidak ditemukan dari response API GW.');
+                }
             }
 
             $payload = $this->buildWabaTemplatePayload(
                 $validated,
                 $headerPathFile,
-                $this->resolveWabaAccountIds($request, $client, $gwToken, $validated),
+                $accountIds,
             );
 
             $resp = $client->wabaTemplateAdd($accessToken, $payload, $gwToken, $this->gatewayRefreshCallback($request, $client));
@@ -338,9 +343,11 @@ class CampaignMenuController extends Controller
         return [
             'templateName' => trim((string) $validated['name']),
             'language' => $this->mapWabaTemplateLanguage((string) $validated['language']),
-            'headerType' => $headerType,
-            'headerLabel' => $headerType === 'TEXT' ? trim((string) ($validated['header_label'] ?? '')) : '',
-            'headerPathFile' => $headerType === 'IMAGE' ? $headerPathFile : '',
+            ...($headerType !== 'NONE' ? [
+                'headerType' => $headerType,
+                'headerLabel' => $headerType === 'TEXT' ? trim((string) ($validated['header_label'] ?? '')) : '',
+                'headerPathFile' => $headerType === 'IMAGE' ? $headerPathFile : '',
+            ] : []),
             'bodyMessage' => $validated['body'],
             'bodyType' => 'STATIC',
             'bodyPathFile' => '',

@@ -133,9 +133,13 @@
                             name="sender_name"
                             form="campaignGwSubmitForm"
                             class="text-input"
-                            maxlength="255"
+                            maxlength="11"
                             required
                         >
+                    </div>
+                    <div class="campaign-message-meta">
+                        <span>Nama pengirim maksimal 11 karakter.</span>
+                        <strong id="campaignSenderCount">0/11</strong>
                     </div>
                 </div>
 
@@ -146,7 +150,7 @@
                     <textarea id="campaign_message" name="message" form="campaignGwSubmitForm" class="text-input campaign-message-input"></textarea>
                     <div class="campaign-message-meta">
                         <span>Mohon pastikan pesan iklan Anda tidak mengandung unsur terlarang.</span>
-                        <strong id="campaignMessageCount">{{ $isTargeted ? '0/160 karakter (1 SMS)' : '0/160 karakter' }}</strong>
+                        <strong id="campaignMessageCount">0/160 karakter (1SMS)</strong>
                     </div>
                 </div>
 
@@ -363,7 +367,7 @@
                                 </div>
                             </div>
                         </div>
-                        <a href="#" class="campaign-inline-link campaign-inline-link--strong campaign-inline-link--arrow campaign-inline-link--fit">Gunakan Pengaturan Audience</a>
+                        {{-- <a href="#" class="campaign-inline-link campaign-inline-link--strong campaign-inline-link--arrow campaign-inline-link--fit">Gunakan Pengaturan Audience</a> --}}
 
                         <div class="campaign-targeted-location-group">
                             <div class="campaign-targeted-location-group__head">
@@ -858,6 +862,7 @@
             const titlePreview = document.getElementById('campaignTitlePreview');
             const senderInput = document.getElementById('campaign_sender');
             const senderPreview = document.getElementById('campaignSenderPreview');
+            const senderCount = document.getElementById('campaignSenderCount');
             const messageInput = document.getElementById('campaign_message');
             const messagePreview = document.getElementById('campaignMessagePreview');
             const messageCount = document.getElementById('campaignMessageCount');
@@ -949,9 +954,10 @@
 
                     const render = (filter = '') => {
                         const keyword = filter.trim().toLowerCase();
-                        const options = Array.from(select.options);
+                        const options = Array.from(select.options).filter((option) => option.value.trim() !== '');
                         const selected = options.filter((option) => option.selected);
                         const filtered = options.filter((option) => option.text.toLowerCase().includes(keyword));
+                        const allSelected = options.length > 0 && options.every((option) => option.selected);
 
                         chips.innerHTML = selected.map((option) => `
                             <button type="button" class="campaign-multiselect__chip" data-chip-value="${option.value}">
@@ -960,8 +966,16 @@
                             </button>
                         `).join('');
 
-                        optionsWrap.innerHTML = filtered.map((option) => `
+                        const selectAll = options.length > 0 ? `
+                            <button type="button" class="campaign-multiselect__option campaign-multiselect__option--all${allSelected ? ' campaign-multiselect__option--selected' : ''}" data-option-all="true">
+                                <input type="checkbox" class="campaign-multiselect__checkbox" ${allSelected ? 'checked' : ''} tabindex="-1">
+                                <span>Centang Semua</span>
+                            </button>
+                        ` : '';
+
+                        optionsWrap.innerHTML = selectAll + filtered.map((option) => `
                             <button type="button" class="campaign-multiselect__option${option.selected ? ' campaign-multiselect__option--selected' : ''}" data-option-value="${option.value}">
+                                <input type="checkbox" class="campaign-multiselect__checkbox" ${option.selected ? 'checked' : ''} tabindex="-1">
                                 <span>${option.text}</span>
                                 ${option.selected ? '<span class="campaign-multiselect__check">✓</span>' : ''}
                             </button>
@@ -983,6 +997,18 @@
                     search.addEventListener('input', () => render(search.value));
 
                     optionsWrap.addEventListener('click', (event) => {
+                        const allButton = event.target.closest('[data-option-all]');
+                        if (allButton) {
+                            const options = Array.from(select.options).filter((option) => option.value.trim() !== '');
+                            const shouldSelect = !options.every((option) => option.selected);
+                            options.forEach((option) => {
+                                option.selected = shouldSelect;
+                            });
+                            select.dispatchEvent(new Event('change', { bubbles: true }));
+                            render(search.value);
+                            return;
+                        }
+
                         const optionButton = event.target.closest('[data-option-value]');
                         if (!optionButton) {
                             return;
@@ -1780,14 +1806,18 @@
             const syncMessagePreview = () => {
                 const message = messageInput.value.trim();
                 messagePreview.innerHTML = message ? linkifyMessage(message) : 'Preview pesan akan muncul di sini.';
-                messageCount.textContent = isTargeted
-                    ? `${messageInput.value.length}/160 karakter (1 SMS)`
-                    : `${messageInput.value.length}/160 karakter`;
+                const messageLength = messageInput.value.length;
+                const smsCount = Math.max(1, Math.ceil(messageLength / 160));
+                messageCount.textContent = `${messageLength}/${smsCount * 160} karakter (${smsCount}SMS)`;
             };
 
             const syncSenderPreview = () => {
                 if (senderPreview && senderInput) {
                     senderPreview.textContent = senderInput.value;
+                }
+
+                if (senderCount && senderInput) {
+                    senderCount.textContent = `${senderInput.value.length}/11`;
                 }
             };
 
@@ -1811,6 +1841,19 @@
                 return `62${digits}`;
             };
 
+            const getSelectedTestRecipients = () => Array.from(testRecipientList?.querySelectorAll('input[type="checkbox"]:checked') || [])
+                .map((checkbox) => checkbox.closest('[data-test-recipient]')?.dataset.testRecipient || '')
+                .filter(Boolean);
+
+            const updateTestRecipientField = () => {
+                if (!testRecipientField) {
+                    return;
+                }
+
+                testRecipientField.value = getSelectedTestRecipients().join(',');
+                syncStepThreeValidity();
+            };
+
             const renderTestRecipientItem = (number) => {
                 if (!testRecipientList || !testRecipientField) {
                     return;
@@ -1818,11 +1861,8 @@
 
                 const existing = testRecipientList.querySelector(`[data-test-recipient="${number}"]`);
                 if (existing) {
-                    testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
-                        other.checked = false;
-                    });
                     existing.querySelector('input[type="checkbox"]').checked = true;
-                    testRecipientField.value = number;
+                    updateTestRecipientField();
                     return;
                 }
 
@@ -1839,28 +1879,17 @@
                 const removeButton = item.querySelector('button');
 
                 checkbox.addEventListener('change', () => {
-                    testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
-                        if (other !== checkbox) {
-                            other.checked = false;
-                        }
-                    });
-
-                    testRecipientField.value = checkbox.checked ? number : '';
+                    updateTestRecipientField();
                 });
 
                 removeButton.addEventListener('click', (event) => {
                     event.preventDefault();
-                    if (testRecipientField.value === number) {
-                        testRecipientField.value = '';
-                    }
                     item.remove();
+                    updateTestRecipientField();
                 });
 
-                testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
-                    other.checked = false;
-                });
                 testRecipientList.appendChild(item);
-                testRecipientField.value = number;
+                updateTestRecipientField();
             };
 
             const addTestRecipient = () => {
@@ -2291,7 +2320,8 @@
 
                 const recipientCount = Number(document.getElementById('campaignRecipientCount')?.value || 0);
                 const totalCost = unitPrice > 0 ? recipientCount * unitPrice : 0;
-                const phone = String(document.getElementById('campaignTestRecipient')?.value || '').trim();
+                const controlNumbers = String(document.getElementById('campaignTestRecipient')?.value || '').trim();
+                const phone = controlNumbers.split(',').map((number) => number.trim()).find(Boolean) || '';
                 const title = String(titleInput?.value || '').trim() || 'Tanpa Judul';
 
                 if (!phone) {

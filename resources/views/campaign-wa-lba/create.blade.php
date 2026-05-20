@@ -1193,7 +1193,8 @@
                 const templateId = Number(selectedTemplate?.id || templateSelect?.value || 0);
                 const campaignName = `gotoads_waba_lba_${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`;
                 const recipientCount = Number(recipientCountInput?.value || 0);
-                const phone = normalizeMsisdn(testRecipient?.value || '');
+                const controlNumbers = String(testRecipient?.value || '').trim();
+                const phone = normalizeMsisdn(controlNumbers.split(',').map((number) => number.trim()).find(Boolean) || '');
                 const totalCost = recipientCount * waLbaUnitPrice;
                 const scheduleId = '1';
                 const startHour = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
@@ -1238,7 +1239,7 @@
                 setHiddenValue('waLbaGwDeliveryEndDate', document.querySelector(`[data-schedule-date-end="${scheduleId}"]`)?.value || '');
                 setHiddenValue('waLbaGwDeliveryStartTime', startHour && startMinute ? `${startHour}:${startMinute}` : '');
                 setHiddenValue('waLbaGwDeliveryEndTime', endHour && endMinute ? `${endHour}:${endMinute}` : '');
-                setHiddenValue('waLbaGwControlNumber', phone);
+                setHiddenValue('waLbaGwControlNumber', controlNumbers);
                 setHiddenValue('waLbaGwLocationName', locationState.name || 'Lokasi dipilih');
                 setHiddenValue('waLbaGwLocationLat', locationState.lat ?? '');
                 setHiddenValue('waLbaGwLocationLng', locationState.lng ?? '');
@@ -1346,9 +1347,10 @@
 
                     const render = (filter = '') => {
                         const keyword = filter.trim().toLowerCase();
-                        const options = Array.from(select.options);
+                        const options = Array.from(select.options).filter((option) => option.value.trim() !== '');
                         const selected = options.filter((option) => option.selected);
                         const filtered = options.filter((option) => option.text.toLowerCase().includes(keyword));
+                        const allSelected = options.length > 0 && options.every((option) => option.selected);
 
                         chips.innerHTML = selected.map((option) => `
                             <button type="button" class="campaign-multiselect__chip" data-chip-value="${option.value}">
@@ -1357,8 +1359,16 @@
                             </button>
                         `).join('');
 
-                        optionsWrap.innerHTML = filtered.map((option) => `
+                        const selectAll = options.length > 0 ? `
+                            <button type="button" class="campaign-multiselect__option campaign-multiselect__option--all${allSelected ? ' campaign-multiselect__option--selected' : ''}" data-option-all="true">
+                                <input type="checkbox" class="campaign-multiselect__checkbox" ${allSelected ? 'checked' : ''} tabindex="-1">
+                                <span>Centang Semua</span>
+                            </button>
+                        ` : '';
+
+                        optionsWrap.innerHTML = selectAll + filtered.map((option) => `
                             <button type="button" class="campaign-multiselect__option${option.selected ? ' campaign-multiselect__option--selected' : ''}" data-option-value="${option.value}">
+                                <input type="checkbox" class="campaign-multiselect__checkbox" ${option.selected ? 'checked' : ''} tabindex="-1">
                                 <span>${option.text}</span>
                                 ${option.selected ? '<span class="campaign-multiselect__check">✓</span>' : ''}
                             </button>
@@ -1380,8 +1390,20 @@
                     search.addEventListener('input', () => render(search.value));
 
                     wrapper.addEventListener('click', (event) => {
+                        const allButton = event.target.closest('[data-option-all]');
                         const optionButton = event.target.closest('[data-option-value]');
                         const chipButton = event.target.closest('[data-chip-value]');
+
+                        if (allButton) {
+                            const options = Array.from(select.options).filter((option) => option.value.trim() !== '');
+                            const shouldSelect = !options.every((option) => option.selected);
+                            options.forEach((option) => {
+                                option.selected = shouldSelect;
+                            });
+                            select.dispatchEvent(new Event('change', { bubbles: true }));
+                            render(search.value);
+                            return;
+                        }
 
                         if (optionButton) {
                             const option = Array.from(select.options).find((item) => item.value === optionButton.dataset.optionValue);
@@ -1429,6 +1451,19 @@
                 return `62${digits}`;
             };
 
+            const getSelectedTestRecipients = () => Array.from(testRecipientList?.querySelectorAll('input[type="checkbox"]:checked') || [])
+                .map((checkbox) => checkbox.closest('[data-test-recipient]')?.dataset.testRecipient || '')
+                .filter(Boolean);
+
+            const updateTestRecipientField = () => {
+                if (!testRecipient) {
+                    return;
+                }
+
+                testRecipient.value = getSelectedTestRecipients().join(',');
+                syncStepThreeState();
+            };
+
             const renderTestRecipientItem = (number) => {
                 if (!testRecipientList || !testRecipient) {
                     return;
@@ -1436,12 +1471,8 @@
 
                 const existing = testRecipientList.querySelector(`[data-test-recipient="${number}"]`);
                 if (existing) {
-                    testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
-                        other.checked = false;
-                    });
                     existing.querySelector('input[type="checkbox"]').checked = true;
-                    testRecipient.value = number;
-                    syncStepThreeState();
+                    updateTestRecipientField();
                     return;
                 }
 
@@ -1458,30 +1489,17 @@
                 const removeButton = item.querySelector('button');
 
                 checkbox.addEventListener('change', () => {
-                    testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
-                        if (other !== checkbox) {
-                            other.checked = false;
-                        }
-                    });
-                    testRecipient.value = checkbox.checked ? number : '';
-                    syncStepThreeState();
+                    updateTestRecipientField();
                 });
 
                 removeButton.addEventListener('click', (event) => {
                     event.preventDefault();
-                    if (testRecipient.value === number) {
-                        testRecipient.value = '';
-                    }
                     item.remove();
-                    syncStepThreeState();
+                    updateTestRecipientField();
                 });
 
-                testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
-                    other.checked = false;
-                });
                 testRecipientList.appendChild(item);
-                testRecipient.value = number;
-                syncStepThreeState();
+                updateTestRecipientField();
             };
 
             const addTestRecipient = () => {
