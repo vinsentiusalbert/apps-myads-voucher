@@ -14,7 +14,7 @@
         ],
         [
             'key' => 'sms',
-            'label' => 'SMS',
+            'label' => 'Daftar SMS',
             'icon' => 'sms',
             'children' => [
                 [
@@ -33,7 +33,7 @@
         ],
         [
             'key' => 'wa-business',
-            'label' => 'WA Business',
+            'label' => 'Daftar WA Business',
             'icon' => 'wa',
             'children' => [
                 [
@@ -79,8 +79,8 @@
 @endpush
 
 @section('content')
-    <section class="campaign-stepper-card campaign-stepper-card--five">
-        <div class="campaign-stepper campaign-stepper--five">
+    <section class="campaign-stepper-card">
+        <div class="campaign-stepper">
             @foreach ($page['steps'] as $index => $step)
                 <div class="campaign-step {{ $index === 0 ? 'campaign-step--active' : '' }}" data-campaign-step="{{ $index + 1 }}">
                     <span class="campaign-step__dot">{{ str_pad((string) ($index + 1), 2, '0', STR_PAD_LEFT) }}</span>
@@ -90,10 +90,10 @@
         </div>
     </section>
 
-    <section class="campaign-info-banner">
+    {{-- <section class="campaign-info-banner">
         <span class="campaign-info-banner__icon">i</span>
         <p>Pelajari cara membuat iklan Anda agar lebih menarik. <a href="https://www.youtube.com/watch?v=0JDF-U6Yze0">Pelajari Selengkapnya.</a></p>
-    </section>
+    </section> --}}
 
     @if (session('status'))
         <div class="status-box status-box--success">{{ session('status') }}</div>

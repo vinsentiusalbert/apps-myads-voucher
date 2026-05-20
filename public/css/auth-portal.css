@@ -1379,25 +1379,72 @@ a {
 
 @media (max-width: 640px) {
     .portal-category-modal {
-        align-items: flex-start;
-        padding: 14px;
+        align-items: center;
+        padding: 10px;
     }
 
     .portal-category-modal__card {
-        padding: 22px;
+        width: min(100%, 360px);
+        max-height: calc(100vh - 20px);
+        padding: 18px;
         border-radius: 16px;
     }
 
+    .portal-category-modal__head {
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .portal-category-modal__eyebrow {
+        font-size: 0.68rem;
+        letter-spacing: 0.04em;
+    }
+
     .portal-category-modal__head h2 {
+        font-size: 1.18rem;
+        line-height: 1.15;
+    }
+
+    .portal-category-modal__close {
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
         font-size: 1.55rem;
     }
 
     .portal-category-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
     }
 
     .portal-category-card {
-        min-height: 156px;
+        min-height: 148px;
+        padding: 14px;
+        border-radius: 12px;
+    }
+
+    .portal-category-card__icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        font-size: 0.78rem;
+    }
+
+    .portal-category-card__channel {
+        margin-top: 14px;
+        font-size: 0.62rem;
+        letter-spacing: 0.04em;
+    }
+
+    .portal-category-card strong {
+        margin-top: 6px;
+        font-size: 0.82rem;
+        line-height: 1.2;
+    }
+
+    .portal-category-card small {
+        font-size: 0.7rem;
+        line-height: 1.2;
     }
 }
 
@@ -2060,6 +2107,8 @@ a {
 }
 
 .campaign-stepper-card {
+    position: static;
+    top: auto;
     padding: 28px 30px;
 }
 
@@ -5116,7 +5165,7 @@ body.campaign-map-open {
         display: block;
         position: fixed;
         inset: 0;
-        z-index: 25;
+        z-index: 90;
         border: 0;
         background: rgba(6, 21, 19, 0.42);
         opacity: 0;
@@ -5133,6 +5182,7 @@ body.campaign-map-open {
         position: fixed;
         top: 0;
         left: 0;
+        z-index: 100;
         width: min(86vw, 340px);
         max-width: 340px;
         height: 100vh;
@@ -5520,6 +5570,13 @@ body.campaign-map-open {
         padding: 20px 18px;
     }
 
+    .campaign-stepper-card {
+        position: sticky;
+        top: 8px;
+        z-index: 40;
+        backdrop-filter: blur(10px);
+    }
+
     .flow-steps {
         grid-template-columns: 1fr;
     }
@@ -5696,6 +5753,49 @@ body.campaign-map-open {
 
     .campaign-step::after {
         display: none;
+    }
+
+    .campaign-stepper,
+    .campaign-stepper--five {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
+        align-items: flex-start;
+        overflow: visible;
+        padding-bottom: 0;
+    }
+
+    .campaign-stepper--five {
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .campaign-step {
+        min-width: 0;
+    }
+
+    .campaign-step::after {
+        display: block;
+        top: 11px;
+        left: calc(50% + 14px);
+        width: calc(100% - 28px);
+    }
+
+    .campaign-step:last-child::after {
+        display: none;
+    }
+
+    .campaign-step__dot {
+        width: 22px;
+        height: 22px;
+        font-size: 0.58rem;
+    }
+
+    .campaign-step__label {
+        margin-top: 7px;
+        font-size: 0.58rem;
+        line-height: 1.18;
+        word-break: normal;
+        overflow-wrap: break-word;
     }
 
     .campaign-title-chip,

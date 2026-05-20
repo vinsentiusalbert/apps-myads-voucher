@@ -11,7 +11,7 @@
         ],
         [
             'key' => 'sms',
-            'label' => 'SMS',
+            'label' => 'Daftar SMS',
             'icon' => 'sms',
             'children' => [
                 [
@@ -30,7 +30,7 @@
         ],
         [
             'key' => 'wa-business',
-            'label' => 'WA Business',
+            'label' => 'Daftar WA Business',
             'icon' => 'wa',
             'children' => [
                 [
@@ -78,10 +78,10 @@
         </div>
     </section>
 
-    <section class="campaign-info-banner">
+    {{-- <section class="campaign-info-banner">
         <span class="campaign-info-banner__icon">i</span>
         <p>Pelajari cara membuat iklan Anda agar lebih menarik. <a href="https://www.youtube.com/watch?v=0JDF-U6Yze0">Pelajari Selengkapnya.</a></p>
-    </section>
+    </section> --}}
 
     <section class="campaign-compose-card campaign-compose-card--single">
         <div class="campaign-compose-card__header campaign-compose-card__header--single">
