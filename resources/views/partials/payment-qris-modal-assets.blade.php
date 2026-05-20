@@ -137,8 +137,6 @@
         }
 
         window.paymentQrisModalInitialized = true;
-        const qrisDownloadUrl = @json(route('campaign.payment.qris-download'));
-
         const closeModal = (modal) => {
             if (!modal) {
                 return;
@@ -148,93 +146,14 @@
             document.body.style.overflow = '';
         };
 
-        const triggerFileDownload = (href, filename) => {
-            const link = document.createElement('a');
-            link.href = href;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-        };
-
-        const downloadRenderedQrImage = (downloadTrigger, filename) => {
-            const modal = downloadTrigger.closest('.campaign-payment-modal');
-            const image = modal?.querySelector('.campaign-payment-modal__qr img');
-            const imageUrl = image?.currentSrc || image?.src || '';
-
-            if (!imageUrl) {
-                return false;
-            }
-
-            if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
-                triggerFileDownload(imageUrl, filename);
-                return true;
-            }
-
-            try {
-                const canvas = document.createElement('canvas');
-                canvas.width = image.naturalWidth || image.width;
-                canvas.height = image.naturalHeight || image.height;
-                if (!canvas.width || !canvas.height) {
-                    return false;
-                }
-
-                const context = canvas.getContext('2d');
-                context.drawImage(image, 0, 0, canvas.width, canvas.height);
-                triggerFileDownload(canvas.toDataURL('image/png'), filename);
-                return true;
-            } catch (error) {
-                return false;
-            }
-        };
-
         document.addEventListener('click', (event) => {
             const downloadTrigger = event.target.closest('.campaign-payment-modal__download');
             if (downloadTrigger) {
-                event.preventDefault();
-
                 const url = downloadTrigger.getAttribute('href') || '';
                 if (!url || url === '#') {
+                    event.preventDefault();
                     window.alert('QRIS belum tersedia untuk di-download.');
-                    return;
                 }
-
-                const filename = downloadTrigger.getAttribute('download') || 'qris.png';
-                if (downloadRenderedQrImage(downloadTrigger, filename)) {
-                    return;
-                }
-
-                const downloadUrl = new URL(qrisDownloadUrl, window.location.origin);
-                downloadUrl.searchParams.set('url', url);
-                downloadUrl.searchParams.set('filename', filename);
-
-                downloadTrigger.setAttribute('aria-busy', 'true');
-
-                fetch(downloadUrl.toString(), { headers: { Accept: 'image/*' } })
-                    .then(async (response) => {
-                        if (!response.ok) {
-                            throw new Error('Gagal download QRIS. QRIS tidak tersedia atau link sudah kedaluwarsa.');
-                        }
-
-                        const contentType = response.headers.get('Content-Type') || '';
-                        if (!contentType.toLowerCase().startsWith('image/') && !contentType.toLowerCase().includes('application/octet-stream')) {
-                            throw new Error('File QRIS yang diterima bukan gambar.');
-                        }
-
-                        return response.blob();
-                    })
-                    .then((blob) => {
-                        const objectUrl = URL.createObjectURL(blob);
-                        triggerFileDownload(objectUrl, filename);
-                        URL.revokeObjectURL(objectUrl);
-                    })
-                    .catch((error) => {
-                        window.alert(error?.message || 'Gagal download QRIS.');
-                    })
-                    .finally(() => {
-                        downloadTrigger.removeAttribute('aria-busy');
-                    });
-
                 return;
             }
 
