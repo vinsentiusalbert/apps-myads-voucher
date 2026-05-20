@@ -3,13 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Services\MyadsApiClient;
 use Illuminate\Contracts\View\View as ViewContract;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class RegisteredUserController extends Controller
@@ -42,22 +39,12 @@ class RegisteredUserController extends Controller
 
         $resolvedMerchantId = (string) data_get($contextResp, 'data.merchant_id', $merchantId);
         $resolvedPartnerId = (string) data_get($contextResp, 'data.partner_id', $partnerId);
-        $hasExistingSsoUser = User::query()
-            ->where('merchant_id', $resolvedMerchantId)
-            ->where('partner_id', $resolvedPartnerId)
-            ->exists();
-
-        if ($hasExistingSsoUser) {
-            return redirect()
-                ->route('login')
-                ->with('status', 'Akun partner sudah terdaftar. Silakan masuk melalui login biasa.');
-        }
 
         return view('auth.register', [
             'merchantId' => $resolvedMerchantId,
             'partnerId' => $resolvedPartnerId,
             'contextMessage' => $contextMessage,
-            'hasExistingSsoUser' => $hasExistingSsoUser,
+            'hasExistingSsoUser' => false,
         ]);
     }
 
@@ -113,23 +100,18 @@ class RegisteredUserController extends Controller
         $userEmail = (string) ($apiUser['email'] ?? $validated['email']);
         $userName = (string) ($apiUser['name'] ?? $validated['name'] ?? $userEmail);
 
-        $user = User::query()->updateOrCreate(
-            ['email' => $userEmail],
-            [
-                'name' => $userName,
-                'merchant_id' => $validated['merchant_id'],
-                'partner_id' => $validated['partner_id'],
-                // Password lokal tidak dipakai untuk login (login via API), tapi kolom wajib ada.
-                'password' => Str::random(32),
-            ]
-        );
-
-        Auth::login($user);
         $request->session()->regenerate();
 
         $request->session()->put([
             'myads.access_token' => data_get($loginResp, 'data.access_token'),
             'myads.refresh_token' => data_get($loginResp, 'data.refresh_token'),
+            'myads.user' => [
+                'id' => (string) ($apiUser['id'] ?? $apiUser['user_id'] ?? $userEmail),
+                'name' => $userName,
+                'email' => $userEmail,
+                'merchant_id' => $validated['merchant_id'],
+                'partner_id' => $validated['partner_id'],
+            ],
         ]);
 
         try {
@@ -142,7 +124,6 @@ class RegisteredUserController extends Controller
 
             $request->session()->put('myads.gw_token', $gwToken);
         } catch (\Throwable $e) {
-            Auth::logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 

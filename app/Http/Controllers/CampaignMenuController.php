@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CampaignTemplate;
 use App\Services\MyadsApiClient;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -284,14 +283,11 @@ class CampaignMenuController extends Controller
             ->with('status', 'Template WABA berhasil dikirim ke API GW.');
     }
 
-    public function showCampaignTemplate(CampaignTemplate $template): View
+    public function showCampaignTemplate(Request $request, string $template): View
     {
-        return view('campaign-wa-template.show', [
-            'channel' => 'wa-business',
-            'menu' => 'campaign-template',
-            'page' => $this->pages()['wa-business']['campaign-template'],
-            'templateRow' => $template,
-        ]);
+        $request->query->set('template_id', $template);
+
+        return $this->showCampaignTemplateFromApi($request);
     }
 
     public function showCampaignTemplateFromApi(Request $request): View
@@ -494,38 +490,6 @@ class CampaignMenuController extends Controller
             ?? '';
 
         return is_string($value) ? $value : '';
-    }
-
-    private function mapWaTemplate(CampaignTemplate $template): array
-    {
-        $body = trim((string) $template->body);
-        $lines = preg_split('/\r\n|\r|\n/', $body) ?: [];
-        $headline = trim((string) ($lines[0] ?? 'Template pesan WA Business'));
-        $message = trim(implode("\n\n", array_slice($lines, 1))) ?: $body;
-        $assetUrl = $template->asset_path ? asset('storage/' . $template->asset_path) : asset('assets/logo.png');
-        $isCarousel = $template->template_type === 'carousel_cards' || str_contains(strtolower((string) $template->category), 'carousel');
-
-        return [
-            'id' => (string) ($template->gw_template_id ?: $template->id),
-            'local_id' => (string) $template->id,
-            'gw_template_id' => (string) ($template->gw_template_id ?? ''),
-            'name' => $template->name,
-            'account_name' => 'Telkomsel Promo & Rewards',
-            'template_kind' => ucfirst(str_replace('_', ' ', (string) $template->template_type)),
-            'channel_kind' => $isCarousel ? 'Carousel' : 'Basic',
-            'bubble_headline' => $headline,
-            'bubble_message' => $message,
-            'asset_url' => $assetUrl,
-            'cards' => $isCarousel
-                ? [
-                    ['title' => 'Card 1', 'caption' => 'Slide utama campaign WA Business'],
-                    ['title' => 'Card 2', 'caption' => 'Slide lanjutan untuk menampilkan informasi tambahan'],
-                ]
-                : [],
-            'price_note' => 'Template yang dipilih menggunakan Display Name Default, sehingga akan dikenakan biaya sebesar Rp 1.100 per pesan.',
-            'cta' => data_get($template->buttons, '0.label', 'Coba Sekarang'),
-            'preview_name' => 'Name',
-        ];
     }
 
     private function mapApiWaTemplateForSelect(array $row): array

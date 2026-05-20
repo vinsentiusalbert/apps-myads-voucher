@@ -98,7 +98,7 @@
         <article class="portal-balance">
             <div class="portal-balance__top">
                 <div>
-                    <p class="portal-balance__label">Saldo Utama</p>
+                    <p class="portal-balance__label">Saldo Refund</p>
                     <p class="portal-balance__value">{{ $balanceFormatted ?? '-' }}</p>
                 </div>
             </div>
