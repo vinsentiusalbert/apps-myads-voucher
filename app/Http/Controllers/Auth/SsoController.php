@@ -3,12 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use App\Services\MyadsApiClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use Throwable;
 
 class SsoController extends Controller
@@ -29,52 +27,15 @@ class SsoController extends Controller
         }
 
         // 🔄 FETCH user data dari API (source of truth)
+        $apiUser = null;
         try {
             $apiUserData = $client->getMe($accessToken);
             $apiUser = $apiUserData['data']['user'] ?? null;
         } catch (Throwable) {
-            $apiUser = null;
+            // Fallback: API user fetch optional
         }
 
-        // Sync/create user di UI database dari API data
-        $user = User::query()->where('merchant_id', $merchantId)->first();
-
-        if (! $user && $apiUser) {
-            // Create dari API data
-            $user = User::query()->create([
-                'name' => $apiUser['name'] ?? 'Merchant SSO',
-                'email' => $apiUser['email'] ?? 'sso-' . Str::random(8) . '@goto.local',
-                'password' => Str::random(32),
-                'merchant_id' => $merchantId,
-                'partner_id' => $partnerId !== '' ? $partnerId : null,
-            ]);
-        } elseif ($user) {
-            // Update existing user jika ada data baru dari API
-            $updateData = [];
-            if ($apiUser && isset($apiUser['name'])) {
-                $updateData['name'] = $apiUser['name'];
-            }
-            if ($partnerId !== '' && $user->partner_id !== $partnerId) {
-                $updateData['partner_id'] = $partnerId;
-            }
-            if (!empty($updateData)) {
-                $user->update($updateData);
-            }
-        }
-
-        // Fallback: create dengan default identity kalau masih tidak ada
-        if (! $user) {
-            [$name, $email] = $this->nextDefaultIdentity();
-            $user = User::query()->create([
-                'name' => $name,
-                'email' => $email,
-                'password' => Str::random(32),
-                'merchant_id' => $merchantId,
-                'partner_id' => $partnerId !== '' ? $partnerId : null,
-            ]);
-        }
-
-        Auth::login($user, true);
+        // Store session tanpa DB
         $request->session()->regenerate();
 
         $request->session()->put([
@@ -82,10 +43,15 @@ class SsoController extends Controller
             'myads.refresh_token' => $refreshToken,
             'myads.merchant_id' => $merchantId,
             'myads.partner_id' => $partnerId,
+            'myads.user' => [
+                'id' => $apiUser['id'] ?? $merchantId,
+                'name' => $apiUser['name'] ?? 'Merchant SSO',
+                'email' => $apiUser['email'] ?? "merchant-{$merchantId}@sso.local",
+            ],
         ]);
 
         try {
-            $gwResp = $client->getGatewayToken();
+            $gwResp = $client->getGatewayToken($accessToken);
             $gwToken = $client->extractGatewayToken($gwResp);
 
             if ($gwToken !== '') {
@@ -96,35 +62,5 @@ class SsoController extends Controller
         }
 
         return redirect()->route('dashboard');
-    }
-
-    private function nextDefaultIdentity(): array
-    {
-        $emails = User::query()
-            ->where('email', 'like', 'merchantgoto%mg@gmail.com')
-            ->pluck('email')
-            ->all();
-
-        $max = 0;
-        foreach ($emails as $email) {
-            if (! is_string($email)) {
-                continue;
-            }
-
-            if (preg_match('/^merchantgoto(\d+)mg@gmail\.com$/i', $email, $matches)) {
-                $seq = (int) $matches[1];
-                if ($seq > $max) {
-                    $max = $seq;
-                }
-            }
-        }
-
-        $next = $max + 1;
-        $suffix = str_pad((string) $next, 2, '0', STR_PAD_LEFT);
-
-        return [
-            'MerchantGoto' . $suffix . 'MG',
-            'merchantgoto' . $suffix . 'mg@gmail.com',
-        ];
     }
 }
