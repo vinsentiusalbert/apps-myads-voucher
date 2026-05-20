@@ -11,7 +11,8 @@ class SessionController extends Controller
 {
     public function create()
     {
-        if (Auth::check()) {
+        // Check if user already has session from API/SSO
+        if (session()->has('myads.access_token')) {
             return redirect()->route('dashboard');
         }
 

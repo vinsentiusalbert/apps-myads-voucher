@@ -94,7 +94,7 @@
     <section class="portal-hero">
         <div class="portal-welcome">
             <p class="portal-welcome__lead">Selamat Datang,</p>
-            <h1 class="portal-welcome__name">{{ auth()->user()->name }}</h1>
+            <h1 class="portal-welcome__name">{{ session('myads.user.name', 'User') }}</h1>
             @if ($clientLabel)
                 <p class="portal-welcome__meta">{{ $clientLabel }}</p>
             @endif
