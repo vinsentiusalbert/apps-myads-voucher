@@ -272,6 +272,11 @@
     filter: drop-shadow(0 4px 12px rgba(0, 166, 153, 0.3));
 }
 
+.error-icon svg {
+    color: var(--danger);
+    filter: drop-shadow(0 4px 12px rgba(225, 29, 72, 0.4));
+}
+
 .error-code {
     display: inline-block;
     animation: float 3s ease-in-out infinite;
@@ -309,80 +314,7 @@
 
 /* ===== ERROR ACTIONS ===== */
 
-.error-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 40px;
-    animation: slide-in-up 0.8s ease-out 0.3s both;
-}
-
-.error-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    padding: 14px 28px;
-    border-radius: 16px;
-    border: none;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    position: relative;
-    overflow: hidden;
-}
-
-.error-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), transparent);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.error-btn:hover::before {
-    opacity: 1;
-}
-
-/* Primary Button */
-.error-btn--primary {
-    background: linear-gradient(135deg, var(--brand-teal) 0%, var(--brand-blue) 100%);
-    color: white;
-    box-shadow: 
-        0 8px 20px rgba(0, 166, 153, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.error-btn--primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 
-        0 12px 32px rgba(0, 166, 153, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.4);
-}
-
-.error-btn--primary:active {
-    transform: translateY(0);
-}
-
-/* Secondary Button */
-.error-btn--secondary {
-    background: rgba(0, 166, 153, 0.1);
-    color: var(--brand-teal);
-    border: 2px solid var(--brand-teal);
-    box-shadow: 0 4px 12px rgba(0, 166, 153, 0.15);
-}
-
-.error-btn--secondary:hover {
-    background: rgba(0, 166, 153, 0.15);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 166, 153, 0.25);
-}
-
-.error-btn--secondary:active {
-    transform: translateY(0);
-}
+/* Buttons removed for this version */
 
 /* ===== DECORATIVE ELEMENTS ===== */
 
