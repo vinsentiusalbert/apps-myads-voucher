@@ -480,8 +480,8 @@
                                         <span>Pembayaran Anda Menggunakan</span>
                                         <span class="campaign-report-billing__caret"></span>
                                     </div>
-                                    <div class="campaign-report-billing__row"><span>Saldo Umum</span><strong class="campaign-report-billing__danger">{{ $balanceMain }}</strong></div>
-                                    <div class="campaign-report-billing__row"><span>Saldo Monetary</span><strong>{{ $balanceMonetary }}</strong></div>
+                                    <div class="campaign-report-billing__row"><span>Saldo Refund</span><strong class="campaign-report-billing__danger">{{ $balanceMain }}</strong></div>
+                                    
                                     <div class="campaign-report-billing__row"><span>Kuota Paket</span><strong>{{ $quota }}</strong></div>
                                 </div>
                             </div>

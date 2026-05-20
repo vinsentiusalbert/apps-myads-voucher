@@ -676,12 +676,8 @@
                             <div class="campaign-cost-card__section">
                                 <span class="campaign-cost-card__section-title">Pembayaran Anda Menggunakan</span>
                                 <div class="campaign-cost-card__row">
-                                    <span>Saldo Umum</span>
+                                    <span>Saldo Refund</span>
                                     <strong class="campaign-cost-card__danger">Rp 0</strong>
-                                </div>
-                                <div class="campaign-cost-card__row">
-                                    <span>Saldo Monetary</span>
-                                    <strong id="campaignReviewPaymentMonetary">-</strong>
                                 </div>
                             </div>
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>

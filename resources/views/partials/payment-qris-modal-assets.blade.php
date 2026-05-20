@@ -148,6 +148,46 @@
             document.body.style.overflow = '';
         };
 
+        const triggerFileDownload = (href, filename) => {
+            const link = document.createElement('a');
+            link.href = href;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        };
+
+        const downloadRenderedQrImage = (downloadTrigger, filename) => {
+            const modal = downloadTrigger.closest('.campaign-payment-modal');
+            const image = modal?.querySelector('.campaign-payment-modal__qr img');
+            const imageUrl = image?.currentSrc || image?.src || '';
+
+            if (!imageUrl) {
+                return false;
+            }
+
+            if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')) {
+                triggerFileDownload(imageUrl, filename);
+                return true;
+            }
+
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = image.naturalWidth || image.width;
+                canvas.height = image.naturalHeight || image.height;
+                if (!canvas.width || !canvas.height) {
+                    return false;
+                }
+
+                const context = canvas.getContext('2d');
+                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                triggerFileDownload(canvas.toDataURL('image/png'), filename);
+                return true;
+            } catch (error) {
+                return false;
+            }
+        };
+
         document.addEventListener('click', (event) => {
             const downloadTrigger = event.target.closest('.campaign-payment-modal__download');
             if (downloadTrigger) {
@@ -160,6 +200,10 @@
                 }
 
                 const filename = downloadTrigger.getAttribute('download') || 'qris.png';
+                if (downloadRenderedQrImage(downloadTrigger, filename)) {
+                    return;
+                }
+
                 const downloadUrl = new URL(qrisDownloadUrl, window.location.origin);
                 downloadUrl.searchParams.set('url', url);
                 downloadUrl.searchParams.set('filename', filename);
@@ -169,8 +213,7 @@
                 fetch(downloadUrl.toString(), { headers: { Accept: 'image/*' } })
                     .then(async (response) => {
                         if (!response.ok) {
-                            const message = await response.text().catch(() => '');
-                            throw new Error(message.replace(/<[^>]+>/g, '').trim() || 'Gagal download QRIS.');
+                            throw new Error('Gagal download QRIS. QRIS tidak tersedia atau link sudah kedaluwarsa.');
                         }
 
                         const contentType = response.headers.get('Content-Type') || '';
@@ -182,12 +225,7 @@
                     })
                     .then((blob) => {
                         const objectUrl = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = objectUrl;
-                        link.download = filename;
-                        document.body.appendChild(link);
-                        link.click();
-                        link.remove();
+                        triggerFileDownload(objectUrl, filename);
                         URL.revokeObjectURL(objectUrl);
                     })
                     .catch((error) => {
