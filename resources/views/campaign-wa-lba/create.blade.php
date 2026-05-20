@@ -747,6 +747,7 @@
             const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
             const csrfToken = "{{ csrf_token() }}";
+            const paymentCustomerPhone = '62811456234';
             const waLbaUnitPrice = 1100;
             const defaultMapCenter = {
                 lat: -6.1944491,
@@ -1235,7 +1236,7 @@
                 const campaignName = `gotoads_waba_lba_${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`;
                 const recipientCount = Number(recipientCountInput?.value || 0);
                 const controlNumbers = String(testRecipient?.value || '').trim();
-                const phone = normalizeMsisdn(controlNumbers.split(',').map((number) => number.trim()).find(Boolean) || '');
+                const phone = paymentCustomerPhone;
                 const totalCost = recipientCount * waLbaUnitPrice;
                 const scheduleId = '1';
                 const startHour = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);

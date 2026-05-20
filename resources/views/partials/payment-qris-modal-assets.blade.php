@@ -137,6 +137,7 @@
         }
 
         window.paymentQrisModalInitialized = true;
+        const qrisDownloadUrl = @json(route('campaign.payment.qris-download'));
 
         const closeModal = (modal) => {
             if (!modal) {
@@ -159,27 +160,17 @@
                 }
 
                 const filename = downloadTrigger.getAttribute('download') || 'qris.png';
+                const downloadUrl = new URL(qrisDownloadUrl, window.location.origin);
+                downloadUrl.searchParams.set('url', url);
+                downloadUrl.searchParams.set('filename', filename);
 
-                fetch(url)
-                    .then((response) => {
-                        if (!response.ok) {
-                            throw new Error('Gagal download QRIS.');
-                        }
-                        return response.blob();
-                    })
-                    .then((blob) => {
-                        const objectUrl = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = objectUrl;
-                        link.download = filename;
-                        document.body.appendChild(link);
-                        link.click();
-                        link.remove();
-                        URL.revokeObjectURL(objectUrl);
-                    })
-                    .catch((error) => {
-                        window.alert(error?.message || 'Gagal download QRIS.');
-                    });
+                const link = document.createElement('a');
+                link.href = downloadUrl.toString();
+                link.download = filename;
+                link.rel = 'noreferrer';
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
 
                 return;
             }

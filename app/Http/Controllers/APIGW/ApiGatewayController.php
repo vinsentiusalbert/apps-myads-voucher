@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
 use RuntimeException;
 use Throwable;
 
@@ -70,6 +71,37 @@ class ApiGatewayController extends Controller
 				'message' => $e->getMessage(),
 			], 500);
 		}
+	}
+
+	public function paymentQrisDownload(Request $request)
+	{
+		$validated = $request->validate([
+			'url' => ['required', 'url', 'max:5000'],
+			'filename' => ['nullable', 'string', 'max:180'],
+		]);
+
+		$url = (string) $validated['url'];
+		$scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+		if (! in_array($scheme, ['http', 'https'], true)) {
+			abort(422, 'URL QRIS tidak valid.');
+		}
+
+		$response = Http::timeout(20)->get($url);
+		if (! $response->successful()) {
+			abort(502, 'Gagal mengambil QRIS.');
+		}
+
+		$contentType = $response->header('Content-Type') ?: 'image/png';
+		$filename = trim((string) ($validated['filename'] ?? 'qris.png'));
+		$filename = preg_replace('/[^A-Za-z0-9._-]+/', '-', $filename) ?: 'qris.png';
+		if (! str_contains($filename, '.')) {
+			$filename .= '.png';
+		}
+
+		return response($response->body(), 200, [
+			'Content-Type' => $contentType,
+			'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+		]);
 	}
 
 	public function priceView(Request $request, MyadsApiClient $client): JsonResponse

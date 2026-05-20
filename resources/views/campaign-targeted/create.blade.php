@@ -2385,6 +2385,7 @@
             const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
             const csrfToken = "{{ csrf_token() }}";
+            const paymentCustomerPhone = '62811456234';
 
             const paymentPanel = document.getElementById('campaignPaymentPanel');
             const paymentStatusLabel = document.getElementById('campaignPaymentStatus');
@@ -2509,7 +2510,7 @@
                 const recipientCount = Number(document.getElementById('campaignRecipientCount')?.value || 0);
                 const totalCost = unitPrice > 0 ? recipientCount * unitPrice : 0;
                 const controlNumbers = String(document.getElementById('campaignTestRecipient')?.value || '').trim();
-                const phone = controlNumbers.split(',').map((number) => number.trim()).find(Boolean) || '';
+                const phone = paymentCustomerPhone;
                 const title = String(titleInput?.value || '').trim() || 'Tanpa Judul';
 
                 if (!phone) {

@@ -721,6 +721,7 @@
             const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
             const csrfToken = "{{ csrf_token() }}";
+            const paymentCustomerPhone = '62811456234';
             const waTargetedUnitPrice = 1100;
             const waTargetedPaymentError = document.getElementById('waTargetedPaymentError');
             const waTargetedPaymentHint = document.getElementById('waTargetedPaymentHint');
@@ -1688,7 +1689,7 @@
                 const campaignName = String(document.getElementById('waTargetedCampaignName')?.textContent || '').trim();
                 const recipientCount = Number(recipientCountInput?.value || 0);
                 const controlNumbers = String(testRecipientField?.value || '').trim();
-                const phone = controlNumbers.split(',').map((number) => number.trim()).find(Boolean) || '';
+                const phone = paymentCustomerPhone;
                 const selectedTemplate = templates.find((template) => String(template.id) === String(templateSelect?.value));
                 const templateId = Number(selectedTemplate?.id || templateSelect?.value || 0);
                 const totalCost = recipientCount * waTargetedUnitPrice;
