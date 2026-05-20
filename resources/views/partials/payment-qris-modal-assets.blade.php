@@ -164,13 +164,38 @@
                 downloadUrl.searchParams.set('url', url);
                 downloadUrl.searchParams.set('filename', filename);
 
-                const link = document.createElement('a');
-                link.href = downloadUrl.toString();
-                link.download = filename;
-                link.rel = 'noreferrer';
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
+                downloadTrigger.setAttribute('aria-busy', 'true');
+
+                fetch(downloadUrl.toString(), { headers: { Accept: 'image/*' } })
+                    .then(async (response) => {
+                        if (!response.ok) {
+                            const message = await response.text().catch(() => '');
+                            throw new Error(message.replace(/<[^>]+>/g, '').trim() || 'Gagal download QRIS.');
+                        }
+
+                        const contentType = response.headers.get('Content-Type') || '';
+                        if (!contentType.toLowerCase().startsWith('image/') && !contentType.toLowerCase().includes('application/octet-stream')) {
+                            throw new Error('File QRIS yang diterima bukan gambar.');
+                        }
+
+                        return response.blob();
+                    })
+                    .then((blob) => {
+                        const objectUrl = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = objectUrl;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        URL.revokeObjectURL(objectUrl);
+                    })
+                    .catch((error) => {
+                        window.alert(error?.message || 'Gagal download QRIS.');
+                    })
+                    .finally(() => {
+                        downloadTrigger.removeAttribute('aria-busy');
+                    });
 
                 return;
             }

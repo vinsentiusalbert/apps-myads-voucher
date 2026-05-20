@@ -86,19 +86,32 @@ class ApiGatewayController extends Controller
 			abort(422, 'URL QRIS tidak valid.');
 		}
 
-		$response = Http::timeout(20)->get($url);
+		$response = Http::withHeaders([
+			'Accept' => 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+			'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari',
+		])->timeout(20)->retry(1, 200)->get($url);
 		if (! $response->successful()) {
 			abort(502, 'Gagal mengambil QRIS.');
 		}
 
 		$contentType = $response->header('Content-Type') ?: 'image/png';
+		$contentTypeLower = strtolower($contentType);
+		$body = $response->body();
+		if (! str_starts_with($contentTypeLower, 'image/') && ! str_contains($contentTypeLower, 'application/octet-stream')) {
+			abort(502, 'URL QRIS tidak mengembalikan file gambar.');
+		}
+
+		if (stripos(substr($body, 0, 300), '<html') !== false || stripos(substr($body, 0, 500), 'site wasn') !== false) {
+			abort(502, 'URL QRIS mengembalikan halaman error, bukan gambar.');
+		}
+
 		$filename = trim((string) ($validated['filename'] ?? 'qris.png'));
 		$filename = preg_replace('/[^A-Za-z0-9._-]+/', '-', $filename) ?: 'qris.png';
 		if (! str_contains($filename, '.')) {
 			$filename .= '.png';
 		}
 
-		return response($response->body(), 200, [
+		return response($body, 200, [
 			'Content-Type' => $contentType,
 			'Content-Disposition' => 'attachment; filename="' . $filename . '"',
 		]);
