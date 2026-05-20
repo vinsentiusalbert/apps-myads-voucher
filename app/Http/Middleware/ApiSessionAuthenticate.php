@@ -35,6 +35,6 @@ class ApiSessionAuthenticate
     {
         $source = (string) ($user['id'] ?? $user['email'] ?? 'api-user');
 
-        return (int) sprintf('%u', crc32($source));
+        return ((int) sprintf('%u', crc32($source)) % 2147483647) + 1;
     }
 }
