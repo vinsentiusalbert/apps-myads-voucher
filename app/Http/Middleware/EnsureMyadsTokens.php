@@ -13,16 +13,22 @@ class EnsureMyadsTokens
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! Auth::check()) {
-            return $next($request);
+        $session = $request->session();
+        
+        // Check session-based auth (SSO flow) - NO Laravel Auth needed
+        $accessToken = (string) $session->get('myads.access_token', '');
+        
+        if (trim($accessToken) === '') {
+            // Fallback: kalau tidak ada session token, cek Laravel Auth
+            if (! Auth::check()) {
+                return redirect()->route('login');
+            }
         }
 
-        $session = $request->session();
         $client = app(MyadsApiClient::class);
-
-        $accessToken = (string) $session->get('myads.access_token', '');
         $refreshToken = (string) $session->get('myads.refresh_token', '');
 
+        // Refresh access token kalau expired
         if ($refreshToken !== '' && ($accessToken === '' || $this->isAccessTokenExpired($accessToken))) {
             try {
                 $resp = $client->refreshAccessToken($refreshToken);
@@ -35,13 +41,17 @@ class EnsureMyadsTokens
             }
         }
 
+        // Fetch gateway token kalau belum ada
         $gwToken = (string) $session->get('myads.gw_token', '');
         if ($gwToken === '') {
             try {
-                $gwResp = $client->getGatewayToken();
-                $freshGwToken = $client->extractGatewayToken($gwResp);
-                if ($freshGwToken !== '') {
-                    $session->put('myads.gw_token', $freshGwToken);
+                $freshAccessToken = (string) $session->get('myads.access_token', '');
+                if (trim($freshAccessToken) !== '') {
+                    $gwResp = $client->getGatewayToken($freshAccessToken);
+                    $freshGwToken = $client->extractGatewayToken($gwResp);
+                    if ($freshGwToken !== '') {
+                        $session->put('myads.gw_token', $freshGwToken);
+                    }
                 }
             } catch (Throwable) {
                 // Optional token refresh; ignore failures.

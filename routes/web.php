@@ -22,7 +22,7 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 });
 
-Route::middleware('auth')->group(function (): void {
+Route::middleware('web')->group(function (): void {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/campaign/wa-business/campaign-template', [CampaignMenuController::class, 'listCampaignTemplates'])->name('campaign-template.index');
     Route::post('/campaign/wa-business/campaign-template', [CampaignMenuController::class, 'storeCampaignTemplate'])->name('campaign-template.store');
