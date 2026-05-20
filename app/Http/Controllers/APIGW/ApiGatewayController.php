@@ -89,20 +89,19 @@ class ApiGatewayController extends Controller
 		$response = Http::withHeaders([
 			'Accept' => 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
 			'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari',
-		])->timeout(20)->retry(1, 200)->get($url);
+			'Referer' => config('app.url', $request->getSchemeAndHttpHost()),
+		])->withoutVerifying()->timeout(20)->retry(1, 200)->get($url);
 		if (! $response->successful()) {
 			abort(502, 'Gagal mengambil QRIS.');
 		}
 
-		$contentType = $response->header('Content-Type') ?: 'image/png';
-		$contentTypeLower = strtolower($contentType);
 		$body = $response->body();
-		if (! str_starts_with($contentTypeLower, 'image/') && ! str_contains($contentTypeLower, 'application/octet-stream')) {
-			abort(502, 'URL QRIS tidak mengembalikan file gambar.');
-		}
-
 		if (stripos(substr($body, 0, 300), '<html') !== false || stripos(substr($body, 0, 500), 'site wasn') !== false) {
 			abort(502, 'URL QRIS mengembalikan halaman error, bukan gambar.');
+		}
+		$contentType = $this->detectImageContentType($body, $response->header('Content-Type') ?: '');
+		if ($contentType === null) {
+			abort(502, 'URL QRIS tidak mengembalikan file gambar.');
 		}
 
 		$filename = trim((string) ($validated['filename'] ?? 'qris.png'));
@@ -115,6 +114,34 @@ class ApiGatewayController extends Controller
 			'Content-Type' => $contentType,
 			'Content-Disposition' => 'attachment; filename="' . $filename . '"',
 		]);
+	}
+
+	private function detectImageContentType(string $body, string $headerContentType = ''): ?string
+	{
+		$headerContentType = strtolower(trim(explode(';', $headerContentType)[0] ?? ''));
+		if (str_starts_with($headerContentType, 'image/')) {
+			return $headerContentType;
+		}
+
+		if (str_starts_with($body, "\x89PNG\r\n\x1A\n")) {
+			return 'image/png';
+		}
+		if (str_starts_with($body, "\xFF\xD8\xFF")) {
+			return 'image/jpeg';
+		}
+		if (str_starts_with($body, 'GIF87a') || str_starts_with($body, 'GIF89a')) {
+			return 'image/gif';
+		}
+		if (substr($body, 0, 4) === 'RIFF' && substr($body, 8, 4) === 'WEBP') {
+			return 'image/webp';
+		}
+
+		$trimmed = ltrim(substr($body, 0, 300));
+		if (str_starts_with($trimmed, '<svg') || str_starts_with($trimmed, '<?xml')) {
+			return 'image/svg+xml';
+		}
+
+		return null;
 	}
 
 	public function priceView(Request $request, MyadsApiClient $client): JsonResponse

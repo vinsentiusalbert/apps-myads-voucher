@@ -16,7 +16,7 @@
                 <strong id="{{ $transactionId }}">-</strong>
             </div>
             <div class="campaign-payment-modal__qr">
-                <img id="{{ $qrId }}" alt="QRIS" />
+                <img id="{{ $qrId }}" alt="QRIS" crossorigin="anonymous" />
                 <div class="campaign-payment-modal__actions">
                     <a id="{{ $qrLinkId }}" class="campaign-inline-link campaign-inline-link--fit" href="#" target="_blank" rel="noreferrer" hidden>Buka QRIS</a>
                     <a id="{{ $downloadId }}" class="campaign-payment-modal__download" href="#" download="qris.png" hidden>Download QRIS</a>
