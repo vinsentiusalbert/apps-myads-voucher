@@ -393,10 +393,10 @@
                             </div>
                         </div>
 
-                        <label class="campaign-terms campaign-terms--compact">
+                        {{-- <label class="campaign-terms campaign-terms--compact">
                             <input type="checkbox" id="campaignSaveTargetedProfile">
                             <span>Simpan Pengaturan Profil Penerima</span>
-                        </label>
+                        </label> --}}
 
                     </div>
                 </div>
@@ -1133,7 +1133,9 @@
             };
 
             const buildMinuteOptions = (selectedValue) => {
-                return ['00', '30'].map((value) => `<option value="${value}"${value === selectedValue ? ' selected' : ''}>${value}</option>`).join('');
+                return Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, '0'))
+                    .map((value) => `<option value="${value}"${value === selectedValue ? ' selected' : ''}>${value}</option>`)
+                    .join('');
             };
 
             const formatScheduleDate = (value) => {
@@ -1316,6 +1318,63 @@
                 return [];
             };
 
+            const extractProfileOptions = (source, keys) => {
+                const keyed = findProfileDropdownOptions(source, keys);
+                if (keyed.length > 0) {
+                    return keyed;
+                }
+
+                const candidates = [
+                    source?.data?.data,
+                    source?.data?.items,
+                    source?.data?.list,
+                    source?.data,
+                    source?.items,
+                    source?.list,
+                    source,
+                ];
+
+                for (const candidate of candidates) {
+                    const options = normalizeProfileDropdownOptions(
+                        Array.isArray(candidate)
+                            ? candidate
+                            : (candidate && typeof candidate === 'object' ? Object.values(candidate) : [])
+                    );
+                    if (options.length > 0) {
+                        return options;
+                    }
+                }
+
+                return [];
+            };
+
+            const fetchProfileDropdownOptions = async (params, keys) => {
+                if (!profileDropdownUrl) {
+                    return [];
+                }
+
+                const url = new URL(profileDropdownUrl, window.location.origin);
+                Object.entries(params).forEach(([key, value]) => {
+                    if (value) {
+                        url.searchParams.set(key, value);
+                    }
+                });
+
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    return [];
+                }
+
+                const payload = await response.json();
+                const source = payload?.data?.data ?? payload?.data ?? payload;
+                return extractProfileOptions(source, keys);
+            };
+
             const setProfileDropdownOptions = (fieldId, options) => {
                 const field = document.getElementById(fieldId);
                 if (!field || options.length === 0) {
@@ -1397,7 +1456,7 @@
                 <div class="campaign-targeted-location-grid">
                     <div class="field-group campaign-field-group--compact">
                         <label class="field-label">Provinsi</label>
-                        <select class="text-input text-input--select" data-location-select="province" name="${type === 'work' ? 'profile_work[]' : 'profile_hometown[]'}" form="campaignGwSubmitForm">
+                        <select class="text-input text-input--select" data-location-select="province">
                             ${buildGatewaySelectOptions(type === 'work' ? ['work_province', 'workProvince', 'profileWorkProvince'] : ['province', 'home_province', 'homeProvince', 'profileProvince'], 'Provinsi', ['DKI Jakarta', 'Jawa Barat', 'Banten', 'Jawa Tengah'])}
                         </select>
                     </div>
@@ -1420,8 +1479,95 @@
                         </select>
                     </div>
                 </div>
+                <input type="hidden" data-location-value name="${type === 'work' ? 'profile_work[]' : 'profile_hometown[]'}" form="campaignGwSubmitForm" value="">
                 <button type="button" class="campaign-targeted-location-card__remove" data-remove-location>Hapus</button>
             `;
+
+            const setLocationSelectOptions = (select, options, placeholder) => {
+                if (!select) {
+                    return;
+                }
+
+                select.innerHTML = [
+                    `<option value="">${escapeHtml(placeholder)}</option>`,
+                    ...options.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`),
+                ].join('');
+            };
+
+            const syncLocationDependentOptions = async (card, changedField) => {
+                const province = card.querySelector('[data-location-select="province"]');
+                const city = card.querySelector('[data-location-select="city"]');
+                const district = card.querySelector('[data-location-select="district"]');
+                const subdistrict = card.querySelector('[data-location-select="subdistrict"]');
+
+                if (changedField === 'province') {
+                    setLocationSelectOptions(city, [], 'Kota');
+                    setLocationSelectOptions(district, [], 'Kecamatan');
+                    setLocationSelectOptions(subdistrict, [], 'Kelurahan');
+
+                    const provinceValue = province?.value || '';
+                    if (provinceValue) {
+                        const options = await fetchProfileDropdownOptions({ profile: 'KOTA', province: provinceValue }, ['kota', 'city']);
+                        setLocationSelectOptions(city, options, 'Kota');
+                    }
+                    updateLocationRowValue(card);
+                    return;
+                }
+
+                if (changedField === 'city') {
+                    setLocationSelectOptions(district, [], 'Kecamatan');
+                    setLocationSelectOptions(subdistrict, [], 'Kelurahan');
+
+                    const provinceValue = province?.value || '';
+                    const cityValue = city?.value || '';
+                    if (provinceValue && cityValue) {
+                        const options = await fetchProfileDropdownOptions({ profile: 'KECAMATAN', province: provinceValue, kota: cityValue }, ['kecamatan', 'district']);
+                        setLocationSelectOptions(district, options, 'Kecamatan');
+                    }
+                    updateLocationRowValue(card);
+                    return;
+                }
+
+                if (changedField === 'district') {
+                    setLocationSelectOptions(subdistrict, [], 'Kelurahan');
+
+                    const provinceValue = province?.value || '';
+                    const cityValue = city?.value || '';
+                    const districtValue = district?.value || '';
+                    if (provinceValue && cityValue && districtValue) {
+                        const options = await fetchProfileDropdownOptions({ profile: 'KELURAHAN', province: provinceValue, kota: cityValue, kecamatan: districtValue }, ['kelurahan', 'subdistrict']);
+                        setLocationSelectOptions(subdistrict, options, 'Kelurahan');
+                    }
+                    updateLocationRowValue(card);
+                }
+            };
+
+            const getLocationRowValue = (card) => {
+                const subdistrict = card.querySelector('[data-location-select="subdistrict"]')?.value || '';
+                const district = card.querySelector('[data-location-select="district"]')?.value || '';
+                const city = card.querySelector('[data-location-select="city"]')?.value || '';
+                const province = card.querySelector('[data-location-select="province"]')?.value || '';
+                return subdistrict || district || city || province;
+            };
+
+            const updateLocationRowValue = (card) => {
+                const input = card.querySelector('[data-location-value]');
+                if (input) {
+                    input.value = getLocationRowValue(card);
+                }
+            };
+
+            const bindTargetedLocationRow = (card) => {
+                card.addEventListener('change', (event) => {
+                    const select = event.target.closest('[data-location-select]');
+                    if (!select) {
+                        return;
+                    }
+
+                    syncLocationDependentOptions(card, select.dataset.locationSelect);
+                    updateLocationRowValue(card);
+                });
+            };
 
             const syncTargetedProfileBuilder = () => {
                 if (!targetedProfileBuilder || !targetedRecipient) {
@@ -1454,6 +1600,7 @@
                 card.dataset.locationRow = type;
                 card.innerHTML = locationOptionsTemplate(type);
                 list.appendChild(card);
+                bindTargetedLocationRow(card);
                 syncTargetedLocationRemoveState(list);
             };
 
@@ -1558,7 +1705,7 @@
 
             const syncStepTwoValidity = () => {
                 if (stepTwoNext) {
-                    stepTwoNext.disabled = !targetedRecipient?.value || (targetedRecipient.value === 'profile-recipient' && !hasTargetedProfileFilters());
+                    stepTwoNext.disabled = !targetedRecipient?.value;
                 }
             };
 
@@ -1584,6 +1731,25 @@
                 return Math.floor((endAt.getTime() - startAt.getTime()) / 60000);
             };
 
+            const getScheduleStartDateTime = (scheduleId) => {
+                const startDate = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`)?.value || '';
+                const startHour = Number(document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
+                const startMinute = Number(document.querySelector(`[data-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
+
+                if (!startDate || [startHour, startMinute].some(Number.isNaN)) {
+                    return null;
+                }
+
+                const startAt = new Date(`${startDate}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00`);
+                return Number.isNaN(startAt.getTime()) ? null : startAt;
+            };
+
+            const isScheduleStartAllowed = (scheduleId) => {
+                const startAt = getScheduleStartDateTime(scheduleId);
+                const minimumStartAt = new Date(Date.now() + (4 * 60 * 60 * 1000));
+                return startAt !== null && startAt >= minimumStartAt;
+            };
+
             const syncRecipientScheduleValidity = () => {
                 const recipientCount = Number(recipientCountInput?.value || 0);
                 const isRecipientValid = recipientCount >= 5;
@@ -1596,9 +1762,14 @@
                 document.querySelectorAll('[data-schedule-item]').forEach((item) => {
                     const scheduleId = item.dataset.scheduleItem;
                     const alert = item.querySelector('[data-schedule-duration-alert]');
-                    const isItemValid = getScheduleDurationMinutes(scheduleId) >= 240;
+                    const isDurationValid = getScheduleDurationMinutes(scheduleId) >= 240;
+                    const isStartValid = isScheduleStartAllowed(scheduleId);
+                    const isItemValid = isDurationValid && isStartValid;
 
                     if (alert) {
+                        alert.textContent = !isStartValid
+                            ? 'Jadwal pengiriman minimal 4 jam dari waktu sekarang.'
+                            : 'Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal';
                         alert.hidden = isItemValid;
                     }
 

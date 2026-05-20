@@ -1239,7 +1239,9 @@
         };
 
         const buildMinuteOptions = (selectedValue) => {
-            return ['00', '30'].map((value) => `<option value="${value}"${value === selectedValue ? ' selected' : ''}>${value}</option>`).join('');
+            return Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, '0'))
+                .map((value) => `<option value="${value}"${value === selectedValue ? ' selected' : ''}>${value}</option>`)
+                .join('');
         };
 
         const formatScheduleDate = (value) => {
@@ -1454,7 +1456,7 @@
             if (stepTwoNext) {
                 const isRecipientScheduleValid = syncRecipientScheduleValidity();
                 stepTwoNext.disabled = isTargeted ?
-                    (!targetedRecipient?.value || (targetedRecipient.value === 'profile-recipient' && !recipientProfile?.value && !hasTargetedProfileFilters())) :
+                    !targetedRecipient?.value :
                     (!termsCheck?.checked || !isRecipientScheduleValid);
             }
         };
@@ -1481,6 +1483,25 @@
             return Math.floor((endAt.getTime() - startAt.getTime()) / 60000);
         };
 
+        const getScheduleStartDateTime = (scheduleId) => {
+            const startDate = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`)?.value || '';
+            const startHour = Number(document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
+            const startMinute = Number(document.querySelector(`[data-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
+
+            if (!startDate || [startHour, startMinute].some(Number.isNaN)) {
+                return null;
+            }
+
+            const startAt = new Date(`${startDate}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00`);
+            return Number.isNaN(startAt.getTime()) ? null : startAt;
+        };
+
+        const isScheduleStartAllowed = (scheduleId) => {
+            const startAt = getScheduleStartDateTime(scheduleId);
+            const minimumStartAt = new Date(Date.now() + (4 * 60 * 60 * 1000));
+            return startAt !== null && startAt >= minimumStartAt;
+        };
+
         const syncRecipientScheduleValidity = () => {
             const recipientCount = Number(recipientCountInput?.value || 0);
             const isRecipientValid = recipientCount >= 5;
@@ -1493,9 +1514,14 @@
             document.querySelectorAll('[data-schedule-item]').forEach((item) => {
                 const scheduleId = item.dataset.scheduleItem;
                 const alert = item.querySelector('[data-schedule-duration-alert]');
-                const isItemValid = getScheduleDurationMinutes(scheduleId) >= 240;
+                const isDurationValid = getScheduleDurationMinutes(scheduleId) >= 240;
+                const isStartValid = isScheduleStartAllowed(scheduleId);
+                const isItemValid = isDurationValid && isStartValid;
 
                 if (alert) {
+                    alert.textContent = !isStartValid
+                        ? 'Jadwal pengiriman minimal 4 jam dari waktu sekarang.'
+                        : 'Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal';
                     alert.hidden = isItemValid;
                 }
 

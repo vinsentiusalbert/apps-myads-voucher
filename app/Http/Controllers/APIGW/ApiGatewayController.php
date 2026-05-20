@@ -95,12 +95,24 @@ class ApiGatewayController extends Controller
 
 	public function profileDropdownList(Request $request, MyadsApiClient $client, string $channel): JsonResponse
 	{
-		abort_unless($channel === 'sms', 404);
+		abort_unless(in_array($channel, ['sms', 'wa-business'], true), 404);
 
 		try {
-			$resp = $client->profileDropdownList($this->requireGatewayToken($request), [
-				'profile' => 'ALL',
-			], $this->gatewayRefreshCallback($request, $client));
+			$profile = strtoupper(trim((string) $request->input('profile', 'ALL')));
+			$payload = ['profile' => $profile !== '' ? $profile : 'ALL'];
+
+			foreach (['province', 'kota', 'kecamatan'] as $field) {
+				$value = trim((string) $request->input($field, ''));
+				if ($value !== '') {
+					$payload[$field] = $value;
+				}
+			}
+
+			$resp = $client->profileDropdownList(
+				$this->requireGatewayToken($request),
+				$payload,
+				$this->gatewayRefreshCallback($request, $client)
+			);
 
 			return response()->json($resp);
 		} catch (Throwable $e) {
@@ -251,6 +263,7 @@ class ApiGatewayController extends Controller
 			if ($campaignName === '' || $senderName === '' || $message === '' || $recipientTotal <= 0 || $controlNumbers === [] || $deliveryDate === null || $deliveryTime === null) {
 				throw new RuntimeException('Data belum lengkap. Mohon lengkapi judul, pengirim, isi pesan, jumlah penerima, jadwal kirim, dan nomor kontrol.');
 			}
+			$this->ensureScheduleStartsAtLeastFourHoursFromNow($validated['delivery_date'] ?? null, $validated['delivery_time'] ?? null);
 
 			$payload = [
 				'channel' => $mmsFile !== '' ? 'MMS' : 'SMS',
@@ -382,6 +395,7 @@ class ApiGatewayController extends Controller
 			if ($campaignName === '' || $senderName === '' || $message === '' || $contentName === '' || $recipientTotal <= 0 || $controlNumbers === [] || $startDate === null || $endDate === null || $startTime === null || $endTime === null || $locationName === '' || $radius <= 0 || $locationType === '') {
 				throw new RuntimeException('Data belum lengkap. Mohon lengkapi semua field sebelum mengirim campaign.');
 			}
+			$this->ensureScheduleStartsAtLeastFourHoursFromNow($validated['delivery_start_date'] ?? null, $validated['delivery_start_time'] ?? null);
 
 			$payload = [
 				'channel' => 'SMS',
@@ -488,6 +502,7 @@ class ApiGatewayController extends Controller
 			if ($campaignName === '' || $recipientTotal <= 0 || $wabaUserTemplateId <= 0 || $controlNumbers === [] || $startDate === null || $endDate === null || $startTime === null || $endTime === null || $locationName === '' || $radius <= 0 || $locationType === '') {
 				throw new RuntimeException('Data belum lengkap. Mohon lengkapi semua field sebelum mengirim campaign WABA LBA.');
 			}
+			$this->ensureScheduleStartsAtLeastFourHoursFromNow($validated['delivery_start_date'] ?? null, $validated['delivery_start_time'] ?? null);
 
 			$payload = [
 				'campaignName' => $campaignName,
@@ -589,6 +604,7 @@ class ApiGatewayController extends Controller
 			if ($campaignName === '' || $wabaUserTemplateId <= 0 || $recipientTotal <= 0 || $deliveryDate === null || $deliveryTime === null || $controlNumbers === []) {
 				throw new RuntimeException('Data belum lengkap. Mohon lengkapi semua field sebelum mengirim campaign WABA Targeted.');
 			}
+			$this->ensureScheduleStartsAtLeastFourHoursFromNow($validated['delivery_date'] ?? null, $validated['delivery_time'] ?? null);
 
 			$emptyToNull = static function (?string $value): ?string {
 				$value = trim((string) $value);
@@ -819,6 +835,25 @@ class ApiGatewayController extends Controller
 		}
 
 		return $m[1] . $m[2];
+	}
+
+	private function ensureScheduleStartsAtLeastFourHoursFromNow(?string $date, ?string $time): void
+	{
+		$date = trim((string) $date);
+		$time = trim((string) $time);
+		if ($date === '' || $time === '') {
+			throw new RuntimeException('Jadwal pengiriman belum lengkap.');
+		}
+
+		try {
+			$startAt = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$time}", config('app.timezone'));
+		} catch (Throwable) {
+			throw new RuntimeException('Format jadwal pengiriman tidak valid.');
+		}
+
+		if ($startAt->lt(Carbon::now(config('app.timezone'))->addHours(4))) {
+			throw new RuntimeException('Jadwal pengiriman minimal 4 jam dari waktu sekarang.');
+		}
 	}
 
 	private function pipeProfileValue(array $values, array $map = [], bool $uppercase = false): ?string

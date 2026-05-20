@@ -313,10 +313,10 @@
                             <div class="campaign-targeted-location-list" id="waTargetedWorkLocationList"></div>
                         </div>
 
-                        <label class="campaign-terms campaign-terms--compact">
+                        <!-- <label class="campaign-terms campaign-terms--compact">
                             <input type="checkbox" id="waTargetedSaveProfile">
                             <span>Simpan Pengaturan Profil Penerima</span>
-                        </label>
+                        </label> -->
                     </div>
                 </div>
 
