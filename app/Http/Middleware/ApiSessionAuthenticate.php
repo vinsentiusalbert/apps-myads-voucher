@@ -20,7 +20,8 @@ class ApiSessionAuthenticate
         }
 
         Auth::setUser(new GenericUser([
-            'id' => (string) ($user['id'] ?? $user['email'] ?? 'api-user'),
+            'id' => $this->sessionAuthId($user),
+            'api_user_id' => (string) ($user['id'] ?? ''),
             'name' => (string) ($user['name'] ?? $user['email'] ?? 'MyAds User'),
             'email' => (string) ($user['email'] ?? ''),
             'merchant_id' => (string) ($user['merchant_id'] ?? ''),
@@ -28,5 +29,12 @@ class ApiSessionAuthenticate
         ]));
 
         return $next($request);
+    }
+
+    private function sessionAuthId(array $user): int
+    {
+        $source = (string) ($user['id'] ?? $user['email'] ?? 'api-user');
+
+        return (int) sprintf('%u', crc32($source));
     }
 }
