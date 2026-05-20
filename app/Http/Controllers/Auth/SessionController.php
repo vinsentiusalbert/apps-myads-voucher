@@ -41,15 +41,12 @@ class SessionController extends Controller
             'myads.user',
         ]);
 
-        // Clear Laravel Auth state FIRST
-        Auth::logout();
-
         // Then invalidate and regenerate session
         // This ensures session is completely cleared from database
         Session::flush();
         $request->session()->regenerate();
 
-        return redirect()->route('login');
+        return redirect()->route('/');
     }
 
     private function cleanApiMessage(string $message): string
