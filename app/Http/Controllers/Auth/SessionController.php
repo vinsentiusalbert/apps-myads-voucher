@@ -19,8 +19,9 @@ class SessionController extends Controller
             return redirect()->route('dashboard');
         }
 
-        // User harus login via SSO
-        abort(401, 'Unauthorized. Access must be via SSO.');
+        // Jika tidak ada session, tampilkan login page (SSO only)
+        // Jangan abort karena bisa trigger redirect loop
+        return view('errors.401');
     }
 
     public function store(Request $request)
