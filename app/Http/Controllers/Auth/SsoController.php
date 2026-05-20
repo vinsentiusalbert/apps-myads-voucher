@@ -45,8 +45,8 @@ class SsoController extends Controller
             'myads.partner_id' => $partnerId,
             'myads.user' => [
                 'id' => $apiUser['id'] ?? $merchantId,
-                'name' => $apiUser['name'] ?? 'Merchant SSO',
-                'email' => $apiUser['email'] ?? "merchant-{$merchantId}@sso.local",
+                'name' => $apiUser['name'] ?? 'Merchant GoTo',
+                'email' => $apiUser['email'] ?? "merchant-{$merchantId}@sso.prod",
             ],
         ]);
 
