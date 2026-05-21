@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->alias([
+            'api-session-guest' => \App\Http\Middleware\RedirectIfApiSessionAuthenticated::class,
+            'api-session-auth' => \App\Http\Middleware\ApiSessionAuthenticate::class,
+        ]);
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureMyadsTokens::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

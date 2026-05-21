@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session;
 
 class SessionController extends Controller
 {
@@ -21,7 +19,7 @@ class SessionController extends Controller
 
         // Jika tidak ada session, tampilkan login page (SSO only)
         // Jangan abort karena bisa trigger redirect loop
-        return view('errors.401');
+        return response()->view('errors.401', [], 401);
     }
 
     public function store(Request $request)
@@ -41,12 +39,10 @@ class SessionController extends Controller
             'myads.user',
         ]);
 
-        // Then invalidate and regenerate session
-        // This ensures session is completely cleared from database
-        Session::flush();
-        $request->session()->regenerate();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-        return redirect()->route('/');
+        return redirect()->to('/');
     }
 
     private function cleanApiMessage(string $message): string

@@ -10,7 +10,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Auth\SsoController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function (): void {
+Route::middleware('api-session-guest')->group(function (): void {
     Route::get('/', [SessionController::class, 'create'])->name('login');
     Route::post('/login', [SessionController::class, 'store'])->name('login.store');
     Route::get('/sso/complete', [SsoController::class, 'complete'])->name('sso.complete');

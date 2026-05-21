@@ -5,7 +5,6 @@ namespace App\Http\Middleware;
 use App\Services\MyadsApiClient;
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -18,11 +17,8 @@ class EnsureMyadsTokens
         // Check session-based auth (SSO flow) - NO Laravel Auth needed
         $accessToken = (string) $session->get('myads.access_token', '');
         
-        if (trim($accessToken) === '') {
-            // Fallback: kalau tidak ada session token, cek Laravel Auth
-            if (! Auth::check()) {
-                return redirect()->route('login');
-            }
+        if (trim($accessToken) === '' && ! $this->isPublicRoute($request)) {
+            return response()->view('errors.401', [], 401);
         }
 
         $client = app(MyadsApiClient::class);
@@ -59,6 +55,34 @@ class EnsureMyadsTokens
         }
 
         return $next($request);
+    }
+
+    private function isPublicRoute(Request $request): bool
+    {
+        $routeName = $request->route()?->getName();
+        if (is_string($routeName) && $routeName !== '') {
+            return in_array($routeName, [
+                'login',
+                'login.store',
+                'sso.complete',
+                'register',
+                'register.store',
+                'password.request',
+                'password.email',
+                'password.reset',
+                'password.store',
+            ], true);
+        }
+
+        $path = '/' . ltrim($request->path(), '/');
+
+        return in_array($path, [
+            '/',
+            '/login',
+            '/sso/complete',
+            '/register',
+            '/forgot-password',
+        ], true) || str_starts_with($path, '/reset-password');
     }
 
     private function isAccessTokenExpired(string $token): bool
