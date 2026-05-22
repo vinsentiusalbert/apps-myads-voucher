@@ -33,9 +33,11 @@ Route::middleware('web')->group(function (): void {
 
     // SMS campaign create (via myads_api proxy)
     Route::get('/campaign/price-view', [ApiGatewayController::class, 'priceView'])->name('campaign.price-view');
+    Route::get('/campaign/terms-and-conditions', [CampaignMenuController::class, 'termsAndConditions'])->name('campaign.terms');
     Route::get('/campaign/{channel}/report', [ApiGatewayController::class, 'campaignReport'])->name('campaign.report');
     Route::get('/campaign/{channel}/targeted/profile-dropdown-list', [ApiGatewayController::class, 'profileDropdownList'])->name('campaign.targeted.profile-dropdown-list');
     Route::post('/campaign/payment/initiate', [ApiGatewayController::class, 'paymentInitiate'])->name('campaign.payment.initiate');
+    Route::get('/campaign/payment/qris-download', [ApiGatewayController::class, 'paymentQrisDownload'])->name('campaign.payment.qris-download');
     Route::get('/campaign/payment/{transactionId}', [ApiGatewayController::class, 'paymentStatus'])->name('campaign.payment.status');
     Route::post('/campaign/wa-business/targeted/send', [ApiGatewayController::class, 'wabaTargetedAdd'])->name('campaign.waba-targeted.send');
     Route::post('/campaign/wa-business/location-based-area/send', [ApiGatewayController::class, 'wabaLbaAdd'])->name('campaign.waba-lba.send');

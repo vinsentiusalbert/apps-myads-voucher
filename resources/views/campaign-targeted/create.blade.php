@@ -133,9 +133,13 @@
                             name="sender_name"
                             form="campaignGwSubmitForm"
                             class="text-input"
-                            maxlength="255"
+                            maxlength="11"
                             required
                         >
+                    </div>
+                    <div class="campaign-message-meta">
+                        <span>Nama pengirim maksimal 11 karakter.</span>
+                        <strong id="campaignSenderCount">0/11</strong>
                     </div>
                 </div>
 
@@ -146,7 +150,7 @@
                     <textarea id="campaign_message" name="message" form="campaignGwSubmitForm" class="text-input campaign-message-input"></textarea>
                     <div class="campaign-message-meta">
                         <span>Mohon pastikan pesan iklan Anda tidak mengandung unsur terlarang.</span>
-                        <strong id="campaignMessageCount">{{ $isTargeted ? '0/160 karakter (1 SMS)' : '0/160 karakter' }}</strong>
+                        <strong id="campaignMessageCount">0/160 karakter (1SMS)</strong>
                     </div>
                 </div>
 
@@ -363,7 +367,7 @@
                                 </div>
                             </div>
                         </div>
-                        <a href="#" class="campaign-inline-link campaign-inline-link--strong campaign-inline-link--arrow campaign-inline-link--fit">Gunakan Pengaturan Audience</a>
+                        {{-- <a href="#" class="campaign-inline-link campaign-inline-link--strong campaign-inline-link--arrow campaign-inline-link--fit">Gunakan Pengaturan Audience</a> --}}
 
                         <div class="campaign-targeted-location-group">
                             <div class="campaign-targeted-location-group__head">
@@ -389,10 +393,10 @@
                             </div>
                         </div>
 
-                        <label class="campaign-terms campaign-terms--compact">
+                        {{-- <label class="campaign-terms campaign-terms--compact">
                             <input type="checkbox" id="campaignSaveTargetedProfile">
                             <span>Simpan Pengaturan Profil Penerima</span>
-                        </label>
+                        </label> --}}
 
                     </div>
                 </div>
@@ -494,7 +498,7 @@
                     <div class="field-group">
                         <label for="campaignDeliveryMethod" class="field-label">Metode Pengiriman Pesan</label>
                         <select id="campaignDeliveryMethod" class="text-input text-input--select">
-                            <option>Metode Pengiriman Pesan</option>
+                            {{-- <option>Metode Pengiriman Pesan</option> --}}
                             <option>Secepatnya</option>
                             <option>Merata per jadwal</option>
                         </select>
@@ -528,10 +532,12 @@
                     <label class="campaign-terms">
                         <input type="checkbox" id="campaignTermsCheck">
                         <span>
-                            Saya menyetujui <a href="#">Syarat dan Ketentuan</a> yang berlaku di website Telkomsel MyAds. Atas setiap pesan iklan yang dibuat oleh pengguna menggunakan produk dan/atau layanan melalui portal myAds, pengguna dilarang untuk mempergunakan kata-kata, komentar, gambar atau konten apapun yang mengandung unsur SARA atau diskriminasi terhadap pihak manapun, bersifat vulgar dan ancaman, atau hal-hal lain yang dapat dianggap tidak sesuai dengan nilai dan norma sosial.
+                            Saya menyetujui <a href="{{ route('campaign.terms') }}" data-campaign-terms-trigger>Syarat dan Ketentuan</a> yang berlaku di website Telkomsel MyAds. Atas setiap pesan iklan yang dibuat oleh pengguna menggunakan produk dan/atau layanan melalui portal myAds, pengguna dilarang untuk mempergunakan kata-kata, komentar, gambar atau konten apapun yang mengandung unsur SARA atau diskriminasi terhadap pihak manapun, bersifat vulgar dan ancaman, atau hal-hal lain yang dapat dianggap tidak sesuai dengan nilai dan norma sosial.
                         </span>
                     </label>
                 </div>
+
+                @include('partials.campaign-terms-modal')
 
                 <div class="campaign-form-actions campaign-form-actions--step-two">
                     <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="campaignStepThreeBack">Sebelumnya</button>
@@ -675,39 +681,26 @@
                             <div class="campaign-cost-card__section">
                                 <span class="campaign-cost-card__section-title">Pembayaran Anda Menggunakan</span>
                                 <div class="campaign-cost-card__row">
-                                    <span>Saldo Umum</span>
+                                    <span>Saldo refund</span>
                                     <strong class="campaign-cost-card__danger">-</strong>
-                                </div>
-                                <div class="campaign-cost-card__row">
-                                    <span>Saldo Monetary</span>
-                                    <strong id="campaignReviewPaymentMonetary">-</strong>
                                 </div>
                             </div>
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
-                            <div class="campaign-cost-card__section" id="campaignPaymentPanel" hidden>
-                                <span class="campaign-cost-card__section-title">Pembayaran QRIS</span>
-                                <div class="campaign-cost-card__row">
-                                    <span>Status</span>
-                                    <strong id="campaignPaymentStatus">-</strong>
-                                </div>
-                                <div class="campaign-cost-card__row">
-                                    <span>Transaction ID</span>
-                                    <strong id="campaignPaymentTransaction">-</strong>
-                                </div>
-                                <div class="campaign-cost-card__row" style="display:block">
-                                    <img id="campaignPaymentQr" alt="QRIS" style="max-width: 100%; height: auto; display: block; margin-top: 10px;" />
-                                    <a id="campaignPaymentQrLink" class="campaign-inline-link campaign-inline-link--fit" href="#" target="_blank" rel="noreferrer" style="margin-top: 8px; display: inline-block">Buka QRIS</a>
-                                </div>
-                            </div>
+                            @include('partials.payment-qris-modal', [
+                                'modalId' => 'campaignPaymentModal',
+                                'panelId' => 'campaignPaymentPanel',
+                                'statusId' => 'campaignPaymentStatus',
+                                'transactionId' => 'campaignPaymentTransaction',
+                                'qrId' => 'campaignPaymentQr',
+                                'qrLinkId' => 'campaignPaymentQrLink',
+                                'downloadId' => 'campaignPaymentQrDownload',
+                            ])
                             <form id="campaignGwSubmitForm" method="POST" action="{{ route('campaign.targeted.send', ['channel' => $channel]) }}" hidden>
                                 @csrf
                                 <input type="hidden" name="campaign_name" id="campaign_title" value="{{ $autoCampaignName }}">
                                 <input type="hidden" name="delivery_time" id="gwDeliveryTime">
                                 <input type="hidden" name="payment_transaction_id" id="gwPaymentTransactionId" value="">
                             </form>
-                            <p class="campaign-cost-card__footnote">
-                                Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim.
-                            </p>
                         </div>
                     </div>
                 </aside>
@@ -720,6 +713,7 @@
 @endsection
 
 @section('after_shell')
+    @include('partials.payment-qris-modal-assets')
     <div class="campaign-map-modal" id="campaignMapModal" hidden aria-hidden="true">
         <div class="campaign-map-modal__backdrop" data-location-close onclick="window.closeCampaignLocationModal && window.closeCampaignLocationModal()"></div>
         <div class="campaign-map-modal__card" role="dialog" aria-modal="true" aria-labelledby="campaignMapHeading">
@@ -858,6 +852,7 @@
             const titlePreview = document.getElementById('campaignTitlePreview');
             const senderInput = document.getElementById('campaign_sender');
             const senderPreview = document.getElementById('campaignSenderPreview');
+            const senderCount = document.getElementById('campaignSenderCount');
             const messageInput = document.getElementById('campaign_message');
             const messagePreview = document.getElementById('campaignMessagePreview');
             const messageCount = document.getElementById('campaignMessageCount');
@@ -949,9 +944,10 @@
 
                     const render = (filter = '') => {
                         const keyword = filter.trim().toLowerCase();
-                        const options = Array.from(select.options);
+                        const options = Array.from(select.options).filter((option) => option.value.trim() !== '');
                         const selected = options.filter((option) => option.selected);
                         const filtered = options.filter((option) => option.text.toLowerCase().includes(keyword));
+                        const allSelected = options.length > 0 && options.every((option) => option.selected);
 
                         chips.innerHTML = selected.map((option) => `
                             <button type="button" class="campaign-multiselect__chip" data-chip-value="${option.value}">
@@ -960,8 +956,16 @@
                             </button>
                         `).join('');
 
-                        optionsWrap.innerHTML = filtered.map((option) => `
+                        const selectAll = options.length > 0 ? `
+                            <button type="button" class="campaign-multiselect__option campaign-multiselect__option--all${allSelected ? ' campaign-multiselect__option--selected' : ''}" data-option-all="true">
+                                <input type="checkbox" class="campaign-multiselect__checkbox" ${allSelected ? 'checked' : ''} tabindex="-1">
+                                <span>Centang Semua</span>
+                            </button>
+                        ` : '';
+
+                        optionsWrap.innerHTML = selectAll + filtered.map((option) => `
                             <button type="button" class="campaign-multiselect__option${option.selected ? ' campaign-multiselect__option--selected' : ''}" data-option-value="${option.value}">
+                                <input type="checkbox" class="campaign-multiselect__checkbox" ${option.selected ? 'checked' : ''} tabindex="-1">
                                 <span>${option.text}</span>
                                 ${option.selected ? '<span class="campaign-multiselect__check">✓</span>' : ''}
                             </button>
@@ -983,6 +987,18 @@
                     search.addEventListener('input', () => render(search.value));
 
                     optionsWrap.addEventListener('click', (event) => {
+                        const allButton = event.target.closest('[data-option-all]');
+                        if (allButton) {
+                            const options = Array.from(select.options).filter((option) => option.value.trim() !== '');
+                            const shouldSelect = !options.every((option) => option.selected);
+                            options.forEach((option) => {
+                                option.selected = shouldSelect;
+                            });
+                            select.dispatchEvent(new Event('change', { bubbles: true }));
+                            render(search.value);
+                            return;
+                        }
+
                         const optionButton = event.target.closest('[data-option-value]');
                         if (!optionButton) {
                             return;
@@ -1107,7 +1123,9 @@
             };
 
             const buildMinuteOptions = (selectedValue) => {
-                return ['00', '30'].map((value) => `<option value="${value}"${value === selectedValue ? ' selected' : ''}>${value}</option>`).join('');
+                return Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, '0'))
+                    .map((value) => `<option value="${value}"${value === selectedValue ? ' selected' : ''}>${value}</option>`)
+                    .join('');
             };
 
             const formatScheduleDate = (value) => {
@@ -1290,6 +1308,63 @@
                 return [];
             };
 
+            const extractProfileOptions = (source, keys) => {
+                const keyed = findProfileDropdownOptions(source, keys);
+                if (keyed.length > 0) {
+                    return keyed;
+                }
+
+                const candidates = [
+                    source?.data?.data,
+                    source?.data?.items,
+                    source?.data?.list,
+                    source?.data,
+                    source?.items,
+                    source?.list,
+                    source,
+                ];
+
+                for (const candidate of candidates) {
+                    const options = normalizeProfileDropdownOptions(
+                        Array.isArray(candidate)
+                            ? candidate
+                            : (candidate && typeof candidate === 'object' ? Object.values(candidate) : [])
+                    );
+                    if (options.length > 0) {
+                        return options;
+                    }
+                }
+
+                return [];
+            };
+
+            const fetchProfileDropdownOptions = async (params, keys) => {
+                if (!profileDropdownUrl) {
+                    return [];
+                }
+
+                const url = new URL(profileDropdownUrl, window.location.origin);
+                Object.entries(params).forEach(([key, value]) => {
+                    if (value) {
+                        url.searchParams.set(key, value);
+                    }
+                });
+
+                const response = await fetch(url.toString(), {
+                    headers: {
+                        Accept: 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+                    return [];
+                }
+
+                const payload = await response.json();
+                const source = payload?.data?.data ?? payload?.data ?? payload;
+                return extractProfileOptions(source, keys);
+            };
+
             const setProfileDropdownOptions = (fieldId, options) => {
                 const field = document.getElementById(fieldId);
                 if (!field || options.length === 0) {
@@ -1371,7 +1446,7 @@
                 <div class="campaign-targeted-location-grid">
                     <div class="field-group campaign-field-group--compact">
                         <label class="field-label">Provinsi</label>
-                        <select class="text-input text-input--select" data-location-select="province" name="${type === 'work' ? 'profile_work[]' : 'profile_hometown[]'}" form="campaignGwSubmitForm">
+                        <select class="text-input text-input--select" data-location-select="province">
                             ${buildGatewaySelectOptions(type === 'work' ? ['work_province', 'workProvince', 'profileWorkProvince'] : ['province', 'home_province', 'homeProvince', 'profileProvince'], 'Provinsi', ['DKI Jakarta', 'Jawa Barat', 'Banten', 'Jawa Tengah'])}
                         </select>
                     </div>
@@ -1394,8 +1469,95 @@
                         </select>
                     </div>
                 </div>
+                <input type="hidden" data-location-value name="${type === 'work' ? 'profile_work[]' : 'profile_hometown[]'}" form="campaignGwSubmitForm" value="">
                 <button type="button" class="campaign-targeted-location-card__remove" data-remove-location>Hapus</button>
             `;
+
+            const setLocationSelectOptions = (select, options, placeholder) => {
+                if (!select) {
+                    return;
+                }
+
+                select.innerHTML = [
+                    `<option value="">${escapeHtml(placeholder)}</option>`,
+                    ...options.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`),
+                ].join('');
+            };
+
+            const syncLocationDependentOptions = async (card, changedField) => {
+                const province = card.querySelector('[data-location-select="province"]');
+                const city = card.querySelector('[data-location-select="city"]');
+                const district = card.querySelector('[data-location-select="district"]');
+                const subdistrict = card.querySelector('[data-location-select="subdistrict"]');
+
+                if (changedField === 'province') {
+                    setLocationSelectOptions(city, [], 'Kota');
+                    setLocationSelectOptions(district, [], 'Kecamatan');
+                    setLocationSelectOptions(subdistrict, [], 'Kelurahan');
+
+                    const provinceValue = province?.value || '';
+                    if (provinceValue) {
+                        const options = await fetchProfileDropdownOptions({ profile: 'KOTA', province: provinceValue }, ['kota', 'city']);
+                        setLocationSelectOptions(city, options, 'Kota');
+                    }
+                    updateLocationRowValue(card);
+                    return;
+                }
+
+                if (changedField === 'city') {
+                    setLocationSelectOptions(district, [], 'Kecamatan');
+                    setLocationSelectOptions(subdistrict, [], 'Kelurahan');
+
+                    const provinceValue = province?.value || '';
+                    const cityValue = city?.value || '';
+                    if (provinceValue && cityValue) {
+                        const options = await fetchProfileDropdownOptions({ profile: 'KECAMATAN', province: provinceValue, kota: cityValue }, ['kecamatan', 'district']);
+                        setLocationSelectOptions(district, options, 'Kecamatan');
+                    }
+                    updateLocationRowValue(card);
+                    return;
+                }
+
+                if (changedField === 'district') {
+                    setLocationSelectOptions(subdistrict, [], 'Kelurahan');
+
+                    const provinceValue = province?.value || '';
+                    const cityValue = city?.value || '';
+                    const districtValue = district?.value || '';
+                    if (provinceValue && cityValue && districtValue) {
+                        const options = await fetchProfileDropdownOptions({ profile: 'KELURAHAN', province: provinceValue, kota: cityValue, kecamatan: districtValue }, ['kelurahan', 'subdistrict']);
+                        setLocationSelectOptions(subdistrict, options, 'Kelurahan');
+                    }
+                    updateLocationRowValue(card);
+                }
+            };
+
+            const getLocationRowValue = (card) => {
+                const subdistrict = card.querySelector('[data-location-select="subdistrict"]')?.value || '';
+                const district = card.querySelector('[data-location-select="district"]')?.value || '';
+                const city = card.querySelector('[data-location-select="city"]')?.value || '';
+                const province = card.querySelector('[data-location-select="province"]')?.value || '';
+                return subdistrict || district || city || province;
+            };
+
+            const updateLocationRowValue = (card) => {
+                const input = card.querySelector('[data-location-value]');
+                if (input) {
+                    input.value = getLocationRowValue(card);
+                }
+            };
+
+            const bindTargetedLocationRow = (card) => {
+                card.addEventListener('change', (event) => {
+                    const select = event.target.closest('[data-location-select]');
+                    if (!select) {
+                        return;
+                    }
+
+                    syncLocationDependentOptions(card, select.dataset.locationSelect);
+                    updateLocationRowValue(card);
+                });
+            };
 
             const syncTargetedProfileBuilder = () => {
                 if (!targetedProfileBuilder || !targetedRecipient) {
@@ -1428,6 +1590,7 @@
                 card.dataset.locationRow = type;
                 card.innerHTML = locationOptionsTemplate(type);
                 list.appendChild(card);
+                bindTargetedLocationRow(card);
                 syncTargetedLocationRemoveState(list);
             };
 
@@ -1532,21 +1695,49 @@
 
             const syncStepTwoValidity = () => {
                 if (stepTwoNext) {
-                    stepTwoNext.disabled = !targetedRecipient?.value || (targetedRecipient.value === 'profile-recipient' && !hasTargetedProfileFilters());
+                    stepTwoNext.disabled = !targetedRecipient?.value;
                 }
             };
 
             const getScheduleDurationMinutes = (scheduleId) => {
+                const startDate = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`)?.value || '';
+                const endDate = document.querySelector(`[data-schedule-date-end="${scheduleId}"]`)?.value || '';
                 const startHour = Number(document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
                 const startMinute = Number(document.querySelector(`[data-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
                 const endHour = Number(document.querySelector(`[data-schedule-time-end-hour="${scheduleId}"]`)?.value || NaN);
                 const endMinute = Number(document.querySelector(`[data-schedule-time-end-minute="${scheduleId}"]`)?.value || NaN);
 
-                if ([startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
+                if (!startDate || !endDate || [startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
                     return 0;
                 }
 
-                return (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+                const startAt = new Date(`${startDate}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00`);
+                const endAt = new Date(`${endDate}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00`);
+
+                if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
+                    return 0;
+                }
+
+                return Math.floor((endAt.getTime() - startAt.getTime()) / 60000);
+            };
+
+            const getScheduleStartDateTime = (scheduleId) => {
+                const startDate = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`)?.value || '';
+                const startHour = Number(document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
+                const startMinute = Number(document.querySelector(`[data-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
+
+                if (!startDate || [startHour, startMinute].some(Number.isNaN)) {
+                    return null;
+                }
+
+                const startAt = new Date(`${startDate}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00`);
+                return Number.isNaN(startAt.getTime()) ? null : startAt;
+            };
+
+            const isScheduleStartAllowed = (scheduleId) => {
+                const startAt = getScheduleStartDateTime(scheduleId);
+                const minimumStartAt = new Date(Date.now() + (4 * 60 * 60 * 1000));
+                return startAt !== null && startAt >= minimumStartAt;
             };
 
             const syncRecipientScheduleValidity = () => {
@@ -1561,9 +1752,14 @@
                 document.querySelectorAll('[data-schedule-item]').forEach((item) => {
                     const scheduleId = item.dataset.scheduleItem;
                     const alert = item.querySelector('[data-schedule-duration-alert]');
-                    const isItemValid = getScheduleDurationMinutes(scheduleId) >= 240;
+                    const isDurationValid = getScheduleDurationMinutes(scheduleId) >= 240;
+                    const isStartValid = isScheduleStartAllowed(scheduleId);
+                    const isItemValid = isDurationValid && isStartValid;
 
                     if (alert) {
+                        alert.textContent = !isStartValid
+                            ? 'Jadwal pengiriman minimal 4 jam dari waktu sekarang.'
+                            : 'Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal';
                         alert.hidden = isItemValid;
                     }
 
@@ -1679,6 +1875,17 @@
                 '<span class="campaign-phone__url">$1</span>'
             );
 
+            const ctaUrlPrefix = 'https://gofood/';
+            const normalizeCtaPath = (value) => String(value || '')
+                .trim()
+                .replace(/^https?:\/\/gofood\/?/i, '')
+                .replace(/^gofood\/?/i, '')
+                .replace(/^\/+/, '');
+            const buildCtaUrl = (value) => {
+                const path = normalizeCtaPath(value);
+                return path === '' ? '' : `${ctaUrlPrefix}${path}`;
+            };
+
             const syncUrlIntoMessage = (card) => {
                 if (!messageInput) {
                     return;
@@ -1686,15 +1893,15 @@
 
                 const websiteInput = card.querySelector('[data-action-url]');
                 const previousUrl = card.dataset.syncedUrl || '';
-                const nextUrl = websiteInput?.value?.trim() || '';
+                const nextUrl = buildCtaUrl(websiteInput?.value);
                 let message = messageInput.value;
 
                 if (previousUrl !== '') {
-                    message = message.replace(new RegExp(`\\n?${escapeRegExp(previousUrl)}`, 'g'), '');
+                    message = message.replace(new RegExp(`\\s*${escapeRegExp(previousUrl)}`, 'g'), '');
                 }
 
                 if (nextUrl !== '') {
-                    message = `${message.trimEnd()}${message.trim() === '' ? '' : '\n'}${nextUrl}`;
+                    message = `${message.trimEnd()}${message.trim() === '' ? '' : ' '}${nextUrl}`;
                 }
 
                 card.dataset.syncedUrl = nextUrl;
@@ -1705,8 +1912,14 @@
             const updateButtonCardMeta = (card) => {
                 const websiteInput = card.querySelector('[data-action-url]');
                 const urlMeta = card.querySelector('[data-url-meta]');
+                const normalizedPath = normalizeCtaPath(websiteInput.value);
 
-                urlMeta.innerHTML = `${websiteInput.value.length} / 2000`;
+                if (websiteInput.value !== normalizedPath) {
+                    websiteInput.value = normalizedPath;
+                }
+
+                const fullUrlLength = buildCtaUrl(normalizedPath).length;
+                urlMeta.innerHTML = `${fullUrlLength} / 2000`;
                 syncUrlIntoMessage(card);
                 renderPhoneActions();
             };
@@ -1742,7 +1955,10 @@
                         </div>
                         <div class="campaign-button-card__field">
                             <label>Website URL</label>
-                            <input type="text" class="text-input" data-action-url maxlength="2000" value="">
+                            <div class="campaign-prefixed-input">
+                                <span>${ctaUrlPrefix}</span>
+                                <input type="text" class="text-input" data-action-url maxlength="1985" value="" placeholder="path">
+                            </div>
                             <div class="campaign-button-card__meta" data-url-meta>0 / 2000</div>
                         </div>
                     </div>
@@ -1768,17 +1984,28 @@
                 syncButtonLimitState();
             };
 
+            const sanitizeSmsBody = (value) => String(value || '').replace(/[\r\n\t]+/g, ' ');
+
             const syncMessagePreview = () => {
-                const message = messageInput.value.trim();
+                const sanitizedValue = sanitizeSmsBody(messageInput.value);
+                if (messageInput.value !== sanitizedValue) {
+                    messageInput.value = sanitizedValue;
+                }
+
+                const message = sanitizedValue.trim();
                 messagePreview.innerHTML = message ? linkifyMessage(message) : 'Preview pesan akan muncul di sini.';
-                messageCount.textContent = isTargeted
-                    ? `${messageInput.value.length}/160 karakter (1 SMS)`
-                    : `${messageInput.value.length}/160 karakter`;
+                const messageLength = sanitizedValue.length;
+                const smsCount = Math.max(1, Math.ceil(messageLength / 160));
+                messageCount.textContent = `${messageLength}/${smsCount * 160} karakter (${smsCount}SMS)`;
             };
 
             const syncSenderPreview = () => {
                 if (senderPreview && senderInput) {
                     senderPreview.textContent = senderInput.value;
+                }
+
+                if (senderCount && senderInput) {
+                    senderCount.textContent = `${senderInput.value.length}/11`;
                 }
             };
 
@@ -1802,6 +2029,19 @@
                 return `62${digits}`;
             };
 
+            const getSelectedTestRecipients = () => Array.from(testRecipientList?.querySelectorAll('input[type="checkbox"]:checked') || [])
+                .map((checkbox) => checkbox.closest('[data-test-recipient]')?.dataset.testRecipient || '')
+                .filter(Boolean);
+
+            const updateTestRecipientField = () => {
+                if (!testRecipientField) {
+                    return;
+                }
+
+                testRecipientField.value = getSelectedTestRecipients().join(',');
+                syncStepThreeValidity();
+            };
+
             const renderTestRecipientItem = (number) => {
                 if (!testRecipientList || !testRecipientField) {
                     return;
@@ -1809,11 +2049,8 @@
 
                 const existing = testRecipientList.querySelector(`[data-test-recipient="${number}"]`);
                 if (existing) {
-                    testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
-                        other.checked = false;
-                    });
                     existing.querySelector('input[type="checkbox"]').checked = true;
-                    testRecipientField.value = number;
+                    updateTestRecipientField();
                     return;
                 }
 
@@ -1830,28 +2067,17 @@
                 const removeButton = item.querySelector('button');
 
                 checkbox.addEventListener('change', () => {
-                    testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
-                        if (other !== checkbox) {
-                            other.checked = false;
-                        }
-                    });
-
-                    testRecipientField.value = checkbox.checked ? number : '';
+                    updateTestRecipientField();
                 });
 
                 removeButton.addEventListener('click', (event) => {
                     event.preventDefault();
-                    if (testRecipientField.value === number) {
-                        testRecipientField.value = '';
-                    }
                     item.remove();
+                    updateTestRecipientField();
                 });
 
-                testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
-                    other.checked = false;
-                });
                 testRecipientList.appendChild(item);
-                testRecipientField.value = number;
+                updateTestRecipientField();
             };
 
             const addTestRecipient = () => {
@@ -2175,6 +2401,7 @@
             const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
             const csrfToken = "{{ csrf_token() }}";
+            const paymentCustomerPhone = '62811456234';
 
             const paymentPanel = document.getElementById('campaignPaymentPanel');
             const paymentStatusLabel = document.getElementById('campaignPaymentStatus');
@@ -2190,6 +2417,13 @@
             const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
             const setPaymentUi = ({ status, transactionId, qrisUrl } = {}) => {
+                const paymentModal = paymentPanel?.closest('.campaign-payment-modal');
+                const paymentQrDownload = paymentModal?.querySelector('[download]');
+                if (paymentModal) {
+                    paymentModal.hidden = false;
+                    paymentModal.setAttribute('aria-hidden', 'false');
+                    document.body.style.overflow = 'hidden';
+                }
                 if (paymentPanel) {
                     paymentPanel.hidden = false;
                 }
@@ -2203,8 +2437,17 @@
                     paymentQr.src = qrisUrl;
                 }
                 if (paymentQrLink) {
-                    paymentQrLink.href = qrisUrl || '#';
-                    paymentQrLink.hidden = !qrisUrl;
+                    if (qrisUrl) {
+                        paymentQrLink.href = qrisUrl;
+                        paymentQrLink.hidden = false;
+                    }
+                }
+                if (paymentQrDownload) {
+                    if (qrisUrl) {
+                        paymentQrDownload.href = qrisUrl;
+                        paymentQrDownload.download = `qris-${transactionId || 'payment'}.png`;
+                        paymentQrDownload.hidden = false;
+                    }
                 }
             };
 
@@ -2282,7 +2525,8 @@
 
                 const recipientCount = Number(document.getElementById('campaignRecipientCount')?.value || 0);
                 const totalCost = unitPrice > 0 ? recipientCount * unitPrice : 0;
-                const phone = String(document.getElementById('campaignTestRecipient')?.value || '').trim();
+                const controlNumbers = String(document.getElementById('campaignTestRecipient')?.value || '').trim();
+                const phone = paymentCustomerPhone;
                 const title = String(titleInput?.value || '').trim() || 'Tanpa Judul';
 
                 if (!phone) {

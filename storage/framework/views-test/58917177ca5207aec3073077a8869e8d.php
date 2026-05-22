@@ -289,7 +289,7 @@
                                 </div>
                             </div>
                         </div>
-                        <a href="#" class="campaign-inline-link campaign-inline-link--strong campaign-inline-link--arrow campaign-inline-link--fit">Gunakan Pengaturan Audience</a>
+                        <!-- <a href="#" class="campaign-inline-link campaign-inline-link--strong campaign-inline-link--arrow campaign-inline-link--fit">Gunakan Pengaturan Audience</a> -->
 
                         <div class="campaign-targeted-location-group">
                             <div class="campaign-targeted-location-group__head">
@@ -313,10 +313,10 @@
                             <div class="campaign-targeted-location-list" id="waTargetedWorkLocationList"></div>
                         </div>
 
-                        <label class="campaign-terms campaign-terms--compact">
+                        <!-- <label class="campaign-terms campaign-terms--compact">
                             <input type="checkbox" id="waTargetedSaveProfile">
                             <span>Simpan Pengaturan Profil Penerima</span>
-                        </label>
+                        </label> -->
                     </div>
                 </div>
 
@@ -408,7 +408,7 @@
                     <div class="field-group">
                         <label for="waTargetedDeliveryMethod" class="field-label">Metode Pengiriman Pesan</label>
                         <select id="waTargetedDeliveryMethod" class="text-input text-input--select">
-                            <option>Metode Pengiriman Pesan</option>
+                            <!-- <option>Metode Pengiriman Pesan</option> -->
                             <option>Secepatnya</option>
                             <option>Merata per jadwal</option>
                         </select>

@@ -168,29 +168,29 @@
                             <div class="campaign-wa-lba-preview__profile">
                                 <span class="campaign-wa-lba-preview__avatar"></span>
                                 <div>
-                                    <strong id="waLbaPreviewName">Name</strong>
-                                    <span id="waLbaPreviewSubtitle">Business Account</span>
+                                    <strong id="waLbaPreviewName"></strong>
+                                    <span id="waLbaPreviewSubtitle"></span>
                                 </div>
                             </div>
                             <span class="campaign-wa-lba-preview__menu">⋮</span>
                         </div>
 
                         <div class="campaign-wa-lba-preview__chat">
-                            <div class="campaign-wa-lba-preview__bubble">
-                                <strong id="waLbaPreviewHeadline">-</strong>
-                                <p id="waLbaPreviewMessage">-</p>
+                            <div class="campaign-wa-lba-preview__bubble" id="waLbaPreviewBubble">
+                                <strong id="waLbaPreviewHeadline"></strong>
+                                <p id="waLbaPreviewMessage"></p>
                             </div>
 
-                            <div class="campaign-wa-lba-preview__carousel">
-                                <img src="{{ asset('assets/logo.png') }}" alt="Preview template" id="waLbaPreviewAsset">
+                            <div class="campaign-wa-lba-preview__carousel" id="waLbaPreviewCarousel" hidden>
+                                <img src="" alt="Preview template" id="waLbaPreviewAsset" hidden>
                                 <div class="campaign-wa-lba-preview__carousel-copy">
-                                    <span class="campaign-wa-lba-preview__brand">MyAds</span>
-                                    <strong id="waLbaPreviewCardTitle">Template Carousel</strong>
-                                    <p id="waLbaPreviewCardCaption">Detail card pertama akan tampil di sini.</p>
+                                    <span class="campaign-wa-lba-preview__brand"></span>
+                                    <strong id="waLbaPreviewCardTitle"></strong>
+                                    <p id="waLbaPreviewCardCaption"></p>
                                 </div>
                             </div>
 
-                            <div class="campaign-wa-lba-preview__action" id="waLbaPreviewCta">Coba Sekarang</div>
+                            <div class="campaign-wa-lba-preview__action" id="waLbaPreviewCta" hidden></div>
                         </div>
                     </div>
                 </aside>
@@ -403,10 +403,12 @@
                     <label class="campaign-terms">
                         <input type="checkbox" id="waLbaTermsCheck">
                         <span>
-                            Saya menyetujui <a href="#">Syarat dan Ketentuan</a> yang berlaku di website Telkomsel MyAds. Atas setiap pesan iklan yang dibuat oleh pengguna menggunakan produk dan/atau layanan melalui portal myAds, pengguna dilarang untuk mempergunakan kata-kata, komentar, gambar atau konten apapun yang mengandung unsur SARA atau diskriminasi terhadap pihak manapun, bersifat vulgar dan ancaman, atau hal-hal lain yang dapat dianggap tidak sesuai dengan nilai dan norma sosial.
+                            Saya menyetujui <a href="{{ route('campaign.terms') }}" data-campaign-terms-trigger>Syarat dan Ketentuan</a> yang berlaku di website Telkomsel MyAds. Atas setiap pesan iklan yang dibuat oleh pengguna menggunakan produk dan/atau layanan melalui portal myAds, pengguna dilarang untuk mempergunakan kata-kata, komentar, gambar atau konten apapun yang mengandung unsur SARA atau diskriminasi terhadap pihak manapun, bersifat vulgar dan ancaman, atau hal-hal lain yang dapat dianggap tidak sesuai dengan nilai dan norma sosial.
                         </span>
                     </label>
                 </div>
+
+                @include('partials.campaign-terms-modal')
 
                 <div class="campaign-form-actions campaign-form-actions--step-two">
                     <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="waLbaStepThreeBack">Sebelumnya</button>
@@ -579,21 +581,16 @@
                             <p class="campaign-payment-error" id="waLbaPaymentError" hidden></p>
                             <p class="campaign-payment-hint" id="waLbaPaymentHint" hidden></p>
                             <button type="button" class="campaign-cost-card__cta" id="waLbaGwSubmitButton">Bayar & Kirim Iklan</button>
-                            <div class="campaign-cost-card__section" id="waLbaPaymentPanel" hidden>
-                                <span class="campaign-cost-card__section-title">Pembayaran QRIS</span>
-                                <div class="campaign-cost-card__row">
-                                    <span>Status</span>
-                                    <strong id="waLbaPaymentStatus">-</strong>
-                                </div>
-                                <div class="campaign-cost-card__row">
-                                    <span>Transaction ID</span>
-                                    <strong id="waLbaPaymentTransaction">-</strong>
-                                </div>
-                                <div class="campaign-cost-card__row" style="display:block">
-                                    <img id="waLbaPaymentQr" alt="QRIS" style="max-width: 100%; height: auto; display: block; margin-top: 10px;" />
-                                    <a id="waLbaPaymentQrLink" class="campaign-inline-link campaign-inline-link--fit" href="#" target="_blank" rel="noreferrer" style="margin-top: 8px; display: inline-block">Buka QRIS</a>
-                                </div>
-                            </div>
+                            @include('partials.payment-qris-modal', [
+                                'modalId' => 'waLbaPaymentModal',
+                                'panelId' => 'waLbaPaymentPanel',
+                                'statusId' => 'waLbaPaymentStatus',
+                                'transactionId' => 'waLbaPaymentTransaction',
+                                'qrId' => 'waLbaPaymentQr',
+                                'qrLinkId' => 'waLbaPaymentQrLink',
+                                'downloadId' => 'waLbaPaymentQrDownload',
+                                'footnote' => 'Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim. Detil mengenai jumlah iklan terkirim/tidak terkirim akan diinformasikan pada menu laporan setelah iklan Anda tayang.',
+                            ])
                             <form id="waLbaGwSubmitForm" method="POST" action="{{ route('campaign.waba-lba.send') }}" hidden>
                                 @csrf
                                 <input type="hidden" name="payment_transaction_id" id="waLbaPaymentTransactionId" value="">
@@ -615,9 +612,6 @@
                                 <input type="hidden" name="profile_age" id="waLbaGwProfileAge" value="">
                                 <input type="hidden" name="profile_religion" id="waLbaGwProfileReligion" value="">
                             </form>
-                            <p class="campaign-cost-card__footnote">
-                                Apabila terdapat pesan yang tidak terkirim, maka biaya akan dikembalikan (refund) sesuai jumlah pesan yang tidak terkirim. Detil mengenai jumlah iklan terkirim/tidak terkirim akan diinformasikan pada menu laporan setelah iklan Anda tayang.
-                            </p>
                         </div>
                     </div>
                 </aside>
@@ -630,6 +624,8 @@
 @endsection
 
 @section('after_shell')
+    @include('partials.payment-qris-modal-assets')
+
     <div class="campaign-map-modal" id="campaignMapModal" hidden aria-hidden="true">
         <div class="campaign-map-modal__backdrop" data-location-close onclick="window.closeCampaignLocationModal && window.closeCampaignLocationModal()"></div>
         <div class="campaign-map-modal__card" role="dialog" aria-modal="true" aria-labelledby="campaignMapHeading">
@@ -710,6 +706,8 @@
             const previewSubtitle = document.getElementById('waLbaPreviewSubtitle');
             const previewHeadline = document.getElementById('waLbaPreviewHeadline');
             const previewMessage = document.getElementById('waLbaPreviewMessage');
+            const previewBubble = document.getElementById('waLbaPreviewBubble');
+            const previewCarousel = document.getElementById('waLbaPreviewCarousel');
             const previewAsset = document.getElementById('waLbaPreviewAsset');
             const previewCardTitle = document.getElementById('waLbaPreviewCardTitle');
             const previewCardCaption = document.getElementById('waLbaPreviewCardCaption');
@@ -749,6 +747,7 @@
             const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
             const csrfToken = "{{ csrf_token() }}";
+            const paymentCustomerPhone = '62811456234';
             const waLbaUnitPrice = 1100;
             const defaultMapCenter = {
                 lat: -6.1944491,
@@ -817,7 +816,9 @@
             };
 
             const buildMinuteOptions = (selectedValue) => {
-                return ['00', '30'].map((value) => `<option value="${value}"${value === selectedValue ? ' selected' : ''}>${value}</option>`).join('');
+                return Array.from({ length: 60 }, (_, minute) => String(minute).padStart(2, '0'))
+                    .map((value) => `<option value="${value}"${value === selectedValue ? ' selected' : ''}>${value}</option>`)
+                    .join('');
             };
 
             const formatScheduleDate = (value) => {
@@ -943,16 +944,44 @@
             };
 
             const getScheduleDurationMinutes = (scheduleId) => {
+                const startDate = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`)?.value || '';
+                const endDate = document.querySelector(`[data-schedule-date-end="${scheduleId}"]`)?.value || '';
                 const startHour = Number(document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
                 const startMinute = Number(document.querySelector(`[data-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
                 const endHour = Number(document.querySelector(`[data-schedule-time-end-hour="${scheduleId}"]`)?.value || NaN);
                 const endMinute = Number(document.querySelector(`[data-schedule-time-end-minute="${scheduleId}"]`)?.value || NaN);
 
-                if ([startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
+                if (!startDate || !endDate || [startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
                     return 0;
                 }
 
-                return (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+                const startAt = new Date(`${startDate}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00`);
+                const endAt = new Date(`${endDate}T${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}:00`);
+
+                if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
+                    return 0;
+                }
+
+                return Math.floor((endAt.getTime() - startAt.getTime()) / 60000);
+            };
+
+            const getScheduleStartDateTime = (scheduleId) => {
+                const startDate = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`)?.value || '';
+                const startHour = Number(document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
+                const startMinute = Number(document.querySelector(`[data-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
+
+                if (!startDate || [startHour, startMinute].some(Number.isNaN)) {
+                    return null;
+                }
+
+                const startAt = new Date(`${startDate}T${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}:00`);
+                return Number.isNaN(startAt.getTime()) ? null : startAt;
+            };
+
+            const isScheduleStartAllowed = (scheduleId) => {
+                const startAt = getScheduleStartDateTime(scheduleId);
+                const minimumStartAt = new Date(Date.now() + (4 * 60 * 60 * 1000));
+                return startAt !== null && startAt >= minimumStartAt;
             };
 
             const syncStepThreeState = () => {
@@ -975,9 +1004,14 @@
                 document.querySelectorAll('[data-schedule-item]').forEach((item) => {
                     const scheduleId = item.dataset.scheduleItem;
                     const alert = item.querySelector('[data-wa-lba-schedule-duration-alert]');
-                    const isItemValid = getScheduleDurationMinutes(scheduleId) >= 240;
+                    const isDurationValid = getScheduleDurationMinutes(scheduleId) >= 240;
+                    const isStartValid = isScheduleStartAllowed(scheduleId);
+                    const isItemValid = isDurationValid && isStartValid;
 
                     if (alert) {
+                        alert.textContent = !isStartValid
+                            ? 'Jadwal pengiriman minimal 4 jam dari waktu sekarang.'
+                            : 'Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal';
                         alert.hidden = isItemValid;
                     }
 
@@ -1052,6 +1086,13 @@
             const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
             const setPaymentUi = ({ status, transactionId, qrisUrl } = {}) => {
+                const waLbaPaymentModal = waLbaPaymentPanel?.closest('.campaign-payment-modal');
+                const waLbaPaymentQrDownload = waLbaPaymentModal?.querySelector('[download]');
+                if (waLbaPaymentModal) {
+                    waLbaPaymentModal.hidden = false;
+                    waLbaPaymentModal.setAttribute('aria-hidden', 'false');
+                    document.body.style.overflow = 'hidden';
+                }
                 if (waLbaPaymentPanel) {
                     waLbaPaymentPanel.hidden = false;
                 }
@@ -1065,8 +1106,17 @@
                     waLbaPaymentQr.src = qrisUrl;
                 }
                 if (waLbaPaymentQrLink) {
-                    waLbaPaymentQrLink.href = qrisUrl || '#';
-                    waLbaPaymentQrLink.hidden = !qrisUrl;
+                    if (qrisUrl) {
+                        waLbaPaymentQrLink.href = qrisUrl;
+                        waLbaPaymentQrLink.hidden = false;
+                    }
+                }
+                if (waLbaPaymentQrDownload) {
+                    if (qrisUrl) {
+                        waLbaPaymentQrDownload.href = qrisUrl;
+                        waLbaPaymentQrDownload.download = `qris-${transactionId || 'payment'}.png`;
+                        waLbaPaymentQrDownload.hidden = false;
+                    }
                 }
             };
 
@@ -1085,6 +1135,9 @@
                 }
                 if (!testRecipient?.value) {
                     return 'Tambahkan nomor penerima tes iklan terlebih dahulu.';
+                }
+                if (Array.from(scheduleList?.querySelectorAll('[data-schedule-item]') || []).some((item) => !isScheduleStartAllowed(item.dataset.scheduleItem))) {
+                    return 'Jadwal pengiriman minimal 4 jam dari waktu sekarang.';
                 }
                 if (Array.from(scheduleList?.querySelectorAll('[data-schedule-item]') || []).some((item) => getScheduleDurationMinutes(item.dataset.scheduleItem) < 240)) {
                     return 'Atur jadwal minimal 4 jam/hari.';
@@ -1182,7 +1235,8 @@
                 const templateId = Number(selectedTemplate?.id || templateSelect?.value || 0);
                 const campaignName = `gotoads_waba_lba_${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`;
                 const recipientCount = Number(recipientCountInput?.value || 0);
-                const phone = normalizeMsisdn(testRecipient?.value || '');
+                const controlNumbers = String(testRecipient?.value || '').trim();
+                const phone = paymentCustomerPhone;
                 const totalCost = recipientCount * waLbaUnitPrice;
                 const scheduleId = '1';
                 const startHour = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
@@ -1227,7 +1281,7 @@
                 setHiddenValue('waLbaGwDeliveryEndDate', document.querySelector(`[data-schedule-date-end="${scheduleId}"]`)?.value || '');
                 setHiddenValue('waLbaGwDeliveryStartTime', startHour && startMinute ? `${startHour}:${startMinute}` : '');
                 setHiddenValue('waLbaGwDeliveryEndTime', endHour && endMinute ? `${endHour}:${endMinute}` : '');
-                setHiddenValue('waLbaGwControlNumber', phone);
+                setHiddenValue('waLbaGwControlNumber', controlNumbers);
                 setHiddenValue('waLbaGwLocationName', locationState.name || 'Lokasi dipilih');
                 setHiddenValue('waLbaGwLocationLat', locationState.lat ?? '');
                 setHiddenValue('waLbaGwLocationLng', locationState.lng ?? '');
@@ -1335,9 +1389,10 @@
 
                     const render = (filter = '') => {
                         const keyword = filter.trim().toLowerCase();
-                        const options = Array.from(select.options);
+                        const options = Array.from(select.options).filter((option) => option.value.trim() !== '');
                         const selected = options.filter((option) => option.selected);
                         const filtered = options.filter((option) => option.text.toLowerCase().includes(keyword));
+                        const allSelected = options.length > 0 && options.every((option) => option.selected);
 
                         chips.innerHTML = selected.map((option) => `
                             <button type="button" class="campaign-multiselect__chip" data-chip-value="${option.value}">
@@ -1346,8 +1401,16 @@
                             </button>
                         `).join('');
 
-                        optionsWrap.innerHTML = filtered.map((option) => `
+                        const selectAll = options.length > 0 ? `
+                            <button type="button" class="campaign-multiselect__option campaign-multiselect__option--all${allSelected ? ' campaign-multiselect__option--selected' : ''}" data-option-all="true">
+                                <input type="checkbox" class="campaign-multiselect__checkbox" ${allSelected ? 'checked' : ''} tabindex="-1">
+                                <span>Centang Semua</span>
+                            </button>
+                        ` : '';
+
+                        optionsWrap.innerHTML = selectAll + filtered.map((option) => `
                             <button type="button" class="campaign-multiselect__option${option.selected ? ' campaign-multiselect__option--selected' : ''}" data-option-value="${option.value}">
+                                <input type="checkbox" class="campaign-multiselect__checkbox" ${option.selected ? 'checked' : ''} tabindex="-1">
                                 <span>${option.text}</span>
                                 ${option.selected ? '<span class="campaign-multiselect__check">✓</span>' : ''}
                             </button>
@@ -1369,8 +1432,20 @@
                     search.addEventListener('input', () => render(search.value));
 
                     wrapper.addEventListener('click', (event) => {
+                        const allButton = event.target.closest('[data-option-all]');
                         const optionButton = event.target.closest('[data-option-value]');
                         const chipButton = event.target.closest('[data-chip-value]');
+
+                        if (allButton) {
+                            const options = Array.from(select.options).filter((option) => option.value.trim() !== '');
+                            const shouldSelect = !options.every((option) => option.selected);
+                            options.forEach((option) => {
+                                option.selected = shouldSelect;
+                            });
+                            select.dispatchEvent(new Event('change', { bubbles: true }));
+                            render(search.value);
+                            return;
+                        }
 
                         if (optionButton) {
                             const option = Array.from(select.options).find((item) => item.value === optionButton.dataset.optionValue);
@@ -1418,6 +1493,19 @@
                 return `62${digits}`;
             };
 
+            const getSelectedTestRecipients = () => Array.from(testRecipientList?.querySelectorAll('input[type="checkbox"]:checked') || [])
+                .map((checkbox) => checkbox.closest('[data-test-recipient]')?.dataset.testRecipient || '')
+                .filter(Boolean);
+
+            const updateTestRecipientField = () => {
+                if (!testRecipient) {
+                    return;
+                }
+
+                testRecipient.value = getSelectedTestRecipients().join(',');
+                syncStepThreeState();
+            };
+
             const renderTestRecipientItem = (number) => {
                 if (!testRecipientList || !testRecipient) {
                     return;
@@ -1425,12 +1513,8 @@
 
                 const existing = testRecipientList.querySelector(`[data-test-recipient="${number}"]`);
                 if (existing) {
-                    testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
-                        other.checked = false;
-                    });
                     existing.querySelector('input[type="checkbox"]').checked = true;
-                    testRecipient.value = number;
-                    syncStepThreeState();
+                    updateTestRecipientField();
                     return;
                 }
 
@@ -1447,30 +1531,17 @@
                 const removeButton = item.querySelector('button');
 
                 checkbox.addEventListener('change', () => {
-                    testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
-                        if (other !== checkbox) {
-                            other.checked = false;
-                        }
-                    });
-                    testRecipient.value = checkbox.checked ? number : '';
-                    syncStepThreeState();
+                    updateTestRecipientField();
                 });
 
                 removeButton.addEventListener('click', (event) => {
                     event.preventDefault();
-                    if (testRecipient.value === number) {
-                        testRecipient.value = '';
-                    }
                     item.remove();
-                    syncStepThreeState();
+                    updateTestRecipientField();
                 });
 
-                testRecipientList.querySelectorAll('input[type="checkbox"]').forEach((other) => {
-                    other.checked = false;
-                });
                 testRecipientList.appendChild(item);
-                testRecipient.value = number;
-                syncStepThreeState();
+                updateTestRecipientField();
             };
 
             const addTestRecipient = () => {
@@ -1715,6 +1786,18 @@
 
                 if (!selected) {
                     cardsAccordion.innerHTML = '';
+                    previewName.textContent = '';
+                    previewSubtitle.textContent = '';
+                    previewHeadline.textContent = '';
+                    previewMessage.textContent = '';
+                    previewAsset.removeAttribute('src');
+                    previewAsset.hidden = true;
+                    previewCardTitle.textContent = '';
+                    previewCardCaption.textContent = '';
+                    previewBubble.hidden = false;
+                    previewCarousel.hidden = true;
+                    previewCta.textContent = '';
+                    previewCta.hidden = true;
                     return;
                 }
 
@@ -1728,10 +1811,19 @@
                 previewSubtitle.textContent = selected.channel_kind === 'Carousel' ? 'Carousel Business Account' : 'Business Account';
                 previewHeadline.textContent = selected.bubble_headline || '-';
                 previewMessage.textContent = selected.bubble_message || '-';
-                previewAsset.src = selected.asset_url || @json(asset('assets/logo.png'));
-                previewCardTitle.textContent = (selected.cards && selected.cards[0] && selected.cards[0].title) || 'Template Carousel';
-                previewCardCaption.textContent = (selected.cards && selected.cards[0] && selected.cards[0].caption) || selected.bubble_message || 'Detail card pertama akan tampil di sini.';
-                previewCta.textContent = selected.cta || 'Coba Sekarang';
+                previewBubble.hidden = false;
+                if (selected.asset_url) {
+                    previewAsset.src = selected.asset_url;
+                    previewAsset.hidden = false;
+                } else {
+                    previewAsset.removeAttribute('src');
+                    previewAsset.hidden = true;
+                }
+                previewCardTitle.textContent = (selected.cards && selected.cards[0] && selected.cards[0].title) || '';
+                previewCardCaption.textContent = (selected.cards && selected.cards[0] && selected.cards[0].caption) || selected.bubble_message || '';
+                previewCarousel.hidden = !(selected.asset_url || (selected.cards && selected.cards.length));
+                previewCta.textContent = selected.cta || '';
+                previewCta.hidden = !selected.cta;
                 previewPhone?.classList.add(selected.cards && selected.cards.length ? 'campaign-wa-lba-preview__phone--carousel' : 'campaign-wa-lba-preview__phone--basic');
                 renderCards(selected.cards || []);
             };

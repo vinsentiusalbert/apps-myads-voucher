@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\MyadsApiClient;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -11,6 +12,47 @@ use Throwable;
 
 class CampaignMenuController extends Controller
 {
+    public function termsAndConditions(): JsonResponse
+    {
+        $path = base_path('Syarat & ketentuan.docx');
+
+        if (! is_file($path) || ! class_exists(\ZipArchive::class)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dokumen syarat dan ketentuan tidak tersedia.',
+            ], 404);
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($path) !== true) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dokumen syarat dan ketentuan tidak dapat dibuka.',
+            ], 500);
+        }
+
+        $xml = $zip->getFromName('word/document.xml');
+        $zip->close();
+
+        if (! is_string($xml) || $xml === '') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Isi dokumen syarat dan ketentuan tidak ditemukan.',
+            ], 500);
+        }
+
+        $text = preg_replace('/<\/w:p[^>]*>/i', "\n", $xml) ?? $xml;
+        $text = preg_replace('/<[^>]+>/', '', $text) ?? $text;
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_XML1, 'UTF-8');
+        $paragraphs = array_values(array_filter(array_map('trim', preg_split('/\R+/', $text) ?: [])));
+
+        return response()->json([
+            'success' => true,
+            'title' => 'Syarat & Ketentuan',
+            'paragraphs' => $paragraphs,
+        ]);
+    }
+
     public function show(Request $request, string $channel, string $menu): View
     {
         $pages = $this->pages();
@@ -259,16 +301,21 @@ class CampaignMenuController extends Controller
             $accessToken = $this->requireAccessToken($request);
             $headerPathFile = '';
             $gwToken = $this->requireGatewayToken($request);
+            $accountIds = $this->resolveWabaAccountIds($request, $client, $gwToken, $validated);
 
             if ($request->hasFile('asset') && $this->mapWabaHeaderType($validated['header_type']) === 'IMAGE') {
-                $uploadResp = $client->uploadFile($accessToken, $request->file('asset'), 'MULTIMEDIA', $gwToken, $this->gatewayRefreshCallback($request, $client));
+                $uploadResp = $client->contentUpload($gwToken, $request->file('asset'), $accountIds['phoneNumberId'], $this->gatewayRefreshCallback($request, $client));
                 $headerPathFile = $this->extractUploadedFileValue($uploadResp);
+
+                if ($headerPathFile === '') {
+                    throw new RuntimeException('Upload asset berhasil dipanggil, tetapi pathFile tidak ditemukan dari response API GW.');
+                }
             }
 
             $payload = $this->buildWabaTemplatePayload(
                 $validated,
                 $headerPathFile,
-                $this->resolveWabaAccountIds($request, $client, $gwToken, $validated),
+                $accountIds,
             );
 
             $resp = $client->wabaTemplateAdd($accessToken, $payload, $gwToken, $this->gatewayRefreshCallback($request, $client));
@@ -338,9 +385,11 @@ class CampaignMenuController extends Controller
         return [
             'templateName' => trim((string) $validated['name']),
             'language' => $this->mapWabaTemplateLanguage((string) $validated['language']),
-            'headerType' => $headerType,
-            'headerLabel' => $headerType === 'TEXT' ? trim((string) ($validated['header_label'] ?? '')) : '',
-            'headerPathFile' => $headerType === 'IMAGE' ? $headerPathFile : '',
+            ...($headerType !== 'NONE' ? [
+                'headerType' => $headerType,
+                'headerLabel' => $headerType === 'TEXT' ? trim((string) ($validated['header_label'] ?? '')) : '',
+                'headerPathFile' => $headerType === 'IMAGE' ? $headerPathFile : '',
+            ] : []),
             'bodyMessage' => $validated['body'],
             'bodyType' => 'STATIC',
             'bodyPathFile' => '',

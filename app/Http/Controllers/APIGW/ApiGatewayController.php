@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
 use RuntimeException;
 use Throwable;
 
@@ -91,6 +92,50 @@ class ApiGatewayController extends Controller
 		}
 	}
 
+	public function paymentQrisDownload(Request $request)
+	{
+		$validated = $request->validate([
+			'url' => ['required', 'url', 'max:5000'],
+			'filename' => ['nullable', 'string', 'max:180'],
+		]);
+
+		$url = (string) $validated['url'];
+		$scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+		if (! in_array($scheme, ['http', 'https'], true)) {
+			abort(422, 'URL QRIS tidak valid.');
+		}
+
+		$response = Http::withHeaders([
+			'Accept' => 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+			'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari',
+		])->timeout(20)->retry(1, 200)->get($url);
+		if (! $response->successful()) {
+			abort(502, 'Gagal mengambil QRIS.');
+		}
+
+		$contentType = $response->header('Content-Type') ?: 'image/png';
+		$contentTypeLower = strtolower($contentType);
+		$body = $response->body();
+		if (! str_starts_with($contentTypeLower, 'image/') && ! str_contains($contentTypeLower, 'application/octet-stream')) {
+			abort(502, 'URL QRIS tidak mengembalikan file gambar.');
+		}
+
+		if (stripos(substr($body, 0, 300), '<html') !== false || stripos(substr($body, 0, 500), 'site wasn') !== false) {
+			abort(502, 'URL QRIS mengembalikan halaman error, bukan gambar.');
+		}
+
+		$filename = trim((string) ($validated['filename'] ?? 'qris.png'));
+		$filename = preg_replace('/[^A-Za-z0-9._-]+/', '-', $filename) ?: 'qris.png';
+		if (! str_contains($filename, '.')) {
+			$filename .= '.png';
+		}
+
+		return response($body, 200, [
+			'Content-Type' => $contentType,
+			'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+		]);
+	}
+
 	public function priceView(Request $request, MyadsApiClient $client): JsonResponse
 	{
 		try {
@@ -114,12 +159,24 @@ class ApiGatewayController extends Controller
 
 	public function profileDropdownList(Request $request, MyadsApiClient $client, string $channel): JsonResponse
 	{
-		abort_unless($channel === 'sms', 404);
+		abort_unless(in_array($channel, ['sms', 'wa-business'], true), 404);
 
 		try {
-			$resp = $client->profileDropdownList($this->requireGatewayToken($request), [
-				'profile' => 'ALL',
-			], $this->gatewayRefreshCallback($request, $client));
+			$profile = strtoupper(trim((string) $request->input('profile', 'ALL')));
+			$payload = ['profile' => $profile !== '' ? $profile : 'ALL'];
+
+			foreach (['province', 'kota', 'kecamatan'] as $field) {
+				$value = trim((string) $request->input($field, ''));
+				if ($value !== '') {
+					$payload[$field] = $value;
+				}
+			}
+
+			$resp = $client->profileDropdownList(
+				$this->requireGatewayToken($request),
+				$payload,
+				$this->gatewayRefreshCallback($request, $client)
+			);
 
 			return response()->json($resp);
 		} catch (Throwable $e) {
@@ -210,12 +267,12 @@ class ApiGatewayController extends Controller
 		$validated = $request->validate([
 			'payment_transaction_id' => ['required', 'string', 'max:128'],
 			'campaign_name' => ['nullable', 'string', 'max:255'],
-			'sender_name' => ['required', 'string', 'max:255'],
+			'sender_name' => ['required', 'string', 'max:11'],
 			'message' => ['required', 'string', 'max:1024'],
 			'recipient_total' => ['required', 'integer', 'min:1', 'max:100000'],
 			'delivery_date' => ['nullable', 'date_format:Y-m-d'],
 			'delivery_time' => ['nullable', 'date_format:H:i'],
-			'control_number' => ['required', 'string', 'max:32'],
+			'control_number' => ['required', 'string', 'max:1000'],
 			'mms_file' => ['nullable', 'string', 'max:5000'],
 			'profile_gender' => ['nullable', 'array'],
 			'profile_gender.*' => ['nullable', 'string', 'max:255'],
@@ -257,19 +314,20 @@ class ApiGatewayController extends Controller
 
 			$campaignName = $this->generateSmsTargetedCampaignName();
 			$senderName = trim((string) ($validated['sender_name'] ?? ''));
-			$message = trim((string) ($validated['message'] ?? ''));
+			$message = $this->sanitizeSmsMessage($validated['message'] ?? '');
 			$recipientTotal = (int) ($validated['recipient_total'] ?? 0);
 
 			$deliveryDate = $this->formatDateYmd($validated['delivery_date'] ?? null);
 			$deliveryTime = $this->formatTimeHiToHmm($validated['delivery_time'] ?? null);
 
-			$controlNumber = $this->normalizeMsisdn((string) ($validated['control_number'] ?? ''));
+			$controlNumbers = $this->normalizeControlNumbers((string) ($validated['control_number'] ?? ''));
 
 			$mmsFile = trim((string) ($validated['mms_file'] ?? ''));
 
-			if ($campaignName === '' || $senderName === '' || $message === '' || $recipientTotal <= 0 || $controlNumber === null || $deliveryDate === null || $deliveryTime === null) {
+			if ($campaignName === '' || $senderName === '' || $message === '' || $recipientTotal <= 0 || $controlNumbers === [] || $deliveryDate === null || $deliveryTime === null) {
 				throw new RuntimeException('Data belum lengkap. Mohon lengkapi judul, pengirim, isi pesan, jumlah penerima, jadwal kirim, dan nomor kontrol.');
 			}
+			$this->ensureScheduleStartsAtLeastFourHoursFromNow($validated['delivery_date'] ?? null, $validated['delivery_time'] ?? null);
 
 			$payload = [
 				'channel' => $mmsFile !== '' ? 'MMS' : 'SMS',
@@ -283,7 +341,7 @@ class ApiGatewayController extends Controller
 						'deliveryTime' => $deliveryTime,
 					],
 				],
-				'controlNumbers' => [$controlNumber],
+				'controlNumbers' => $controlNumbers,
 			];
 
 			if ($mmsFile !== '') {
@@ -343,7 +401,7 @@ class ApiGatewayController extends Controller
 		$validated = $request->validate([
 			'payment_transaction_id' => ['required', 'string', 'max:128'],
 			'campaign_name' => ['nullable', 'string', 'max:255'],
-			'sender_name' => ['required', 'string', 'max:255'],
+			'sender_name' => ['required', 'string', 'max:11'],
 			'message' => ['required', 'string', 'max:1024'],
 			'content_name' => ['nullable', 'string', 'max:255'],
 			'recipient_total' => ['required', 'integer', 'min:1', 'max:100000'],
@@ -351,7 +409,7 @@ class ApiGatewayController extends Controller
 			'delivery_end_date' => ['nullable', 'date_format:Y-m-d'],
 			'delivery_start_time' => ['nullable', 'date_format:H:i'],
 			'delivery_end_time' => ['nullable', 'date_format:H:i'],
-			'control_number' => ['required', 'string', 'max:32'],
+			'control_number' => ['required', 'string', 'max:1000'],
 			'location_name' => ['required', 'string', 'max:255'],
 			'location_lat' => ['required', 'numeric'],
 			'location_lng' => ['required', 'numeric'],
@@ -375,7 +433,7 @@ class ApiGatewayController extends Controller
 
 			$campaignName = $this->generateSmsLbaCampaignName();
 			$senderName = trim((string) ($validated['sender_name'] ?? ''));
-			$message = trim((string) ($validated['message'] ?? ''));
+			$message = $this->sanitizeSmsMessage($validated['message'] ?? '');
 			$contentName = trim((string) ($validated['content_name'] ?? ''));
 			if ($contentName === '') {
 				$contentName = $campaignName;
@@ -387,7 +445,7 @@ class ApiGatewayController extends Controller
 			$startTime = $this->formatTimeHiToHmm($validated['delivery_start_time'] ?? null);
 			$endTime = $this->formatTimeHiToHmm($validated['delivery_end_time'] ?? null);
 
-			$controlNumber = $this->normalizeMsisdn((string) ($validated['control_number'] ?? ''));
+			$controlNumbers = $this->normalizeControlNumbers((string) ($validated['control_number'] ?? ''));
 
 			$locationName = trim((string) ($validated['location_name'] ?? ''));
 			$lat = (float) ($validated['location_lat'] ?? 0);
@@ -398,9 +456,10 @@ class ApiGatewayController extends Controller
 				$locationType = 'ALL';
 			}
 
-			if ($campaignName === '' || $senderName === '' || $message === '' || $contentName === '' || $recipientTotal <= 0 || $controlNumber === null || $startDate === null || $endDate === null || $startTime === null || $endTime === null || $locationName === '' || $radius <= 0 || $locationType === '') {
+			if ($campaignName === '' || $senderName === '' || $message === '' || $contentName === '' || $recipientTotal <= 0 || $controlNumbers === [] || $startDate === null || $endDate === null || $startTime === null || $endTime === null || $locationName === '' || $radius <= 0 || $locationType === '') {
 				throw new RuntimeException('Data belum lengkap. Mohon lengkapi semua field sebelum mengirim campaign.');
 			}
+			$this->ensureScheduleStartsAtLeastFourHoursFromNow($validated['delivery_start_date'] ?? null, $validated['delivery_start_time'] ?? null);
 
 			$payload = [
 				'channel' => 'SMS',
@@ -416,7 +475,7 @@ class ApiGatewayController extends Controller
 						'deliveryEndTime' => $endTime,
 					],
 				],
-				'controlNumbers' => [$controlNumber],
+				'controlNumbers' => $controlNumbers,
 				'contents' => [
 					'contentName' => $contentName,
 					'message' => $message,
@@ -461,7 +520,7 @@ class ApiGatewayController extends Controller
 			'delivery_end_date' => ['required', 'date_format:Y-m-d'],
 			'delivery_start_time' => ['required', 'date_format:H:i'],
 			'delivery_end_time' => ['required', 'date_format:H:i'],
-			'control_number' => ['required', 'string', 'max:32'],
+			'control_number' => ['required', 'string', 'max:1000'],
 			'location_name' => ['required', 'string', 'max:255'],
 			'location_lat' => ['required', 'numeric'],
 			'location_lng' => ['required', 'numeric'],
@@ -492,7 +551,7 @@ class ApiGatewayController extends Controller
 			$endDate = $this->formatDateYmd($validated['delivery_end_date'] ?? null);
 			$startTime = $this->formatTimeHiToHmm($validated['delivery_start_time'] ?? null);
 			$endTime = $this->formatTimeHiToHmm($validated['delivery_end_time'] ?? null);
-			$controlNumber = $this->normalizeMsisdn((string) ($validated['control_number'] ?? ''));
+			$controlNumbers = $this->normalizeControlNumbers((string) ($validated['control_number'] ?? ''));
 			$locationName = trim((string) ($validated['location_name'] ?? ''));
 			$lat = (float) ($validated['location_lat'] ?? 0);
 			$lng = (float) ($validated['location_lng'] ?? 0);
@@ -504,9 +563,10 @@ class ApiGatewayController extends Controller
 				$locationType = 'ALL';
 			}
 
-			if ($campaignName === '' || $recipientTotal <= 0 || $wabaUserTemplateId <= 0 || $controlNumber === null || $startDate === null || $endDate === null || $startTime === null || $endTime === null || $locationName === '' || $radius <= 0 || $locationType === '') {
+			if ($campaignName === '' || $recipientTotal <= 0 || $wabaUserTemplateId <= 0 || $controlNumbers === [] || $startDate === null || $endDate === null || $startTime === null || $endTime === null || $locationName === '' || $radius <= 0 || $locationType === '') {
 				throw new RuntimeException('Data belum lengkap. Mohon lengkapi semua field sebelum mengirim campaign WABA LBA.');
 			}
+			$this->ensureScheduleStartsAtLeastFourHoursFromNow($validated['delivery_start_date'] ?? null, $validated['delivery_start_time'] ?? null);
 
 			$payload = [
 				'campaignName' => $campaignName,
@@ -518,7 +578,7 @@ class ApiGatewayController extends Controller
 					'deliveryStartDate' => $startDate,
 					'deliveryStartTime' => $startTime,
 				],
-				'controlNumbers' => [$controlNumber],
+				'controlNumbers' => $controlNumbers,
 				'contents' => [
 					'locations' => [
 						'address' => $locationName,
@@ -571,7 +631,7 @@ class ApiGatewayController extends Controller
 			'recipient_total' => ['required', 'integer', 'min:1', 'max:100000'],
 			'delivery_date' => ['required', 'date_format:Y-m-d'],
 			'delivery_time' => ['required', 'date_format:H:i'],
-			'control_number' => ['required', 'string', 'max:32'],
+			'control_number' => ['required', 'string', 'max:1000'],
 			'profile_gender' => ['nullable', 'string', 'max:500'],
 			'profile_age' => ['nullable', 'string', 'max:500'],
 			'profile_mobile_data_subs' => ['nullable', 'string', 'max:500'],
@@ -601,13 +661,14 @@ class ApiGatewayController extends Controller
 
 			$deliveryDate = $this->formatDateYmd($validated['delivery_date'] ?? null);
 			$deliveryTime = $this->formatTimeHiToHmm($validated['delivery_time'] ?? null);
-			$controlNumber = $this->normalizeMsisdn((string) ($validated['control_number'] ?? ''));
+			$controlNumbers = $this->normalizeControlNumbers((string) ($validated['control_number'] ?? ''));
 			$recipientTotal = (int) ($validated['recipient_total'] ?? 0);
 			$wabaUserTemplateId = (int) ($validated['waba_user_template_id'] ?? 0);
 
-			if ($campaignName === '' || $wabaUserTemplateId <= 0 || $recipientTotal <= 0 || $deliveryDate === null || $deliveryTime === null || $controlNumber === null) {
+			if ($campaignName === '' || $wabaUserTemplateId <= 0 || $recipientTotal <= 0 || $deliveryDate === null || $deliveryTime === null || $controlNumbers === []) {
 				throw new RuntimeException('Data belum lengkap. Mohon lengkapi semua field sebelum mengirim campaign WABA Targeted.');
 			}
+			$this->ensureScheduleStartsAtLeastFourHoursFromNow($validated['delivery_date'] ?? null, $validated['delivery_time'] ?? null);
 
 			$emptyToNull = static function (?string $value): ?string {
 				$value = trim((string) $value);
@@ -635,7 +696,7 @@ class ApiGatewayController extends Controller
 						'deliveryTime' => $deliveryTime,
 					],
 				],
-				'controlNumbers' => [$controlNumber],
+				'controlNumbers' => $controlNumbers,
 			];
 
 			$resp = $client->wabaTargetedAdd($this->requireGatewayToken($request), $payload, $this->gatewayRefreshCallback($request, $client));
@@ -880,6 +941,31 @@ class ApiGatewayController extends Controller
 		return $m[1] . $m[2];
 	}
 
+	private function ensureScheduleStartsAtLeastFourHoursFromNow(?string $date, ?string $time): void
+	{
+		$date = trim((string) $date);
+		$time = trim((string) $time);
+		if ($date === '' || $time === '') {
+			throw new RuntimeException('Jadwal pengiriman belum lengkap.');
+		}
+
+		try {
+			$startAt = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$time}", config('app.timezone'));
+		} catch (Throwable) {
+			throw new RuntimeException('Format jadwal pengiriman tidak valid.');
+		}
+
+		if ($startAt->lt(Carbon::now(config('app.timezone'))->addHours(4))) {
+			throw new RuntimeException('Jadwal pengiriman minimal 4 jam dari waktu sekarang.');
+		}
+	}
+
+	private function sanitizeSmsMessage(mixed $value): string
+	{
+		$message = preg_replace('/[\r\n\t]+/', ' ', (string) $value) ?? (string) $value;
+		return trim($message);
+	}
+
 	private function pipeProfileValue(array $values, array $map = [], bool $uppercase = false): ?string
 	{
 		$cleaned = array_values(array_unique(array_filter(array_map(static function ($value) use ($map, $uppercase): string {
@@ -891,6 +977,15 @@ class ApiGatewayController extends Controller
 		}, $values), static fn (string $value): bool => $value !== '')));
 
 		return $cleaned === [] ? null : implode('|', $cleaned);
+	}
+
+	private function normalizeControlNumbers(string $value): array
+	{
+		$numbers = preg_split('/[,|]+/', $value) ?: [];
+
+		return array_values(array_unique(array_filter(array_map(function ($number): ?string {
+			return $this->normalizeMsisdn((string) $number);
+		}, $numbers), static fn (?string $number): bool => $number !== null && $number !== '')));
 	}
 
 	private function normalizeMsisdn(string $value): ?string
