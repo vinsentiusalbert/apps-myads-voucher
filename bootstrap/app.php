@@ -1,7 +1,5 @@
 <?php
 
-use App\Http\Middleware\ApiSessionAuthenticate;
-use App\Http\Middleware\RedirectIfApiSessionAuthenticated;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -14,9 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'auth' => ApiSessionAuthenticate::class,
-            'guest' => RedirectIfApiSessionAuthenticated::class,
+            'api-session-guest' => \App\Http\Middleware\RedirectIfApiSessionAuthenticated::class,
+            'api-session-auth' => \App\Http\Middleware\ApiSessionAuthenticate::class,
         ]);
+        $middleware->appendToGroup('web', \App\Http\Middleware\EnsureMyadsTokens::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

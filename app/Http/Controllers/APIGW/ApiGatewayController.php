@@ -49,7 +49,16 @@ class ApiGatewayController extends Controller
 				'product_detail' => $validated['product_detail'] ?? 'Advertisement Payment',
 			];
 
-			$resp = $client->paymentInitiate($accessToken, $payload);
+			try {
+				$resp = $client->paymentInitiate($accessToken, $payload);
+			} catch (Throwable $e) {
+				if (! $this->isUnauthorizedError($e)) {
+					throw $e;
+				}
+
+				$accessToken = $this->ensureValidAccessToken($request, $client, true);
+				$resp = $client->paymentInitiate($accessToken, $payload);
+			}
 			return response()->json($resp);
 		} catch (Throwable $e) {
 			return response()->json([
@@ -63,7 +72,17 @@ class ApiGatewayController extends Controller
 	{
 		try {
 			$accessToken = $this->ensureValidAccessToken($request, $client);
-			$resp = $client->paymentStatus($accessToken, $transactionId);
+
+			try {
+				$resp = $client->paymentStatus($accessToken, $transactionId);
+			} catch (Throwable $e) {
+				if (! $this->isUnauthorizedError($e)) {
+					throw $e;
+				}
+
+				$accessToken = $this->ensureValidAccessToken($request, $client, true);
+				$resp = $client->paymentStatus($accessToken, $transactionId);
+			}
 			return response()->json($resp);
 		} catch (Throwable $e) {
 			return response()->json([
@@ -824,33 +843,73 @@ class ApiGatewayController extends Controller
 	 * Ensure access token is valid, auto-refresh jika sudah expired
 	 * Throws exception jika refresh gagal
 	 */
-	private function ensureValidAccessToken(Request $request, MyadsApiClient $client): string
+	private function ensureValidAccessToken(Request $request, MyadsApiClient $client, bool $forceRefresh = false): string
 	{
-		try {
-			$accessToken = $this->requireAccessToken($request);
+		$accessToken = (string) $request->session()->get('myads.access_token', '');
+		if (! $forceRefresh && $accessToken !== '' && ! $this->isAccessTokenExpired($accessToken)) {
 			return $accessToken;
-		} catch (RuntimeException $e) {
-			// Token kosong, coba refresh
-			$refreshToken = (string) $request->session()->get('myads.refresh_token', '');
-			if (trim($refreshToken) === '') {
-				throw new RuntimeException('Session expired. Silakan login ulang.');
-			}
-
-			try {
-				$resp = $client->refreshAccessToken($refreshToken);
-				$newAccessToken = (string) data_get($resp, 'data.access_token', '');
-				if (trim($newAccessToken) === '') {
-					throw new RuntimeException('Token akses tidak valid dari server.');
-				}
-
-				// Update session dengan token baru
-				$request->session()->put('myads.access_token', $newAccessToken);
-
-				return $newAccessToken;
-			} catch (Throwable $refreshError) {
-				throw new RuntimeException('Token sudah kadaluarsa dan refresh gagal. Silakan login ulang.');
-			}
 		}
+
+		$refreshToken = (string) $request->session()->get('myads.refresh_token', '');
+		if (trim($refreshToken) === '') {
+			throw new RuntimeException('Session expired. Silakan login ulang.');
+		}
+
+		try {
+			$resp = $client->refreshAccessToken($refreshToken);
+			$newAccessToken = (string) data_get($resp, 'data.access_token', '');
+			if (trim($newAccessToken) === '') {
+				throw new RuntimeException('Token akses tidak valid dari server.');
+			}
+
+			$request->session()->put('myads.access_token', $newAccessToken);
+
+			return $newAccessToken;
+		} catch (Throwable $refreshError) {
+			throw new RuntimeException('Token sudah kadaluarsa dan refresh gagal. Silakan login ulang.');
+		}
+	}
+
+	private function isUnauthorizedError(Throwable $e): bool
+	{
+		return str_contains(strtolower($e->getMessage()), 'unauthorized');
+	}
+
+	private function isAccessTokenExpired(string $token): bool
+	{
+		$payload = $this->decodeJwtPayload($token);
+		if (! is_array($payload)) {
+			return false;
+		}
+
+		$exp = $payload['exp'] ?? null;
+		if (! is_numeric($exp)) {
+			return false;
+		}
+
+		return time() >= ((int) $exp - 60);
+	}
+
+	private function decodeJwtPayload(string $token): ?array
+	{
+		$parts = explode('.', $token);
+		if (count($parts) < 2) {
+			return null;
+		}
+
+		$payload = str_replace(['-', '_'], ['+', '/'], $parts[1]);
+		$padding = strlen($payload) % 4;
+		if ($padding > 0) {
+			$payload .= str_repeat('=', 4 - $padding);
+		}
+
+		$decoded = base64_decode($payload, true);
+		if ($decoded === false) {
+			return null;
+		}
+
+		$json = json_decode($decoded, true);
+		return is_array($json) ? $json : null;
 	}
 
 	private function formatDateYmd(?string $value): ?string

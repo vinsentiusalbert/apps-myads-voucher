@@ -11,9 +11,8 @@ class AuthLoginTest extends TestCase
     {
         $response = $this->get('/');
 
-        $response->assertOk();
-        $response->assertSee('Masuk akun MyAds');
-        $response->assertSee(route('password.request'));
+        $response->assertStatus(401);
+        $response->assertSee('Akses Ditolak');
     }
 
     public function test_register_page_requires_merchant_and_partner_context(): void
@@ -62,7 +61,8 @@ class AuthLoginTest extends TestCase
     {
         $response = $this->get('/dashboard');
 
-        $response->assertRedirect('/');
+        $response->assertStatus(401);
+        $response->assertSee('Akses Ditolak');
     }
 
     public function test_authenticated_user_can_open_dashboard(): void

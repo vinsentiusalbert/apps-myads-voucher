@@ -127,8 +127,8 @@
                     </div>
                     <div class="portal-topbar__actions">
                         <div class="portal-user">
-                            <span class="portal-user__avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
-                            <span class="portal-user__name">{{ auth()->user()->name }}</span>
+                            <span class="portal-user__avatar">{{ strtoupper(substr(session('myads.user.name', 'U'), 0, 1)) }}</span>
+                            <span class="portal-user__name">{{ session('myads.user.name', 'User') }}</span>
                         </div>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
