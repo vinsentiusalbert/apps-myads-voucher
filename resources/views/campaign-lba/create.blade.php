@@ -195,7 +195,7 @@
                 </div>
             </section>
 
-            <section class="campaign-block">
+            <section class="campaign-block" hidden aria-hidden="true">
                 <h2 class="campaign-block__title">Atur Profil Target</h2>
                 <p class="campaign-block__copy">
                     Anda dapat membuat target lebih spesifik dengan menentukan profil dan lokasi penerima. Semakin banyak profil dan lokasi yang dipilih akan mengurangi jumlah penerima iklan Anda, sehingga menurunkan jumlah iklan yang ditampilkan pada laman situs yang dikunjungi.

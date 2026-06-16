@@ -229,7 +229,7 @@
                     </div>
                 </div>
 
-                <div class="campaign-step-two__section">
+                <div class="campaign-step-two__section" hidden aria-hidden="true" style="display: none">
                     <h2 class="campaign-block__title">Atur Profil Target</h2>
                     <p class="campaign-block__copy">
                         Anda dapat membuat target lebih spesifik dengan menentukan profil dan lokasi penerima. Semakin banyak profil yang dipilih akan memengaruhi estimasi penerima potensial.
