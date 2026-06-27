@@ -2175,11 +2175,13 @@ a {
 .campaign-step--completed .campaign-step__dot {
     background: #0d274c;
     color: transparent;
+    font-size: 0;
 }
 
 .campaign-step--completed .campaign-step__dot::before {
     content: '✓';
     color: #ffffff;
+    font-size: 0.8rem;
 }
 
 .campaign-step--completed .campaign-step__label {

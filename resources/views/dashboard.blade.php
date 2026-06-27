@@ -108,6 +108,12 @@
                 </div>
             </div>
 
+            <div class="portal-balance__cta-wrap">
+                <button type="button" class="portal-balance__cta" data-campaign-category-open>
+                    Buat Iklan
+                </button>
+            </div>
+
             {{-- <div class="portal-balance__bottom">
                 <span>{{ $expiryLabel }}</span>
                 <span>{{ $expiryLabel }}</span>

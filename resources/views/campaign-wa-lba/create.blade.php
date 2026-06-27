@@ -295,7 +295,7 @@
                     <div class="campaign-send-grid">
                         <div class="field-group campaign-field-group--compact">
                             <label for="waLbaRecipientCount" class="field-label">Jumlah Penerima</label>
-                            <input id="waLbaRecipientCount" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
+                            <input id="waLbaRecipientCount" type="number" class="text-input" min="5" value="0" placeholder="Jumlah Penerima">
                             <p class="campaign-step-two__alert" data-wa-lba-recipient-count-alert>Jumlah penerima minimal 5 perhari</p>
                             <p class="campaign-block__copy">Berdasarkan policy Meta, batas maksimum kuota pengiriman Anda dalam satu hari sebesar 100.000 pesan.</p>
                         </div>
@@ -315,9 +315,9 @@
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label">Tanggal Kirim</label>
                                     <div class="campaign-range-field">
-                                        <input id="waLbaScheduleDate1Start" type="date" class="text-input" value="{{ now()->addDay()->toDateString() }}" data-schedule-date-start="1">
+                                        <input id="waLbaScheduleDate1Start" type="date" class="text-input" value="{{ now()->addDay()->toDateString() }}" min="{{ now()->toDateString() }}" data-schedule-date-start="1">
                                         <span class="campaign-range-field__separator">-</span>
-                                        <input id="waLbaScheduleDate1End" type="date" class="text-input" value="{{ now()->addDay()->toDateString() }}" data-schedule-date-end="1">
+                                        <input id="waLbaScheduleDate1End" type="date" class="text-input" value="{{ now()->addDay()->toDateString() }}" min="{{ now()->toDateString() }}" data-schedule-date-end="1">
                                     </div>
                                     <p class="campaign-range-preview" id="waLbaScheduleDatePreview1">{{ now()->addDay()->format('d/m/y') }} - {{ now()->addDay()->format('d/m/y') }}</p>
                                 </div>
@@ -537,7 +537,7 @@
                             </div>
                             <div class="campaign-review-total">
                                 <span>Total Pesan yang akan dikirim</span>
-                                <strong id="waLbaReviewRecipientCount">5 Pesan</strong>
+                                <strong id="waLbaReviewRecipientCount">0 Pesan</strong>
                             </div>
                             <p class="campaign-review-note">dari estimasi <span id="waLbaReviewPotentialRange">0</span> penerima potensial</p>
                         </div>
@@ -578,6 +578,10 @@
                                     <strong class="campaign-cost-card__danger" id="waLbaReviewPayment">Rp 5.500</strong>
                                 </div>
                             </div>
+                            @include('partials.payment-invoice-email', [
+                                'inputId' => 'waLbaPaymentInvoiceEmail',
+                                'checkboxId' => 'waLbaPaymentInvoiceEmailCheck',
+                            ])
                             <p class="campaign-payment-error" id="waLbaPaymentError" hidden></p>
                             <p class="campaign-payment-hint" id="waLbaPaymentHint" hidden></p>
                             <button type="button" class="campaign-cost-card__cta" id="waLbaGwSubmitButton">Bayar & Kirim Iklan</button>
@@ -748,6 +752,9 @@
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
             const csrfToken = "{{ csrf_token() }}";
             const paymentCustomerPhone = '62811456234';
+            const defaultInvoiceEmail = 'myads@telkomsel.com';
+            const waLbaPaymentInvoiceEmail = document.getElementById('waLbaPaymentInvoiceEmail');
+            const waLbaPaymentInvoiceEmailCheck = document.getElementById('waLbaPaymentInvoiceEmailCheck');
             const waLbaUnitPrice = 1100;
             const defaultMapCenter = {
                 lat: -6.1944491,
@@ -861,13 +868,16 @@
 
             const applyDefaultDeliverySchedule = (scheduleId) => {
                 const defaults = defaultDeliverySchedule();
+                const minDate = toDateInputValue(new Date());
                 const dateStart = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`);
                 const dateEnd = document.querySelector(`[data-schedule-date-end="${scheduleId}"]`);
 
                 if (dateStart) {
+                    dateStart.min = minDate;
                     dateStart.value = defaults.startDate;
                 }
                 if (dateEnd) {
+                    dateEnd.min = minDate;
                     dateEnd.value = defaults.endDate;
                 }
 
@@ -885,6 +895,12 @@
                 const timeEndMinute = document.querySelector(`[data-schedule-time-end-minute="${scheduleId}"]`);
                 const datePreview = document.getElementById(`waLbaScheduleDatePreview${scheduleId}`);
                 const timePreview = document.getElementById(`waLbaScheduleTimePreview${scheduleId}`);
+
+                [dateStart, dateEnd].forEach((field) => {
+                    if (field?.min && field.value && field.value < field.min) {
+                        field.value = field.min;
+                    }
+                });
 
                 if (datePreview && dateStart && dateEnd) {
                     datePreview.textContent = `${formatScheduleDate(dateStart.value)} - ${formatScheduleDate(dateEnd.value)}`;
@@ -1199,6 +1215,19 @@
                 throw new Error('Timeout menunggu pembayaran. Silakan coba lagi.');
             };
 
+            const resolvePaymentInvoiceEmail = () => {
+                if (!waLbaPaymentInvoiceEmailCheck?.checked) {
+                    return defaultInvoiceEmail;
+                }
+
+                const email = waLbaPaymentInvoiceEmail?.value?.trim() || '';
+                if (!email || !waLbaPaymentInvoiceEmail?.checkValidity()) {
+                    throw new Error('Email invoice tidak valid.');
+                }
+
+                return email;
+            };
+
             const initiatePayment = async (amount, phone, detail) => {
                 const response = await fetch(paymentInitiateUrl, {
                     method: 'POST',
@@ -1210,6 +1239,7 @@
                     body: JSON.stringify({
                         transaction_amount: amount,
                         customer_phone: phone,
+                        customer_email: resolvePaymentInvoiceEmail(),
                         product_category: 'MYADS',
                         product_type: 'ADVERTISEMENT',
                         product_detail: detail,
@@ -1572,9 +1602,9 @@
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label">Tanggal Kirim</label>
                             <div class="campaign-range-field">
-                                <input id="waLbaScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${defaults.startDate}" data-schedule-date-start="${scheduleIndex}">
+                                <input id="waLbaScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${defaults.startDate}" min="${toDateInputValue(new Date())}" data-schedule-date-start="${scheduleIndex}">
                                 <span class="campaign-range-field__separator">-</span>
-                                <input id="waLbaScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${defaults.endDate}" data-schedule-date-end="${scheduleIndex}">
+                                <input id="waLbaScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${defaults.endDate}" min="${toDateInputValue(new Date())}" data-schedule-date-end="${scheduleIndex}">
                             </div>
                             <p class="campaign-range-preview" id="waLbaScheduleDatePreview${scheduleIndex}">${formatScheduleDate(defaults.startDate)} - ${formatScheduleDate(defaults.endDate)}</p>
                         </div>
