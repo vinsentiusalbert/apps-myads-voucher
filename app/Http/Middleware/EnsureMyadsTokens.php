@@ -16,8 +16,12 @@ class EnsureMyadsTokens
         
         // Check session-based auth (SSO flow) - NO Laravel Auth needed
         $accessToken = (string) $session->get('myads.access_token', '');
-        
-        if (trim($accessToken) === '' && ! $this->isPublicRoute($request)) {
+
+        if ($this->isPublicRoute($request)) {
+            return $next($request);
+        }
+
+        if (trim($accessToken) === '') {
             return response()->view('errors.401', [], 401);
         }
 
@@ -31,15 +35,20 @@ class EnsureMyadsTokens
                 $newAccessToken = (string) data_get($resp, 'data.access_token', '');
                 if (trim($newAccessToken) !== '') {
                     $session->put('myads.access_token', $newAccessToken);
+                    $accessToken = $newAccessToken;
                 }
             } catch (Throwable) {
                 // Leave the session intact; refresh will be retried later.
             }
         }
 
+        if (trim((string) $session->get('myads.access_token', $accessToken)) === '') {
+            return response()->view('errors.401', [], 401);
+        }
+
         // Fetch gateway token kalau belum ada
         $gwToken = (string) $session->get('myads.gw_token', '');
-        if ($gwToken === '') {
+        if (trim($gwToken) === '') {
             try {
                 $freshAccessToken = (string) $session->get('myads.access_token', '');
                 if (trim($freshAccessToken) !== '') {
@@ -47,11 +56,16 @@ class EnsureMyadsTokens
                     $freshGwToken = $client->extractGatewayToken($gwResp);
                     if ($freshGwToken !== '') {
                         $session->put('myads.gw_token', $freshGwToken);
+                        $gwToken = $freshGwToken;
                     }
                 }
             } catch (Throwable) {
                 // Optional token refresh; ignore failures.
             }
+        }
+
+        if (trim($gwToken) === '') {
+            return response()->view('errors.401', [], 401);
         }
 
         return $next($request);
@@ -71,6 +85,7 @@ class EnsureMyadsTokens
                 'password.email',
                 'password.reset',
                 'password.store',
+                'logout',
             ], true);
         }
 

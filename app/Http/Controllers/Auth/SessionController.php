@@ -12,8 +12,9 @@ class SessionController extends Controller
     {
         // Check if user already has valid session from API/SSO
         $accessToken = session('myads.access_token', '');
-        
-        if (trim($accessToken) !== '') {
+        $gatewayToken = session('myads.gw_token', '');
+
+        if (trim($accessToken) !== '' && trim($gatewayToken) !== '') {
             return redirect()->route('dashboard');
         }
 

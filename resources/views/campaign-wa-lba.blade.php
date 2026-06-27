@@ -282,7 +282,7 @@
                     <div class="campaign-send-grid">
                         <div class="field-group campaign-field-group--compact">
                             <label for="waLbaRecipientCount" class="field-label">Jumlah Penerima</label>
-                            <input id="waLbaRecipientCount" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
+                            <input id="waLbaRecipientCount" type="number" class="text-input" min="5" value="0" placeholder="Jumlah Penerima">
                             <p class="campaign-step-two__alert">Minimal 5 jumlah penerima perhari</p>
                             {{-- <p class="campaign-block__copy">Berdasarkan policy Meta, batas maksimum kuota pengiriman Anda dalam satu hari sebesar 100.000 pesan.</p> --}}
                         </div>
@@ -305,11 +305,11 @@
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label">Tanggal Kirim</label>
                                     <div class="campaign-range-field">
-                                        <input id="waLbaScheduleDate1Start" type="date" class="text-input" value="2026-04-27" data-schedule-date-start="1">
+                                        <input id="waLbaScheduleDate1Start" type="date" class="text-input" value="{{ now()->addDay()->toDateString() }}" min="{{ now()->toDateString() }}" data-schedule-date-start="1">
                                         <span class="campaign-range-field__separator">-</span>
-                                        <input id="waLbaScheduleDate1End" type="date" class="text-input" value="2026-04-27" data-schedule-date-end="1">
+                                        <input id="waLbaScheduleDate1End" type="date" class="text-input" value="{{ now()->addDay()->toDateString() }}" min="{{ now()->toDateString() }}" data-schedule-date-end="1">
                                     </div>
-                                    <p class="campaign-range-preview" id="waLbaScheduleDatePreview1">27/04/26 - 27/04/26</p>
+                                    <p class="campaign-range-preview" id="waLbaScheduleDatePreview1">{{ now()->addDay()->format('d/m/y') }} - {{ now()->addDay()->format('d/m/y') }}</p>
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label">Jam Kirim</label>
@@ -516,7 +516,7 @@
                             </div>
                             <div class="campaign-review-total">
                                 <span>Total Pesan yang akan dikirim</span>
-                                <strong id="waLbaReviewRecipientCount">5 Pesan</strong>
+                                <strong id="waLbaReviewRecipientCount">0 Pesan</strong>
                             </div>
                             <p class="campaign-review-note">dari estimasi <span id="waLbaReviewPotentialRange">0</span> penerima potensial</p>
                         </div>
@@ -747,6 +747,19 @@
                 return `${day}/${month}/${year.slice(-2)}`;
             };
 
+            const toDateInputValue = (date) => {
+                const pad = (value) => String(value).padStart(2, '0');
+                return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+            };
+
+            const todayDateValue = () => toDateInputValue(new Date());
+
+            const tomorrowDateValue = () => {
+                const date = new Date();
+                date.setDate(date.getDate() + 1);
+                return toDateInputValue(date);
+            };
+
             const syncSchedulePreview = (scheduleId) => {
                 const dateStart = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`);
                 const dateEnd = document.querySelector(`[data-schedule-date-end="${scheduleId}"]`);
@@ -756,6 +769,12 @@
                 const timeEndMinute = document.querySelector(`[data-schedule-time-end-minute="${scheduleId}"]`);
                 const datePreview = document.getElementById(`waLbaScheduleDatePreview${scheduleId}`);
                 const timePreview = document.getElementById(`waLbaScheduleTimePreview${scheduleId}`);
+
+                [dateStart, dateEnd].forEach((field) => {
+                    if (field?.min && field.value && field.value < field.min) {
+                        field.value = field.min;
+                    }
+                });
 
                 if (datePreview && dateStart && dateEnd) {
                     datePreview.textContent = `${formatScheduleDate(dateStart.value)} - ${formatScheduleDate(dateEnd.value)}`;
@@ -1012,11 +1031,11 @@
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label">Tanggal Kirim</label>
                             <div class="campaign-range-field">
-                                <input id="waLbaScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="2026-04-27" data-schedule-date-start="${scheduleIndex}">
+                                <input id="waLbaScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${tomorrowDateValue()}" min="${todayDateValue()}" data-schedule-date-start="${scheduleIndex}">
                                 <span class="campaign-range-field__separator">-</span>
-                                <input id="waLbaScheduleDate${scheduleIndex}End" type="date" class="text-input" value="2026-04-27" data-schedule-date-end="${scheduleIndex}">
+                                <input id="waLbaScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${tomorrowDateValue()}" min="${todayDateValue()}" data-schedule-date-end="${scheduleIndex}">
                             </div>
-                            <p class="campaign-range-preview" id="waLbaScheduleDatePreview${scheduleIndex}">27/04/26 - 27/04/26</p>
+                            <p class="campaign-range-preview" id="waLbaScheduleDatePreview${scheduleIndex}">${formatScheduleDate(tomorrowDateValue())} - ${formatScheduleDate(tomorrowDateValue())}</p>
                         </div>
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label">Jam Kirim</label>

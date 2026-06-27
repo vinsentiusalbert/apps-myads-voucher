@@ -19,6 +19,7 @@ class ApiGatewayController extends Controller
 		$validated = $request->validate([
 			'transaction_amount' => ['required', 'numeric', 'min:1'],
 			'customer_phone' => ['required', 'string', 'max:32'],
+			'customer_email' => ['nullable', 'email', 'max:255'],
 			'product_category' => ['nullable', 'string', 'max:255'],
 			'product_type' => ['nullable', 'string', 'max:255'],
 			'product_detail' => ['nullable', 'string', 'max:500'],
@@ -27,16 +28,26 @@ class ApiGatewayController extends Controller
 		try {
 			$accessToken = $this->ensureValidAccessToken($request, $client);
 			$user = $request->user();
-			$email = is_object($user) ? (string) ($user->email ?? '') : '';
+			$sessionUser = $request->session()->get('myads.user', []);
+			$defaultEmail = 'myads@telkomsel.com';
+			$email = (string) ($validated['customer_email'] ?? '');
+			if (trim($email) === '') {
+				$email = is_object($user) ? (string) ($user->email ?? '') : '';
+			}
+			if (trim($email) === '' && is_array($sessionUser)) {
+				$email = (string) ($sessionUser['email'] ?? '');
+			}
+			if (trim($email) === '') {
+				$email = $defaultEmail;
+			}
 			$name = is_object($user) ? (string) ($user->name ?? '') : '';
+			if (trim($name) === '' && is_array($sessionUser)) {
+				$name = (string) ($sessionUser['name'] ?? '');
+			}
 
 			$phone = $this->normalizeMsisdn((string) ($validated['customer_phone'] ?? ''));
 			if ($phone === null) {
 				throw new RuntimeException('Nomor telepon tidak valid.');
-			}
-
-			if (trim($email) === '') {
-				throw new RuntimeException('Email user tidak tersedia. Silakan login ulang.');
 			}
 
 			$payload = [

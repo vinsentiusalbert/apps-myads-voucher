@@ -346,7 +346,7 @@
                     <div class="campaign-send-grid">
                         <div class="field-group campaign-field-group--compact">
                             <label for="waTargetedRecipientCount" class="field-label">Jumlah Penerima</label>
-                            <input id="waTargetedRecipientCount" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
+                            <input id="waTargetedRecipientCount" type="number" class="text-input" min="5" value="0" placeholder="Jumlah Penerima">
                             <p class="campaign-step-two__alert" data-wa-targeted-recipient-count-alert>Jumlah penerima minimal 5 perhari</p>
                         </div>
                         <strong id="waTargetedEstimate" hidden>-</strong>
@@ -365,11 +365,11 @@
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label" for="waTargetedScheduleDate1Start">Tgl Kirim</label>
                                     <div class="campaign-range-field">
-                                        <input id="waTargetedScheduleDate1Start" type="date" class="text-input" value="{{ now()->toDateString() }}" data-wa-targeted-schedule-date-start="1">
+                                        <input id="waTargetedScheduleDate1Start" type="date" class="text-input" value="{{ now()->addDay()->toDateString() }}" min="{{ now()->toDateString() }}" data-wa-targeted-schedule-date-start="1">
                                         <span class="campaign-range-field__separator">-</span>
-                                        <input id="waTargetedScheduleDate1End" type="date" class="text-input" value="{{ now()->toDateString() }}" data-wa-targeted-schedule-date-end="1">
+                                        <input id="waTargetedScheduleDate1End" type="date" class="text-input" value="{{ now()->addDay()->toDateString() }}" min="{{ now()->toDateString() }}" data-wa-targeted-schedule-date-end="1">
                                     </div>
-                                    <p class="campaign-range-preview" id="waTargetedScheduleDatePreview1">{{ now()->format('d/m/y') }} - {{ now()->format('d/m/y') }}</p>
+                                    <p class="campaign-range-preview" id="waTargetedScheduleDatePreview1">{{ now()->addDay()->format('d/m/y') }} - {{ now()->addDay()->format('d/m/y') }}</p>
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label" for="waTargetedScheduleTime1">Jam Kirim</label>
@@ -574,7 +574,7 @@
                             </div>
                             <div class="campaign-review-total">
                                 <span>Total Pesan yang akan dikirim</span>
-                                <strong id="waTargetedReviewRecipientCount">5 Pesan</strong>
+                                <strong id="waTargetedReviewRecipientCount">0 Pesan</strong>
                             </div>
                             <p class="campaign-review-note">dari estimasi <span id="waTargetedReviewPotentialRange">-</span> penerima potensial</p>
                         </div>
@@ -615,6 +615,10 @@
                                     <strong class="campaign-cost-card__danger" id="waTargetedReviewPayment">Rp 5.500</strong>
                                 </div>
                             </div>
+                            @include('partials.payment-invoice-email', [
+                                'inputId' => 'waTargetedPaymentInvoiceEmail',
+                                'checkboxId' => 'waTargetedPaymentInvoiceEmailCheck',
+                            ])
                             <p class="campaign-payment-error" id="waTargetedPaymentError" hidden></p>
                             <p class="campaign-payment-hint" id="waTargetedPaymentHint" hidden></p>
                             <button type="button" class="campaign-cost-card__cta" id="waTargetedGwSubmitButton">Bayar & Kirim Iklan</button>
@@ -722,9 +726,12 @@
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
             const csrfToken = "{{ csrf_token() }}";
             const paymentCustomerPhone = '62811456234';
+            const defaultInvoiceEmail = 'myads@telkomsel.com';
             const waTargetedUnitPrice = 1100;
             const waTargetedPaymentError = document.getElementById('waTargetedPaymentError');
             const waTargetedPaymentHint = document.getElementById('waTargetedPaymentHint');
+            const waTargetedPaymentInvoiceEmail = document.getElementById('waTargetedPaymentInvoiceEmail');
+            const waTargetedPaymentInvoiceEmailCheck = document.getElementById('waTargetedPaymentInvoiceEmailCheck');
             const waTargetedProfileLoading = document.getElementById('waTargetedProfileLoading');
             let profileDropdownSource = null;
             let scheduleIndex = 1;
@@ -1324,13 +1331,16 @@
 
             const applyDefaultDeliverySchedule = (scheduleId) => {
                 const defaults = defaultDeliverySchedule();
+                const minDate = todayDateValue();
                 const dateStart = document.querySelector(`[data-wa-targeted-schedule-date-start="${scheduleId}"]`);
                 const dateEnd = document.querySelector(`[data-wa-targeted-schedule-date-end="${scheduleId}"]`);
 
                 if (dateStart) {
+                    dateStart.min = minDate;
                     dateStart.value = defaults.startDate;
                 }
                 if (dateEnd) {
+                    dateEnd.min = minDate;
                     dateEnd.value = defaults.endDate;
                 }
 
@@ -1370,6 +1380,12 @@
                 const timeEndMinute = document.querySelector(`[data-wa-targeted-schedule-time-end-minute="${scheduleId}"]`);
                 const datePreview = document.getElementById(`waTargetedScheduleDatePreview${scheduleId}`);
                 const timePreview = document.getElementById(`waTargetedScheduleTimePreview${scheduleId}`);
+
+                [dateStart, dateEnd].forEach((field) => {
+                    if (field?.min && field.value && field.value < field.min) {
+                        field.value = field.min;
+                    }
+                });
 
                 if (datePreview && dateStart && dateEnd) {
                     datePreview.textContent = `${formatScheduleDate(dateStart.value)} - ${formatScheduleDate(dateEnd.value)}`;
@@ -1646,6 +1662,19 @@
                 throw new Error('Timeout menunggu pembayaran. Silakan coba lagi.');
             };
 
+            const resolvePaymentInvoiceEmail = () => {
+                if (!waTargetedPaymentInvoiceEmailCheck?.checked) {
+                    return defaultInvoiceEmail;
+                }
+
+                const email = waTargetedPaymentInvoiceEmail?.value?.trim() || '';
+                if (!email || !waTargetedPaymentInvoiceEmail?.checkValidity()) {
+                    throw new Error('Email invoice tidak valid.');
+                }
+
+                return email;
+            };
+
             const initiatePayment = async (amount, phone, detail) => {
                 const response = await fetch(paymentInitiateUrl, {
                     method: 'POST',
@@ -1657,6 +1686,7 @@
                     body: JSON.stringify({
                         transaction_amount: amount,
                         customer_phone: phone,
+                        customer_email: resolvePaymentInvoiceEmail(),
                         product_category: 'MYADS',
                         product_type: 'ADVERTISEMENT',
                         product_detail: detail,
@@ -1909,9 +1939,9 @@
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label" for="waTargetedScheduleDate${scheduleIndex}Start">Tgl Kirim</label>
                             <div class="campaign-range-field">
-                                <input id="waTargetedScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${defaults.startDate}" data-wa-targeted-schedule-date-start="${scheduleIndex}">
+                                <input id="waTargetedScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${defaults.startDate}" min="${todayDateValue()}" data-wa-targeted-schedule-date-start="${scheduleIndex}">
                                 <span class="campaign-range-field__separator">-</span>
-                                <input id="waTargetedScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${defaults.endDate}" data-wa-targeted-schedule-date-end="${scheduleIndex}">
+                                <input id="waTargetedScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${defaults.endDate}" min="${todayDateValue()}" data-wa-targeted-schedule-date-end="${scheduleIndex}">
                             </div>
                             <p class="campaign-range-preview" id="waTargetedScheduleDatePreview${scheduleIndex}">${formatScheduleDate(defaults.startDate)} - ${formatScheduleDate(defaults.endDate)}</p>
                         </div>

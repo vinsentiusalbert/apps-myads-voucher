@@ -54,11 +54,16 @@ class SsoController extends Controller
             $gwResp = $client->getGatewayToken($accessToken);
             $gwToken = $client->extractGatewayToken($gwResp);
 
-            if ($gwToken !== '') {
-                $request->session()->put('myads.gw_token', $gwToken);
+            if ($gwToken === '') {
+                throw new \RuntimeException('Gagal ambil token gateway (format response tidak sesuai).');
             }
+
+            $request->session()->put('myads.gw_token', $gwToken);
         } catch (Throwable) {
-            // Gateway token is optional; will be refreshed later if needed.
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            abort(401, 'Token gateway tidak ditemukan. Silakan login ulang melalui SSO.');
         }
 
         return redirect()->route('dashboard');

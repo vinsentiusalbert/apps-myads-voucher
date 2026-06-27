@@ -12,8 +12,9 @@ class RedirectIfApiSessionAuthenticated
     {
         $user = $request->session()->get('myads.user');
         $accessToken = (string) $request->session()->get('myads.access_token', '');
+        $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
 
-        if (is_array($user) && trim($accessToken) !== '') {
+        if (is_array($user) && trim($accessToken) !== '' && trim($gatewayToken) !== '') {
             return redirect()->route('dashboard');
         }
 

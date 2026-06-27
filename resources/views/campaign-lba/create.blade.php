@@ -418,7 +418,7 @@
                     <div class="campaign-send-grid">
                         <div class="field-group campaign-field-group--compact">
                             <label for="campaignRecipientCount" class="field-label">Jumlah Penerima</label>
-                            <input id="campaignRecipientCount" name="recipient_total" form="campaignGwSubmitForm" type="number" class="text-input" min="5" value="5" placeholder="Jumlah Penerima">
+                            <input id="campaignRecipientCount" name="recipient_total" form="campaignGwSubmitForm" type="number" class="text-input" min="5" value="0" placeholder="Jumlah Penerima">
                             <p class="campaign-step-two__alert" data-recipient-count-alert>Jumlah penerima minimal 5 perhari</p>
                         </div>
                         <strong id="campaignStepTwoEstimate" hidden>-</strong>
@@ -437,11 +437,11 @@
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label" for="campaignScheduleDate1">Tgl Kirim</label>
                                     <div class="campaign-range-field">
-                                        <input id="campaignScheduleDate1Start" name="delivery_start_date" form="campaignGwSubmitForm" type="date" class="text-input" value="2026-04-24" data-schedule-date-start="1">
+                                        <input id="campaignScheduleDate1Start" name="delivery_start_date" form="campaignGwSubmitForm" type="date" class="text-input" value="{{ now()->addDay()->toDateString() }}" min="{{ now()->toDateString() }}" data-schedule-date-start="1">
                                         <span class="campaign-range-field__separator">-</span>
-                                        <input id="campaignScheduleDate1End" name="delivery_end_date" form="campaignGwSubmitForm" type="date" class="text-input" value="2026-04-24" data-schedule-date-end="1">
+                                        <input id="campaignScheduleDate1End" name="delivery_end_date" form="campaignGwSubmitForm" type="date" class="text-input" value="{{ now()->addDay()->toDateString() }}" min="{{ now()->toDateString() }}" data-schedule-date-end="1">
                                     </div>
-                                    <p class="campaign-range-preview" id="campaignScheduleDatePreview1">24/04/26 - 24/04/26</p>
+                                    <p class="campaign-range-preview" id="campaignScheduleDatePreview1">{{ now()->addDay()->format('d/m/y') }} - {{ now()->addDay()->format('d/m/y') }}</p>
                                 </div>
                                 <div class="field-group campaign-field-group--compact">
                                     <label class="field-label" for="campaignScheduleTime1">Jam Kirim</label>
@@ -639,7 +639,7 @@
                         </div>
                         <div class="campaign-review-total">
                             <span>Total Pesan yang akan dikirim</span>
-                            <strong id="campaignReviewRecipientCount">5 Pesan</strong>
+                            <strong id="campaignReviewRecipientCount">0 Pesan</strong>
                         </div>
                         <p class="campaign-review-note">dari estimasi <span id="campaignReviewPotentialRange">-</span> penerima potensial</p>
                     </div>
@@ -680,6 +680,10 @@
                                     <strong class="campaign-cost-card__danger">Rp 0</strong>
                                 </div>
                             </div>
+                            @include('partials.payment-invoice-email', [
+                                'inputId' => 'campaignPaymentInvoiceEmail',
+                                'checkboxId' => 'campaignPaymentInvoiceEmailCheck',
+                            ])
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
                             @include('partials.payment-qris-modal', [
                                 'modalId' => 'campaignPaymentModal',
@@ -1274,13 +1278,16 @@
 
         const applyDefaultDeliverySchedule = (scheduleId) => {
             const defaults = defaultDeliverySchedule();
+            const minDate = toDateInputValue(new Date());
             const dateStart = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`);
             const dateEnd = document.querySelector(`[data-schedule-date-end="${scheduleId}"]`);
 
             if (dateStart) {
+                dateStart.min = minDate;
                 dateStart.value = defaults.startDate;
             }
             if (dateEnd) {
+                dateEnd.min = minDate;
                 dateEnd.value = defaults.endDate;
             }
 
@@ -1313,6 +1320,12 @@
             const datePreview = document.getElementById(`campaignScheduleDatePreview${scheduleId}`);
             const timePreview = document.getElementById(`campaignScheduleTimePreview${scheduleId}`);
 
+            [dateStart, dateEnd].forEach((field) => {
+                if (field?.min && field.value && field.value < field.min) {
+                    field.value = field.min;
+                }
+            });
+
             if (datePreview && dateStart && dateEnd) {
                 datePreview.textContent = `${formatScheduleDate(dateStart.value)} - ${formatScheduleDate(dateEnd.value)}`;
             }
@@ -1326,6 +1339,10 @@
 
         const unitPrice = Number("{{ (int) ($unitPrice ?? 0) }}") || 0;
         const formatUnitPrice = () => unitPrice > 0 ? formatCurrency(unitPrice) : '-';
+        const getSmsSegmentCount = () => {
+            const messageLength = sanitizeSmsBody(messageInput?.value || '').length;
+            return Math.max(1, Math.ceil(messageLength / 160));
+        };
 
         const hasTargetedProfileFilters = () => targetedProfileFields.some((field) => field?.value?.trim());
 
@@ -1356,7 +1373,7 @@
             const testRecipient = document.getElementById('campaignTestRecipient');
             const recipientCount = Number(document.getElementById('campaignRecipientCount')?.value || 0);
             const radius = Number(locationRadiusInput?.value || 0);
-            const totalCost = unitPrice > 0 ? recipientCount * unitPrice : 0;
+            const totalCost = unitPrice > 0 ? recipientCount * unitPrice * getSmsSegmentCount() : 0;
             const totalCostLabel = unitPrice > 0 ? formatCurrency(totalCost) : '-';
 
             setText('campaignReviewTitle', titleInput?.value?.trim() || 'Tanpa Judul');
@@ -1566,9 +1583,9 @@
                         <div class="field-group campaign-field-group--compact">
                             <label class="field-label" for="campaignScheduleDate${scheduleIndex}Start">Tgl Kirim</label>
                             <div class="campaign-range-field">
-                                <input id="campaignScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${defaults.startDate}" data-schedule-date-start="${scheduleIndex}">
+                                <input id="campaignScheduleDate${scheduleIndex}Start" type="date" class="text-input" value="${defaults.startDate}" min="${toDateInputValue(new Date())}" data-schedule-date-start="${scheduleIndex}">
                                 <span class="campaign-range-field__separator">-</span>
-                                <input id="campaignScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${defaults.endDate}" data-schedule-date-end="${scheduleIndex}">
+                                <input id="campaignScheduleDate${scheduleIndex}End" type="date" class="text-input" value="${defaults.endDate}" min="${toDateInputValue(new Date())}" data-schedule-date-end="${scheduleIndex}">
                             </div>
                             <p class="campaign-range-preview" id="campaignScheduleDatePreview${scheduleIndex}">${formatScheduleDate(defaults.startDate)} - ${formatScheduleDate(defaults.endDate)}</p>
                         </div>
@@ -1757,7 +1774,7 @@
             const message = sanitizedValue.trim();
             messagePreview.innerHTML = message ? linkifyMessage(message) : 'Preview pesan akan muncul di sini.';
             const messageLength = sanitizedValue.length;
-            const smsCount = Math.max(1, Math.ceil(messageLength / 160));
+            const smsCount = getSmsSegmentCount();
             messageCount.textContent = `${messageLength}/${smsCount * 160} karakter (${smsCount}SMS)`;
         };
 
@@ -2188,6 +2205,9 @@
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
             const csrfToken = "{{ csrf_token() }}";
             const paymentCustomerPhone = '62811456234';
+            const defaultInvoiceEmail = 'myads@telkomsel.com';
+            const paymentInvoiceEmail = document.getElementById('campaignPaymentInvoiceEmail');
+            const paymentInvoiceEmailCheck = document.getElementById('campaignPaymentInvoiceEmailCheck');
 
             const paymentPanel = document.getElementById('campaignPaymentPanel');
             const paymentStatusLabel = document.getElementById('campaignPaymentStatus');
@@ -2207,6 +2227,19 @@
         };
 
         const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+        const resolvePaymentInvoiceEmail = () => {
+            if (!paymentInvoiceEmailCheck?.checked) {
+                return defaultInvoiceEmail;
+            }
+
+            const email = paymentInvoiceEmail?.value?.trim() || '';
+            if (!email || !paymentInvoiceEmail?.checkValidity()) {
+                throw new Error('Email invoice tidak valid.');
+            }
+
+            return email;
+        };
 
         const setPaymentUi = ({ status, transactionId, qrisUrl } = {}) => {
             const paymentModal = paymentPanel?.closest('.campaign-payment-modal');
@@ -2290,6 +2323,7 @@
                 body: JSON.stringify({
                     transaction_amount: amount,
                     customer_phone: phone,
+                    customer_email: resolvePaymentInvoiceEmail(),
                     product_category: 'MYADS',
                     product_type: 'ADVERTISEMENT',
                     product_detail: detail,
@@ -2316,7 +2350,7 @@
             }
 
             const recipientCount = Number(document.getElementById('campaignRecipientCount')?.value || 0);
-            const totalCost = unitPrice > 0 ? recipientCount * unitPrice : 0;
+            const totalCost = unitPrice > 0 ? recipientCount * unitPrice * getSmsSegmentCount() : 0;
             const controlNumbers = String(document.getElementById('campaignTestRecipient')?.value || '').trim();
             const phone = paymentCustomerPhone;
             const title = String(titleInput?.value || '').trim() || 'Tanpa Judul';
