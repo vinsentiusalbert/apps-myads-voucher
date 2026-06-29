@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Services\MyadsApiClient;
 use Illuminate\Support\Facades\Http;
+use Mockery;
+use RuntimeException;
 use Tests\TestCase;
 
 class AuthLoginTest extends TestCase
@@ -60,6 +63,66 @@ class AuthLoginTest extends TestCase
     public function test_guest_is_redirected_from_dashboard(): void
     {
         $response = $this->get('/dashboard');
+
+        $response->assertStatus(401);
+        $response->assertSee('Akses Ditolak');
+    }
+
+    public function test_sso_complete_without_token_shows_access_denied(): void
+    {
+        $response = $this->get('/sso/complete?merchant_id=merchant-001');
+
+        $response->assertStatus(401);
+        $response->assertSee('Akses Ditolak');
+    }
+
+    public function test_sso_complete_without_merchant_context_shows_access_denied(): void
+    {
+        $response = $this->get('/sso/complete?access_token=token-001');
+
+        $response->assertStatus(401);
+        $response->assertSee('Akses Ditolak');
+    }
+
+    public function test_sso_complete_api_user_error_shows_access_denied(): void
+    {
+        $client = Mockery::mock(MyadsApiClient::class);
+        $client->shouldReceive('getMe')
+            ->once()
+            ->with('token-001')
+            ->andThrow(new RuntimeException('SSO error'));
+
+        $this->app->instance(MyadsApiClient::class, $client);
+
+        $response = $this->get('/sso/complete?access_token=token-001&merchant_id=merchant-001');
+
+        $response->assertStatus(401);
+        $response->assertSee('Akses Ditolak');
+    }
+
+    public function test_sso_complete_gateway_token_error_shows_access_denied(): void
+    {
+        $client = Mockery::mock(MyadsApiClient::class);
+        $client->shouldReceive('getMe')
+            ->once()
+            ->with('token-001')
+            ->andReturn([
+                'data' => [
+                    'user' => [
+                        'id' => 'user-001',
+                        'name' => 'SSO User',
+                        'email' => 'sso-user@example.test',
+                    ],
+                ],
+            ]);
+        $client->shouldReceive('getGatewayToken')
+            ->once()
+            ->with('token-001')
+            ->andThrow(new RuntimeException('Gateway error'));
+
+        $this->app->instance(MyadsApiClient::class, $client);
+
+        $response = $this->get('/sso/complete?access_token=token-001&merchant_id=merchant-001');
 
         $response->assertStatus(401);
         $response->assertSee('Akses Ditolak');

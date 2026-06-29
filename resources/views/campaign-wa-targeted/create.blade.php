@@ -641,6 +641,7 @@
                                 <input type="hidden" name="delivery_date" id="waTargetedGwDeliveryDate" value="">
                                 <input type="hidden" name="delivery_time" id="waTargetedGwDeliveryTime" value="">
                                 <input type="hidden" name="control_number" id="waTargetedGwControlNumber" value="">
+                                <input type="hidden" name="email_invoice" id="waTargetedGwCustomerEmail" value="">
                                 <input type="hidden" name="profile_gender" id="waTargetedGwProfileGender" value="">
                                 <input type="hidden" name="profile_age" id="waTargetedGwProfileAge" value="">
                                 <input type="hidden" name="profile_mobile_data_subs" id="waTargetedGwProfileMobileDataSubs" value="">
@@ -1547,6 +1548,12 @@
                 waTargetedPaymentError.hidden = message === '';
             };
 
+            const normalizePaymentErrorMessage = (message = '') => {
+                return String(message).toLowerCase().includes('unauthorized')
+                    ? 'Session expired. Silakan login ulang.'
+                    : (message || 'Gagal memproses pembayaran.');
+            };
+
             const getPaymentReadinessMessage = () => {
                 const recipientCount = Number(recipientCountInput?.value || 0);
                 const selectedTemplate = templates.find((template) => String(template.id) === String(templateSelect?.value));
@@ -1748,6 +1755,7 @@
                 submitButton.classList.add('is-loading');
                 submitButton.textContent = 'Menyiapkan pembayaran...';
 
+                const invoiceEmail = resolvePaymentInvoiceEmail();
                 const initiateResp = await initiatePayment(totalCost, phone, `WABA Targeted - ${campaignName}`);
                 const transactionId = String(initiateResp?.data?.transaction_id || '').trim();
                 const qrisUrl = String(initiateResp?.data?.qris_url || '').trim();
@@ -1770,6 +1778,7 @@
                 setHiddenValue('waTargetedGwDeliveryDate', deliveryDate);
                 setHiddenValue('waTargetedGwDeliveryTime', `${startHour}:${startMinute}`);
                 setHiddenValue('waTargetedGwControlNumber', controlNumbers);
+                setHiddenValue('waTargetedGwCustomerEmail', invoiceEmail);
                 setHiddenValue('waTargetedGwProfileGender', pipeValues('waTargetedGender', { M: 'm', F: 'f' }));
                 setHiddenValue('waTargetedGwProfileAge', pipeValues('waTargetedAge'));
                 setHiddenValue('waTargetedGwProfileMobileDataSubs', pipeValues('waTargetedDataPackage'));
@@ -2211,7 +2220,7 @@
                 try {
                     await submitWabaTargetedAfterPayment();
                 } catch (error) {
-                    const message = error?.message || 'Gagal mengirim campaign WABA Targeted.';
+                    const message = normalizePaymentErrorMessage(error?.message ? String(error.message) : 'Gagal mengirim campaign WABA Targeted.');
                     setPaymentUi({ status: 'FAILED' });
                     setPaymentError(message);
                     if (submitButton) {

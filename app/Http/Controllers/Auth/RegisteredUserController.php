@@ -29,12 +29,12 @@ class RegisteredUserController extends Controller
 
         try {
             $contextResp = $client->registrationContext($merchantId, $partnerId);
-        } catch (\Throwable $e) {
-            $contextMessage = $this->cleanApiMessage($e->getMessage());
+        } catch (\Throwable) {
+            abort(401, 'Akses Ditolak');
         }
 
         if ($contextResp !== [] && ! (bool) data_get($contextResp, 'success', false)) {
-            $contextMessage = $this->cleanApiMessage((string) (data_get($contextResp, 'message') ?: 'Konteks register tidak valid.'));
+            abort(401, 'Akses Ditolak');
         }
 
         $resolvedMerchantId = (string) data_get($contextResp, 'data.merchant_id', $merchantId);

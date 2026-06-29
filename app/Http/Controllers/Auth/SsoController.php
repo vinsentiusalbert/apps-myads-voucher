@@ -6,12 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Services\MyadsApiClient;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Response;
 use Throwable;
 
 class SsoController extends Controller
 {
-    public function complete(Request $request, MyadsApiClient $client): RedirectResponse
+    public function complete(Request $request, MyadsApiClient $client): RedirectResponse|Response
     {
         $accessToken = (string) ($request->query('access_token') ?? $request->query('token') ?? '');
         $refreshToken = (string) ($request->query('refresh_token') ?? '');
@@ -19,11 +19,11 @@ class SsoController extends Controller
         $partnerId = (string) ($request->query('partner_id') ?? '');
 
         if (trim($accessToken) === '') {
-            abort(401, 'Unauthorized. Access must be via SSO.');
+            return $this->accessDenied();
         }
 
         if (trim($merchantId) === '') {
-            abort(422, 'Merchant ID tidak ditemukan.');
+            return $this->accessDenied();
         }
 
         // 🔄 FETCH user data dari API (source of truth)
@@ -32,7 +32,7 @@ class SsoController extends Controller
             $apiUserData = $client->getMe($accessToken);
             $apiUser = $apiUserData['data']['user'] ?? null;
         } catch (Throwable) {
-            // Fallback: API user fetch optional
+            return $this->accessDenied();
         }
 
         // Store session tanpa DB
@@ -63,9 +63,14 @@ class SsoController extends Controller
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
-            abort(401, 'Token gateway tidak ditemukan. Silakan login ulang melalui SSO.');
+            return $this->accessDenied();
         }
 
         return redirect()->route('dashboard');
+    }
+
+    private function accessDenied(): Response
+    {
+        return response()->view('errors.401', [], 401);
     }
 }
