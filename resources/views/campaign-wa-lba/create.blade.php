@@ -612,6 +612,7 @@
                                 <input type="hidden" name="location_radius" id="waLbaGwLocationRadius" value="">
                                 <input type="hidden" name="location_type" id="waLbaGwLocationType" value="ALL">
                                 <input type="hidden" name="recipient_max" id="waLbaGwRecipientMax" value="">
+                                <input type="hidden" name="email_invoice" id="waLbaGwCustomerEmail" value="">
                                 <input type="hidden" name="profile_gender" id="waLbaGwProfileGender" value="">
                                 <input type="hidden" name="profile_age" id="waLbaGwProfileAge" value="">
                                 <input type="hidden" name="profile_religion" id="waLbaGwProfileReligion" value="">
@@ -1099,6 +1100,12 @@
                 waLbaPaymentError.hidden = message === '';
             };
 
+            const normalizePaymentErrorMessage = (message = '') => {
+                return String(message).toLowerCase().includes('unauthorized')
+                    ? 'Session expired. Silakan login ulang.'
+                    : (message || 'Gagal memproses pembayaran.');
+            };
+
             const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
             const setPaymentUi = ({ status, transactionId, qrisUrl } = {}) => {
@@ -1288,6 +1295,7 @@
                 waLbaGwSubmitButton.classList.add('is-loading');
                 waLbaGwSubmitButton.textContent = 'Menyiapkan pembayaran...';
 
+                const invoiceEmail = resolvePaymentInvoiceEmail();
                 const initiateResp = await initiatePayment(totalCost, phone, `WABA LBA - ${campaignName}`);
                 const transactionId = String(initiateResp?.data?.transaction_id || '').trim();
                 const qrisUrl = String(initiateResp?.data?.qris_url || '').trim();
@@ -1318,6 +1326,7 @@
                 setHiddenValue('waLbaGwLocationRadius', Number(locationRadiusInput?.value || 0));
                 setHiddenValue('waLbaGwLocationType', 'ALL');
                 setHiddenValue('waLbaGwRecipientMax', estimateRange?.textContent || '');
+                setHiddenValue('waLbaGwCustomerEmail', invoiceEmail);
                 setHiddenValue('waLbaGwProfileGender', mapProfileValues(selectedValues(genderSelect), { male: 'm', female: 'f' }));
                 setHiddenValue('waLbaGwProfileAge', mapProfileValues(selectedValues(ageSelect)));
                 setHiddenValue('waLbaGwProfileReligion', mapProfileValues(selectedValues(religionSelect)));
@@ -1971,7 +1980,7 @@
                 try {
                     await submitWabaLbaAfterPayment();
                 } catch (error) {
-                    const message = error?.message ? String(error.message) : 'Gagal memproses pembayaran.';
+                    const message = normalizePaymentErrorMessage(error?.message ? String(error.message) : '');
                     setPaymentUi({ status: 'FAILED' });
                     setPaymentError(message);
                     waLbaGwSubmitButton.classList.remove('is-loading');

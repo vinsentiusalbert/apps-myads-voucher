@@ -689,6 +689,7 @@
                                 'inputId' => 'campaignPaymentInvoiceEmail',
                                 'checkboxId' => 'campaignPaymentInvoiceEmailCheck',
                             ])
+                            <p class="campaign-payment-error" id="campaignPaymentError" hidden></p>
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
                             @include('partials.payment-qris-modal', [
                                 'modalId' => 'campaignPaymentModal',
@@ -703,6 +704,7 @@
                                 @csrf
                                 <input type="hidden" name="campaign_name" id="campaign_title" value="{{ $autoCampaignName }}">
                                 <input type="hidden" name="delivery_time" id="gwDeliveryTime">
+                                <input type="hidden" name="email_invoice" id="gwCustomerEmail" value="">
                                 <input type="hidden" name="payment_transaction_id" id="gwPaymentTransactionId" value="">
                             </form>
                         </div>
@@ -2413,6 +2415,7 @@
             const gwSubmitButton = document.getElementById('campaignGwSubmitButton');
             const gwSubmitForm = document.getElementById('campaignGwSubmitForm');
             const gwDeliveryTime = document.getElementById('gwDeliveryTime');
+            const gwCustomerEmail = document.getElementById('gwCustomerEmail');
             const gwPaymentTransactionId = document.getElementById('gwPaymentTransactionId');
 
             const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
@@ -2422,6 +2425,7 @@
             const defaultInvoiceEmail = 'myads@telkomsel.com';
             const paymentInvoiceEmail = document.getElementById('campaignPaymentInvoiceEmail');
             const paymentInvoiceEmailCheck = document.getElementById('campaignPaymentInvoiceEmailCheck');
+            const paymentError = document.getElementById('campaignPaymentError');
 
             const paymentPanel = document.getElementById('campaignPaymentPanel');
             const paymentStatusLabel = document.getElementById('campaignPaymentStatus');
@@ -2435,6 +2439,21 @@
             };
 
             const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+            const normalizePaymentErrorMessage = (message = '') => {
+                return String(message).toLowerCase().includes('unauthorized')
+                    ? 'Session expired. Silakan login ulang.'
+                    : (message || 'Gagal memproses pembayaran.');
+            };
+
+            const setPaymentError = (message = '') => {
+                if (!paymentError) {
+                    return;
+                }
+
+                paymentError.textContent = message;
+                paymentError.hidden = message === '';
+            };
 
             const resolvePaymentInvoiceEmail = () => {
                 if (!paymentInvoiceEmailCheck?.checked) {
@@ -2549,9 +2568,11 @@
             };
 
             const submitCampaignAfterPayment = async () => {
-                if (!gwSubmitForm || !gwDeliveryTime || !gwPaymentTransactionId) {
+                if (!gwSubmitForm || !gwDeliveryTime || !gwCustomerEmail || !gwPaymentTransactionId) {
                     return;
                 }
+
+                setPaymentError('');
 
                 if (!testRecipientField?.value && testRecipientInput?.value?.trim()) {
                     addTestRecipient();
@@ -2573,6 +2594,7 @@
                 gwSubmitButton.disabled = true;
                 gwSubmitButton.textContent = 'Menyiapkan pembayaran...';
 
+                const invoiceEmail = resolvePaymentInvoiceEmail();
                 const initiateResp = await initiatePayment(totalCost, phone, `SMS TARGETED - ${title}`);
                 const transactionId = String(initiateResp?.data?.transaction_id || '').trim();
                 const qrisUrl = String(initiateResp?.data?.qris_url || '').trim();
@@ -2594,6 +2616,7 @@
                 const hourValue = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
                 const minuteValue = pickScheduleValue(`[data-schedule-time-start-minute="${scheduleId}"]`);
                 gwDeliveryTime.value = hourValue && minuteValue ? `${hourValue}:${minuteValue}` : '';
+                gwCustomerEmail.value = invoiceEmail;
 
                 gwSubmitForm.submit();
             };
@@ -2602,11 +2625,11 @@
                 try {
                     await submitCampaignAfterPayment();
                 } catch (error) {
-                    const message = error?.message ? String(error.message) : 'Gagal memproses pembayaran.';
+                    const message = normalizePaymentErrorMessage(error?.message ? String(error.message) : '');
                     setPaymentUi({ status: 'FAILED' });
+                    setPaymentError(message);
                     gwSubmitButton.disabled = false;
                     gwSubmitButton.textContent = 'Bayar & Kirim Iklan';
-                    window.alert(message);
                 }
             });
         })();

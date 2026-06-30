@@ -19,7 +19,7 @@ class ApiGatewayController extends Controller
 		$validated = $request->validate([
 			'transaction_amount' => ['required', 'numeric', 'min:1'],
 			'customer_phone' => ['required', 'string', 'max:32'],
-			'customer_email' => ['nullable', 'email', 'max:255'],
+			'email_invoice' => ['nullable', 'email', 'max:255'],
 			'product_category' => ['nullable', 'string', 'max:255'],
 			'product_type' => ['nullable', 'string', 'max:255'],
 			'product_detail' => ['nullable', 'string', 'max:500'],
@@ -277,6 +277,7 @@ class ApiGatewayController extends Controller
 
 		$validated = $request->validate([
 			'payment_transaction_id' => ['required', 'string', 'max:128'],
+			'email_invoice' => ['nullable', 'email', 'max:255'],
 			'campaign_name' => ['nullable', 'string', 'max:255'],
 			'sender_name' => ['required', 'string', 'max:11'],
 			'message' => ['required', 'string', 'max:1024'],
@@ -324,6 +325,7 @@ class ApiGatewayController extends Controller
 			$gwToken = $this->requireGatewayToken($request);
 
 			$campaignName = $this->generateSmsTargetedCampaignName();
+			$emailInvoice = $this->resolveInvoiceEmail($validated['email_invoice'] ?? null);
 			$senderName = trim((string) ($validated['sender_name'] ?? ''));
 			$message = $this->sanitizeSmsMessage($validated['message'] ?? '');
 			$recipientTotal = (int) ($validated['recipient_total'] ?? 0);
@@ -342,6 +344,8 @@ class ApiGatewayController extends Controller
 
 			$payload = [
 				'channel' => $mmsFile !== '' ? 'MMS' : 'SMS',
+				'email_invoice' => $emailInvoice,
+				'send_invoice' => true,
 				'campaignName' => $campaignName,
 				'message' => $message,
 				'senderName' => $senderName,
@@ -411,6 +415,7 @@ class ApiGatewayController extends Controller
 
 		$validated = $request->validate([
 			'payment_transaction_id' => ['required', 'string', 'max:128'],
+			'email_invoice' => ['nullable', 'email', 'max:255'],
 			'campaign_name' => ['nullable', 'string', 'max:255'],
 			'sender_name' => ['required', 'string', 'max:11'],
 			'message' => ['required', 'string', 'max:1024'],
@@ -443,6 +448,7 @@ class ApiGatewayController extends Controller
 			$gwToken = $this->requireGatewayToken($request);
 
 			$campaignName = $this->generateSmsLbaCampaignName();
+			$emailInvoice = $this->resolveInvoiceEmail($validated['email_invoice'] ?? null);
 			$senderName = trim((string) ($validated['sender_name'] ?? ''));
 			$message = $this->sanitizeSmsMessage($validated['message'] ?? '');
 			$contentName = trim((string) ($validated['content_name'] ?? ''));
@@ -474,6 +480,8 @@ class ApiGatewayController extends Controller
 
 			$payload = [
 				'channel' => 'SMS',
+				'email_invoice' => $emailInvoice,
+				'send_invoice' => true,
 				'campaignName' => $campaignName,
 				'message' => $message,
 				'senderName' => $senderName,
@@ -524,6 +532,7 @@ class ApiGatewayController extends Controller
 	{
 		$validated = $request->validate([
 			'payment_transaction_id' => ['required', 'string', 'max:128'],
+			'email_invoice' => ['nullable', 'email', 'max:255'],
 			'campaign_name' => ['nullable', 'string', 'max:255'],
 			'recipient_total' => ['required', 'integer', 'min:1', 'max:100000'],
 			'waba_user_template_id' => ['required', 'integer', 'min:1'],
@@ -556,6 +565,7 @@ class ApiGatewayController extends Controller
 			if ($campaignName === '') {
 				$campaignName = $this->generateWabaLbaCampaignName();
 			}
+			$emailInvoice = $this->resolveInvoiceEmail($validated['email_invoice'] ?? null);
 			$recipientTotal = (int) ($validated['recipient_total'] ?? 0);
 			$wabaUserTemplateId = (int) ($validated['waba_user_template_id'] ?? 0);
 			$startDate = $this->formatDateYmd($validated['delivery_start_date'] ?? null);
@@ -580,6 +590,8 @@ class ApiGatewayController extends Controller
 			$this->ensureScheduleStartsAtLeastFourHoursFromNow($validated['delivery_start_date'] ?? null, $validated['delivery_start_time'] ?? null);
 
 			$payload = [
+				'email_invoice' => $emailInvoice,
+				'send_invoice' => true,
 				'campaignName' => $campaignName,
 				'recepientTotal' => $recipientTotal,
 				'wabaUserTemplateId' => $wabaUserTemplateId,
@@ -637,6 +649,7 @@ class ApiGatewayController extends Controller
 	{
 		$validated = $request->validate([
 			'payment_transaction_id' => ['required', 'string', 'max:128'],
+			'email_invoice' => ['nullable', 'email', 'max:255'],
 			'campaign_name' => ['nullable', 'string', 'max:255'],
 			'waba_user_template_id' => ['required', 'integer', 'min:1'],
 			'recipient_total' => ['required', 'integer', 'min:1', 'max:100000'],
@@ -669,6 +682,7 @@ class ApiGatewayController extends Controller
 			if ($campaignName === '') {
 				$campaignName = $this->generateWabaTargetedCampaignName();
 			}
+			$emailInvoice = $this->resolveInvoiceEmail($validated['email_invoice'] ?? null);
 
 			$deliveryDate = $this->formatDateYmd($validated['delivery_date'] ?? null);
 			$deliveryTime = $this->formatTimeHiToHmm($validated['delivery_time'] ?? null);
@@ -687,6 +701,8 @@ class ApiGatewayController extends Controller
 			};
 
 			$payload = [
+				'email_invoice' => $emailInvoice,
+				'send_invoice' => true,
 				'wabaUserTemplateId' => $wabaUserTemplateId,
 				'campaignName' => $campaignName,
 				'profileGender' => $emptyToNull($validated['profile_gender'] ?? null),
@@ -730,6 +746,13 @@ class ApiGatewayController extends Controller
 	private function generateSmsLbaCampaignName(): string
 	{
 		return 'gotoads_sms_lba_' . now()->format('YmdHis');
+	}
+
+	private function resolveInvoiceEmail(?string $email): string
+	{
+		$email = trim((string) $email);
+
+		return $email !== '' ? $email : 'myads@telkomsel.com';
 	}
 
 	private function generateSmsTargetedCampaignName(): string
