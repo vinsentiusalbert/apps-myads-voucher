@@ -64,15 +64,15 @@ class EnsureMyadsTokens
             }
         }
 
-        // Admin tidak perlu gw_token — mereka tidak menggunakan fitur campaign API Gateway.
-        // Non-admin (merchant) wajib punya gw_token untuk mengakses halaman campaign.
-        $user = $session->get('myads.user');
-        $userRole = is_array($user) ? (string) ($user['role'] ?? 'user') : 'user';
-        $isAdmin = $userRole === 'admin';
+        // // Admin tidak perlu gw_token — mereka tidak menggunakan fitur campaign API Gateway.
+        // // Non-admin (merchant) wajib punya gw_token untuk mengakses halaman campaign.
+        // $user = $session->get('myads.user');
+        // $userRole = is_array($user) ? (string) ($user['role'] ?? 'user') : 'user';
+        // $isAdmin = $userRole === 'admin';
 
-        if (! $isAdmin && trim($gwToken) === '') {
-            return response()->view('errors.401', [], 401);
-        }
+        // if (! $isAdmin && trim($gwToken) === '') {
+        //     return response()->view('errors.401', [], 401);
+        // }
 
         return $next($request);
 
