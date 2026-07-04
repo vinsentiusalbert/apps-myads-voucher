@@ -486,12 +486,24 @@ class MyadsApiClient
     {
         $requestPayload = $payload === [] ? new stdClass() : $payload;
 
+        $accessToken = '';
         try {
-            $response = $this->client()
-                ->withHeaders([
-                    'x-api-gw-token' => $gatewayToken,
-                ])
-                ->post($path, $requestPayload);
+            if (function_exists('session')) {
+                $accessToken = (string) session('myads.access_token', '');
+            }
+        } catch (\Throwable) {
+        }
+
+        try {
+            $client = $this->client()->withHeaders([
+                'x-api-gw-token' => $gatewayToken,
+            ]);
+
+            if (trim($accessToken) !== '') {
+                $client = $client->withToken($accessToken);
+            }
+
+            $response = $client->post($path, $requestPayload);
         } catch (ConnectionException $e) {
             throw new RuntimeException('Tidak bisa konek ke API GW proxy: ' . $e->getMessage(), previous: $e);
         }
@@ -539,14 +551,27 @@ class MyadsApiClient
         @set_time_limit(120);
         [$uploadPath, $uploadName, $cleanupPath] = $this->prepareContentUploadFile($file);
 
+        $accessToken = '';
         try {
-            $response = Http::baseUrl($this->baseUrl)
+            if (function_exists('session')) {
+                $accessToken = (string) session('myads.access_token', '');
+            }
+        } catch (\Throwable) {
+        }
+
+        try {
+            $client = Http::baseUrl($this->baseUrl)
                 ->acceptJson()
                 ->timeout(60)
                 ->withHeaders([
                     'x-api-gw-token' => $gatewayToken,
-                ])
-                ->asMultipart()
+                ]);
+
+            if (trim($accessToken) !== '') {
+                $client = $client->withToken($accessToken);
+            }
+
+            $response = $client->asMultipart()
                 ->attach('file', fopen($uploadPath, 'r'), $uploadName)
                 ->post('/api/gw/content-upload', [
                     [
