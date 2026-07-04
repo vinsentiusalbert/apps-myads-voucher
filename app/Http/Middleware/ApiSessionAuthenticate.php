@@ -12,12 +12,14 @@ class ApiSessionAuthenticate
     {
         $user = $request->session()->get('myads.user');
         $accessToken = (string) $request->session()->get('myads.access_token', '');
-        $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
 
-        if (! is_array($user) || trim($accessToken) === '' || trim($gatewayToken) === '') {
+        // Hanya cek access_token dan user — gw_token tidak wajib saat login
+        // (endpoint yang butuh gw_token akan error sendiri jika dipanggil tanpa token)
+        if (! is_array($user) || trim($accessToken) === '') {
             return response()->view('errors.401', [], 401);
         }
 
         return $next($request);
     }
 }
+

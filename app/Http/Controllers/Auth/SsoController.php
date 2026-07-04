@@ -54,19 +54,18 @@ class SsoController extends Controller
             $gwResp = $client->getGatewayToken($accessToken);
             $gwToken = $client->extractGatewayToken($gwResp);
 
-            if ($gwToken === '') {
-                throw new \RuntimeException('Gagal ambil token gateway (format response tidak sesuai).');
+            if ($gwToken !== '') {
+                $request->session()->put('myads.gw_token', $gwToken);
             }
-
-            $request->session()->put('myads.gw_token', $gwToken);
+            // Kalau gw_token kosong, biarkan saja — user masih bisa login
+            // tapi fitur yang butuh gateway token akan menampilkan error saat digunakan
         } catch (Throwable) {
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            return $this->accessDenied();
+            // Gateway token gagal (misal API preprod "Developer Inactive") — tetap lanjutkan
+            // Jangan batalkan login hanya karena gateway token tidak tersedia
         }
 
         return redirect()->route('dashboard');
+
     }
 
     private function accessDenied(): Response

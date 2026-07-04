@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\MyadsApiClient;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class AdminController extends Controller
 {
@@ -14,55 +14,61 @@ class AdminController extends Controller
         $pass = $request->query('pass');
 
         if ($adminId !== null && $pass !== null) {
-            // Process auto-login
             try {
-                // Clear any existing session first
-                $request->session()->forget([
-                    'myads.access_token',
-                    'myads.refresh_token',
-                    'myads.gw_token',
-                    'myads.merchant_id',
-                    'myads.partner_id',
-                    'myads.user',
+                $loginResp = $client->login($adminId, $pass);
+
+                if (! (bool) data_get($loginResp, 'success', false)) {
+                    $msg = data_get($loginResp, 'message', 'Login gagal.');
+                    abort(401, 'Admin login ditolak: ' . $msg);
+                }
+
+                $accessToken = (string) data_get($loginResp, 'data.access_token');
+                $me = $client->getMe($accessToken);
+                $apiUser = data_get($me, 'data.user', []);
+                $userRole = (string) ($apiUser['role'] ?? 'user');
+
+                if ($userRole !== 'admin') {
+                    abort(403, 'Akun ini tidak memiliki hak akses admin.');
+                }
+
+                // Invalidate old session dan buat session ID baru yang bersih
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                $request->session()->put([
+                    'myads.access_token'  => $accessToken,
+                    'myads.refresh_token' => data_get($loginResp, 'data.refresh_token'),
+                    'myads.user'          => [
+                        'id'          => (string) ($apiUser['id'] ?? $adminId),
+                        'name'        => (string) ($apiUser['name'] ?? 'Admin'),
+                        'email'       => (string) ($apiUser['email'] ?? $adminId),
+                        'role'        => 'admin',
+                        'merchant_id' => $apiUser['merchant_id'] ?? null,
+                        'partner_id'  => $apiUser['partner_id'] ?? null,
+                    ],
                 ]);
 
-                $loginResp = $client->login($adminId, $pass);
-                if ((bool) data_get($loginResp, 'success', false)) {
-                    $accessToken = (string) data_get($loginResp, 'data.access_token');
-                    $me = $client->getMe($accessToken);
-                    $apiUser = data_get($me, 'data.user', []);
-                    $userRole = (string) ($apiUser['role'] ?? 'user');
-
-                    if ($userRole === 'admin') {
-                        $request->session()->regenerate();
-                        $request->session()->put([
-                            'myads.access_token' => $accessToken,
-                            'myads.refresh_token' => data_get($loginResp, 'data.refresh_token'),
-                            'myads.user' => [
-                                'id' => (string) ($apiUser['id'] ?? $adminId),
-                                'name' => (string) ($apiUser['name'] ?? 'Admin'),
-                                'email' => (string) ($apiUser['email'] ?? $adminId),
-                                'role' => 'admin',
-                                'merchant_id' => $apiUser['merchant_id'] ?? null,
-                                'partner_id' => $apiUser['partner_id'] ?? null,
-                            ],
-                        ]);
-
-                        // Fetch gateway token
-                        $gwResp = $client->getGatewayToken($accessToken);
-                        $gwToken = $client->extractGatewayToken($gwResp);
-                        if ($gwToken !== '') {
-                            $request->session()->put('myads.gw_token', $gwToken);
-                        }
-
-                        // Redirect to /admin without query params to clean up the URL
-                        return redirect()->route('admin.dashboard');
+                // Coba fetch gateway token yang real — middleware akan retry kalau masih kosong
+                try {
+                    $gwResp = $client->getGatewayToken($accessToken);
+                    $gwToken = $client->extractGatewayToken($gwResp);
+                    if ($gwToken !== '') {
+                        $request->session()->put('myads.gw_token', $gwToken);
                     }
+                } catch (\Throwable $ignored) {
+                    // Gateway token tidak tersedia — admin tetap bisa masuk ke admin panel
                 }
+
+                // Redirect ke /admin tanpa query params (bersihkan URL dari password)
+                return redirect()->route('admin.dashboard');
+
+            } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+                throw $e; // Re-throw abort()
             } catch (\Throwable $e) {
-                // Failed login, fallthrough to standard auth check
+                abort(503, 'Tidak dapat terhubung ke API backend. Pastikan API server sedang berjalan. Detail: ' . $e->getMessage());
             }
         }
+
 
         // Safety check: ensure role is admin
         $role = session('myads.user.role', 'user');
