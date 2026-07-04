@@ -23,8 +23,30 @@
         <main class="portal-shell">
             <button type="button" class="portal-overlay" data-menu-close aria-label="Tutup menu"></button>
 
+            @php
+                $processedNavMenus = $navMenus ?? [];
+                if (session('myads.user.role') === 'admin') {
+                    $hasAdmin = false;
+                    foreach ($processedNavMenus as $menu) {
+                        if ($menu['key'] === 'admin') {
+                            $hasAdmin = true;
+                            break;
+                        }
+                    }
+                    if (!$hasAdmin) {
+                        $processedNavMenus[] = [
+                            'key' => 'admin',
+                            'label' => 'Admin Panel',
+                            'icon' => 'dashboard',
+                            'href' => route('admin.dashboard'),
+                            'interactive' => true,
+                        ];
+                    }
+                }
+            @endphp
+
             @include('partials.portal-sidebar', [
-                'navMenus' => $navMenus ?? [],
+                'navMenus' => $processedNavMenus,
                 'activeNav' => $activeNav ?? null,
                 'activeSubnav' => $activeSubnav ?? null,
                 'createButtonLabel' => $createButtonLabel ?? 'Buat Iklan',

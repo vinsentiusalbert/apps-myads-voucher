@@ -16,12 +16,11 @@ class RegisteredUserController extends Controller
         $merchantId = trim((string) $request->query('merchant_id', ''));
         $partnerId = trim((string) ($request->query('partner_id') ?? $request->query('parent_id', '')));
 
-        if ($merchantId === '' || $partnerId === '') {
-            abort(403, 'Merchant ID dan Partner ID wajib disertakan untuk membuka halaman register.');
+        if ($merchantId === '') {
+            $merchantId = 'M-' . strtoupper(bin2hex(random_bytes(6)));
         }
-
-        if (mb_strlen($merchantId) > 128 || mb_strlen($partnerId) > 128) {
-            abort(422, 'Merchant ID atau Partner ID terlalu panjang.');
+        if ($partnerId === '') {
+            $partnerId = 'P-' . strtoupper(bin2hex(random_bytes(6)));
         }
 
         $contextResp = [];

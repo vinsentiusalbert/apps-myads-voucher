@@ -726,4 +726,49 @@ class MyadsApiClient
             'data' => $json,
         ];
     }
+
+    public function getAdminStats(string $accessToken): array
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->get('/api/admin/stats');
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API admin stats: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal mengambil stats admin'));
+        }
+
+        return (array) $response->json();
+    }
+
+    public function getAdminUsers(string $accessToken): array
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->get('/api/admin/users');
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API admin users: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal mengambil daftar user admin'));
+        }
+
+        return (array) $response->json();
+    }
+
+    public function getAdminLogs(string $accessToken): array
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->get('/api/admin/logs');
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API admin logs: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal mengambil logs admin'));
+        }
+
+        return (array) $response->json();
+    }
 }

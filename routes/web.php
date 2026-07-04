@@ -45,5 +45,6 @@ Route::middleware('web')->group(function (): void {
     Route::post('/campaign/{channel}/location-based-area/send', [ApiGatewayController::class, 'lbaAdd'])->name('campaign.lba.send');
 
     Route::get('/campaign/{channel}/{menu}', [CampaignMenuController::class, 'show'])->name('campaign.menu');
+    Route::get('/admin', [App\Http\Controllers\AdminController::class, 'index'])->name('admin.dashboard');
     Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
 });
