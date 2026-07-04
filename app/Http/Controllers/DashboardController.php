@@ -12,8 +12,25 @@ class DashboardController extends Controller
     {
         $gatewayToken = $this->resolveGatewayToken($request, $client);
 
-        $balanceFormatted = '-';
+        $balanceFormatted = 'Rp 0';
         $balanceExpiry = null;
+
+        // Fetch up-to-date user details from database (including real name & local refund balance)
+        $accessToken = (string) $request->session()->get('myads.access_token', '');
+        if ($accessToken !== '') {
+            try {
+                $me = $client->getMe($accessToken);
+                $apiUser = data_get($me, 'data.user', []);
+                if (!empty($apiUser)) {
+                    $request->session()->put('myads.user.name', data_get($apiUser, 'name'));
+                    $refundBalance = data_get($apiUser, 'refund_balance', 0);
+                    $balanceFormatted = 'Rp ' . number_format((float) $refundBalance, 0, ',', '.');
+                }
+            } catch (\Throwable) {
+                // keep default/cached name & Rp 0 balance
+            }
+        }
+
         $campaignTotal = null;
         $campaignSmsTotal = null;
         $campaignWaTotal = null;
@@ -30,20 +47,10 @@ class DashboardController extends Controller
             try {
                 $balanceResp = $client->getBalance($gatewayToken, $refreshGatewayToken);
 
-                $amount = data_get($balanceResp, 'data.data.balanceMain')
-                    ?? data_get($balanceResp, 'data.data.mainBalance')
-                    ?? data_get($balanceResp, 'data.data.amount');
-
                 $rawExpiry = data_get($balanceResp, 'data.data.expiredBalance');
                 if ($rawExpiry && is_numeric($rawExpiry)) {
                     // Convert milliseconds to seconds and format date
                     $balanceExpiry = date('d M Y', (int)($rawExpiry / 1000));
-                }
-
-                if (is_numeric($amount)) {
-                    $balanceFormatted = 'Rp ' . number_format((float) $amount, 0, ',', '.');
-                } elseif (is_string($amount) && trim($amount) !== '') {
-                    $balanceFormatted = $amount;
                 }
             } catch (\Throwable) {
                 // keep default values
