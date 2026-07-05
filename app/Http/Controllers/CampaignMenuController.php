@@ -245,10 +245,19 @@ class CampaignMenuController extends Controller
             ]);
         }
 
+        $gofoodLink = null;
+        try {
+            $accessToken = (string) $request->session()->get('myads.access_token', '');
+            if ($accessToken !== '') {
+                $gofoodLink = app(MyadsApiClient::class)->getMerchantGofoodLink($accessToken);
+            }
+        } catch (\Throwable) {}
+
         return view('campaign-menu', [
             'channel' => $channel,
             'menu' => $menu,
             'page' => $page,
+            'defaultCtaLink' => $gofoodLink,
         ]);
     }
 

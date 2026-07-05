@@ -21,6 +21,7 @@
             $templateCount = $templateCount ?? $templateRows->count();
             $approvedTemplateCount = $approvedTemplateCount ?? $templateRows->where('status', 'APPROVED')->count();
             $templateValue = fn (string $field, mixed $default = null) => old($field, $isWaTemplateRead ? $templateRow->{$field} : $default);
+            $defaultCtaLink = trim((string) ($defaultCtaLink ?? ''));
         @endphp
         <main class="portal-shell">
             <button type="button" class="portal-overlay" data-menu-close aria-label="Tutup menu"></button>
@@ -306,7 +307,7 @@
                                             ✅ Tips dan trik kebugaran
 
                                             Aktifkan akunmu di link ini
-                                            https://bit.ly/Fita_Combofit
+                                            {{ $defaultCtaLink }}
 
                                             #SehatMakinNikmat bersama Fita!
                                         </div>
@@ -525,6 +526,7 @@
                 const templatePreviewActions = document.getElementById('templatePreviewActions');
                 const templateButtonWarning = document.getElementById('templateButtonWarning');
                 const isTemplateRead = @json($isWaTemplateRead);
+                const defaultCtaLink = @json($defaultCtaLink);
                 let templateButtonIndex = 0;
 
                 const syncTemplateBodyPreview = () => {
@@ -540,7 +542,7 @@
 ✅ Tips dan trik kebugaran
 
 Aktifkan akunmu di link ini
-https://bit.ly/Fita_Combofit
+${defaultCtaLink}
 
 #SehatMakinNikmat bersama Fita!`;
                     templateBodyCount.textContent = `${templateBodyInput.value.length} / 1024`;
@@ -651,7 +653,7 @@ https://bit.ly/Fita_Combofit
                             <div class="template-builder-button-card__field">
                                 <label>Url Type</label>
                                 <select>
-                                    <option>static</option>
+                                    <option>Short URL</option>
                                 </select>
                             </div>
                             <div class="template-builder-button-card__field">
