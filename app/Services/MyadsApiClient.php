@@ -785,11 +785,7 @@ class MyadsApiClient
         }
 
         $json = (array) $response->json();
-        $link = data_get($json, 'data.short_link_detail')
-            ?? data_get($json, 'data.data.short_link_detail')
-            ?? data_get($json, 'short_link_detail');
-
-        return is_string($link) && trim($link) !== '' ? trim($link) : null;
+        return $json['data']['short_link_detail'] ?? null;
     }
 
     public function getInvoiceDetails(string $accessToken, string $invoiceId): array

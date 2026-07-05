@@ -1894,7 +1894,7 @@
                 '<span class="campaign-phone__url">$1</span>'
             );
 
-            const defaultCtaLink = "{{ $defaultCtaLink ?? '' }}";
+            const defaultCtaLink = @json($defaultCtaLink ?? '');
             const getDefaultCtaUrl = () => String(defaultCtaLink || '').trim();
             const normalizeCtaUrl = (value) => String(value || '').trim();
             const buildCtaUrl = (value) => normalizeCtaUrl(value);
@@ -1970,7 +1970,7 @@
                         </div>
                         <div class="campaign-button-card__field">
                             <label>Website URL</label>
-                            <input type="url" class="text-input" data-action-url maxlength="2000" value="${defaultUrl}" placeholder="https://gofood.link/...">
+                            <input type="url" class="text-input" data-action-url maxlength="2000" value="${defaultUrl}" placeholder="https://gofood.link/..." readonly>
                             <div class="campaign-button-card__meta" data-url-meta>0 / 2000</div>
                         </div>
                     </div>

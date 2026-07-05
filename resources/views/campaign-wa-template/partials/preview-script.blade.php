@@ -24,7 +24,7 @@
         const oldPhoneNumberId = @json(old('phone_number_id'));
         const oldDisplayName = @json(old('display_name'));
         const isTemplateRead = @json($isWaTemplateRead);
-        const defaultCtaLink = "{{ $defaultCtaLink ?? '' }}";
+        const defaultCtaLink = @json($defaultCtaLink ?? '');
         const getDefaultCtaUrl = () => String(defaultCtaLink || '').trim();
         const normalizeCtaUrl = (value) => String(value || '').trim();
         let templateButtonIndex = 0;
@@ -366,7 +366,7 @@
                     </div>
                     <div class="template-builder-button-card__field" data-template-url-field ${hasDefault ? '' : 'hidden'}>
                         <label>Website URL</label>
-                        <input type="url" value="${defaultUrl}" maxlength="2000" placeholder="https://gofood.link/..." data-template-button-url-suffix>
+                        <input type="url" value="${defaultUrl}" maxlength="2000" placeholder="https://gofood.link/..." data-template-button-url-suffix readonly>
                         <input type="hidden" name="${inputName}[action_url_target]" value="${defaultUrl}" data-template-button-url>
                         <span class="template-builder-button-card__meta" data-template-url-meta>0 / 2000</span>
                     </div>

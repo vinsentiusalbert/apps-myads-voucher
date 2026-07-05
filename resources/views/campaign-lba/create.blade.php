@@ -1656,6 +1656,7 @@
             '<span class="campaign-phone__url">$1</span>'
         );
 
+        const defaultCtaLink = @json($defaultCtaLink ?? '');
         const normalizeCtaUrl = (value) => String(value || '').trim();
         const buildCtaUrl = (value) => normalizeCtaUrl(value);
 
@@ -1711,7 +1712,7 @@
 
             buttonIndex += 1;
 
-            const defaultUrl = '';
+            const defaultUrl = normalizeCtaUrl(defaultCtaLink);
 
             const card = document.createElement('article');
             card.className = 'campaign-button-card';
@@ -1730,7 +1731,7 @@
                         </div>
                         <div class="campaign-button-card__field">
                             <label>Website URL</label>
-                            <input type="url" class="text-input" data-action-url maxlength="2000" value="${defaultUrl}" placeholder="https://gofood.link/...">
+                            <input type="url" class="text-input" data-action-url maxlength="2000" value="${defaultUrl}" placeholder="https://gofood.link/..." readonly>
                             <div class="campaign-button-card__meta" data-url-meta>0 / 2000</div>
                         </div>
                     </div>
