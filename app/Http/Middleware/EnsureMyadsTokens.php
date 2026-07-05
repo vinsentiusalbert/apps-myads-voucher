@@ -14,6 +14,17 @@ class EnsureMyadsTokens
     {
         $session = $request->session();
         
+        // Bypass middleware SSO untuk route admin atau jika session user adalah admin
+        if ($request->is('admin') || $request->routeIs('admin.*')) {
+            return $next($request);
+        }
+
+        $user = $session->get('myads.user');
+        $userRole = is_array($user) ? (string) ($user['role'] ?? 'user') : 'user';
+        if ($userRole === 'admin') {
+            return $next($request);
+        }
+
         // Check session-based auth (SSO flow) - NO Laravel Auth needed
         $accessToken = (string) $session->get('myads.access_token', '');
 
@@ -93,7 +104,6 @@ class EnsureMyadsTokens
                 'password.reset',
                 'password.store',
                 'logout',
-                'admin.dashboard',
             ], true);
         }
 

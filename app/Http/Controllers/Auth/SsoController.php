@@ -26,16 +26,18 @@ class SsoController extends Controller
             return $this->accessDenied();
         }
 
-        // 🔄 FETCH user data dari API (source of truth)
+        // 🔄 FETCH user data dari API (untuk mendapatkan nama, email, role terbaru)
+        // Jika API tidak dapat diakses, gunakan data fallback dari parameter URL
         $apiUser = null;
         try {
             $apiUserData = $client->getMe($accessToken);
             $apiUser = $apiUserData['data']['user'] ?? null;
         } catch (Throwable) {
-            return $this->accessDenied();
+            // API tidak dapat diakses — lanjutkan dengan data fallback dari URL params
+            // Session tetap dibuat agar user bisa masuk
         }
 
-        // Store session tanpa DB
+        // Store session
         $request->session()->regenerate();
 
         $request->session()->put([
@@ -44,9 +46,12 @@ class SsoController extends Controller
             'myads.merchant_id' => $merchantId,
             'myads.partner_id' => $partnerId,
             'myads.user' => [
-                'id' => $apiUser['id'] ?? $merchantId,
-                'name' => $apiUser['name'] ?? 'Merchant GoTo',
-                'email' => $apiUser['email'] ?? "merchant-{$merchantId}@sso.prod",
+                'id'          => ($apiUser['id'] ?? null) ?: $merchantId,
+                'name'        => ($apiUser['name'] ?? null) ?: 'Merchant GoTo',
+                'email'       => ($apiUser['email'] ?? null) ?: "merchant-{$merchantId}@sso.prod",
+                'role'        => ($apiUser['role'] ?? null) ?: 'user',
+                'merchant_id' => ($apiUser['merchant_id'] ?? null) ?: $merchantId,
+                'partner_id'  => ($apiUser['partner_id'] ?? null) ?: $partnerId,
             ],
         ]);
 
@@ -57,14 +62,12 @@ class SsoController extends Controller
             if ($gwToken !== '') {
                 $request->session()->put('myads.gw_token', $gwToken);
             }
-            // Kalau gw_token kosong, biarkan saja — user masih bisa login
-            // tapi fitur yang butuh gateway token akan menampilkan error saat digunakan
         } catch (Throwable) {
-            // Gateway token gagal (misal API preprod "Developer Inactive") — tetap lanjutkan
-            // Jangan batalkan login hanya karena gateway token tidak tersedia
+            // Gateway token gagal — tetap lanjutkan, middleware akan retry
         }
 
         return redirect()->route('dashboard');
+
 
     }
 

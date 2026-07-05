@@ -25,6 +25,16 @@
         const oldDisplayName = @json(old('display_name'));
         const isTemplateRead = @json($isWaTemplateRead);
         const buttonUrlPrefix = 'https://gofood/';
+        const defaultCtaLink = "{{ $defaultCtaLink ?? '' }}";
+        const getDefaultCtaPath = () => {
+            if (!defaultCtaLink) return '';
+            return defaultCtaLink
+                .trim()
+                .replace(/^https?:\/\/gofood\.link\/a\/?/i, '')
+                .replace(/^https?:\/\/gofood\.link\/?/i, '')
+                .replace(/^https?:\/\/gofood\/?/i, '')
+                .replace(/^\/+/, '');
+        };
         let templateButtonIndex = 0;
 
         const syncTemplateBodyPreview = () => {
@@ -328,6 +338,10 @@
 
             templateButtonIndex += 1;
             const inputName = `buttons[${templateButtonIndex}]`;
+            
+            const defaultPath = getDefaultCtaPath();
+            const hasDefault = defaultPath !== '';
+
             const card = document.createElement('article');
             card.className = 'template-builder-button-card';
             card.dataset.templateButtonCard = String(templateButtonIndex);
@@ -344,22 +358,22 @@
                     <div class="template-builder-button-card__field">
                         <label>Aksi</label>
                         <select name="${inputName}[action]" data-template-button-action>
-                            <option value="QUICK_REPLY">Quick Reply</option>
-                            <option value="URL">Visit Website</option>
+                            <option value="QUICK_REPLY" ${hasDefault ? '' : 'selected'}>Quick Reply</option>
+                            <option value="URL" ${hasDefault ? 'selected' : ''}>Visit Website</option>
                         </select>
                     </div>
-                    <div class="template-builder-button-card__field" data-template-url-type-field hidden>
+                    <div class="template-builder-button-card__field" data-template-url-type-field ${hasDefault ? '' : 'hidden'}>
                         <label>Url Type</label>
                         <select name="${inputName}[show_modal_short_url]">
                             <option value="0">Static</option>
                             <option value="1">Short URL</option>
                         </select>
                     </div>
-                    <div class="template-builder-button-card__field" data-template-url-field hidden>
+                    <div class="template-builder-button-card__field" data-template-url-field ${hasDefault ? '' : 'hidden'}>
                         <label>Website URL</label>
                         <div class="template-builder-url-lock">
                             <span>${buttonUrlPrefix}</span>
-                            <input type="text" value="" maxlength="1985" placeholder="path" data-template-button-url-suffix>
+                            <input type="text" value="${defaultPath}" maxlength="1985" placeholder="path" data-template-button-url-suffix>
                         </div>
                         <input type="hidden" name="${inputName}[action_url_target]" value="${buttonUrlPrefix}" data-template-button-url>
                         <span class="template-builder-button-card__meta" data-template-url-meta>0 / 2000</span>

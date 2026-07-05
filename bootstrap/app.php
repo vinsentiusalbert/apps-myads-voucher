@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'api-session-guest' => \App\Http\Middleware\RedirectIfApiSessionAuthenticated::class,
             'api-session-auth' => \App\Http\Middleware\ApiSessionAuthenticate::class,
+            'admin-session-auth' => \App\Http\Middleware\EnsureAdminSession::class,
         ]);
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureMyadsTokens::class);
     })

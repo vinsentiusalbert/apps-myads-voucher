@@ -771,4 +771,62 @@ class MyadsApiClient
 
         return (array) $response->json();
     }
+
+    public function getMerchantGofoodLink(string $accessToken): ?string
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->get('/api/gw/gofood-link');
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API default GoFood link: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal mengambil default GoFood link'));
+        }
+
+        $json = (array) $response->json();
+        return $json['data']['short_link_detail'] ?? null;
+    }
+
+    public function getInvoiceDetails(string $accessToken, string $invoiceId): array
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->get('/api/invoices/' . rawurlencode($invoiceId));
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API detail invoice: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal mengambil detail invoice'));
+        }
+
+        return (array) $response->json();
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function generateInvoice(string $accessToken, array $payload): array
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->post('/api/invoices/generate', $payload);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API generate invoice: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal generate invoice'));
+        }
+
+        return (array) $response->json();
+    }
+
+    public function getInvoicePdf(string $accessToken, string $invoiceId): Response
+    {
+        try {
+            return $this->bearerClient($accessToken)->get('/api/invoices/' . rawurlencode($invoiceId) . '/pdf');
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API PDF invoice: ' . $e->getMessage(), previous: $e);
+        }
+    }
 }

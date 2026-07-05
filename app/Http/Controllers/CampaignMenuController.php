@@ -70,11 +70,20 @@ class CampaignMenuController extends Controller
             $view = $request->query('view');
 
             if ($view === 'create') {
+                $gofoodLink = null;
+                try {
+                    $accessToken = (string) $request->session()->get('myads.access_token', '');
+                    if ($accessToken !== '') {
+                        $gofoodLink = app(MyadsApiClient::class)->getMerchantGofoodLink($accessToken);
+                    }
+                } catch (\Throwable $e) {}
+
                 return view('campaign-wa-lba.create', [
                     'channel' => $channel,
                     'menu' => $menu,
                     'page' => $page,
                     'waTemplates' => $this->resolveWaTemplates(),
+                    'defaultCtaLink' => $gofoodLink,
                 ]);
             }
 
@@ -104,11 +113,20 @@ class CampaignMenuController extends Controller
             $view = $request->query('view');
 
             if ($view === 'create') {
+                $gofoodLink = null;
+                try {
+                    $accessToken = (string) $request->session()->get('myads.access_token', '');
+                    if ($accessToken !== '') {
+                        $gofoodLink = app(MyadsApiClient::class)->getMerchantGofoodLink($accessToken);
+                    }
+                } catch (\Throwable $e) {}
+
                 return view('campaign-wa-targeted.create', [
                     'channel' => $channel,
                     'menu' => $menu,
                     'page' => $page,
                     'waTemplates' => $this->resolveWaTemplates(),
+                    'defaultCtaLink' => $gofoodLink,
                 ]);
             }
 
@@ -139,11 +157,20 @@ class CampaignMenuController extends Controller
 
             if ($view === 'create') {
                 $unitPrice = $this->resolveUnitPrice($request, $channel, $menu);
+                $gofoodLink = null;
+                try {
+                    $accessToken = (string) $request->session()->get('myads.access_token', '');
+                    if ($accessToken !== '') {
+                        $gofoodLink = app(MyadsApiClient::class)->getMerchantGofoodLink($accessToken);
+                    }
+                } catch (\Throwable $e) {}
+
                 return view('campaign-lba.create', [
                     'channel' => $channel,
                     'menu' => $menu,
                     'page' => $page,
                     'unitPrice' => $unitPrice,
+                    'defaultCtaLink' => $gofoodLink,
                 ]);
             }
 
@@ -175,11 +202,20 @@ class CampaignMenuController extends Controller
 
             if ($view === 'create') {
                 $unitPrice = $this->resolveUnitPrice($request, $channel, $menu);
+                $gofoodLink = null;
+                try {
+                    $accessToken = (string) $request->session()->get('myads.access_token', '');
+                    if ($accessToken !== '') {
+                        $gofoodLink = app(MyadsApiClient::class)->getMerchantGofoodLink($accessToken);
+                    }
+                } catch (\Throwable $e) {}
+
                 return view('campaign-targeted.create', [
                     'channel' => $channel,
                     'menu' => $menu,
                     'page' => $page,
                     'unitPrice' => $unitPrice,
+                    'defaultCtaLink' => $gofoodLink,
                 ]);
             }
 
@@ -249,10 +285,19 @@ class CampaignMenuController extends Controller
             ->values();
 
         if ($request->query('view') === 'create') {
+            $gofoodLink = null;
+            try {
+                $accessToken = (string) $request->session()->get('myads.access_token', '');
+                if ($accessToken !== '') {
+                    $gofoodLink = app(MyadsApiClient::class)->getMerchantGofoodLink($accessToken);
+                }
+            } catch (\Throwable $e) {}
+
             return view('campaign-wa-template.create', [
                 'channel' => 'wa-business',
                 'menu' => 'campaign-template',
                 'page' => $page,
+                'defaultCtaLink' => $gofoodLink,
             ]);
         }
 

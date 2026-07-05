@@ -1895,6 +1895,16 @@
             );
 
             const ctaUrlPrefix = 'https://gofood/';
+            const defaultCtaLink = "{{ $defaultCtaLink ?? '' }}";
+            const getDefaultCtaPath = () => {
+                if (!defaultCtaLink) return '';
+                return defaultCtaLink
+                    .trim()
+                    .replace(/^https?:\/\/gofood\.link\/a\/?/i, '')
+                    .replace(/^https?:\/\/gofood\.link\/?/i, '')
+                    .replace(/^https?:\/\/gofood\/?/i, '')
+                    .replace(/^\/+/, '');
+            };
             const normalizeCtaPath = (value) => String(value || '')
                 .trim()
                 .replace(/^https?:\/\/gofood\/?/i, '')
@@ -1957,6 +1967,8 @@
 
                 buttonIndex += 1;
 
+                const defaultPath = getDefaultCtaPath();
+
                 const card = document.createElement('article');
                 card.className = 'campaign-button-card';
                 card.dataset.buttonCard = String(buttonIndex);
@@ -1976,7 +1988,7 @@
                             <label>Website URL</label>
                             <div class="campaign-prefixed-input">
                                 <span>${ctaUrlPrefix}</span>
-                                <input type="text" class="text-input" data-action-url maxlength="1985" value="" placeholder="path">
+                                <input type="text" class="text-input" data-action-url maxlength="1985" value="${defaultPath}" placeholder="path">
                             </div>
                             <div class="campaign-button-card__meta" data-url-meta>0 / 2000</div>
                         </div>

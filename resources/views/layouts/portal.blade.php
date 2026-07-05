@@ -87,5 +87,8 @@
             })();
         </script>
         @stack('scripts')
+        @if(config('app.debug'))
+            @include('partials.api-debug-console')
+        @endif
     </body>
 </html>

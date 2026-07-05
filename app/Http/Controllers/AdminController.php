@@ -48,16 +48,7 @@ class AdminController extends Controller
                     ],
                 ]);
 
-                // Coba fetch gateway token yang real — middleware akan retry kalau masih kosong
-                try {
-                    $gwResp = $client->getGatewayToken($accessToken);
-                    $gwToken = $client->extractGatewayToken($gwResp);
-                    if ($gwToken !== '') {
-                        $request->session()->put('myads.gw_token', $gwToken);
-                    }
-                } catch (\Throwable $ignored) {
-                    // Gateway token tidak tersedia — admin tetap bisa masuk ke admin panel
-                }
+
 
                 // Redirect ke /admin tanpa query params (bersihkan URL dari password)
                 return redirect()->route('admin.dashboard');
