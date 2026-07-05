@@ -1,3 +1,4 @@
+@if(app()->isLocal())
 @php
     $logs = \App\Services\ApiLogCollector::all();
 @endphp
@@ -149,3 +150,4 @@
         });
     })();
 </script>
+@endif
