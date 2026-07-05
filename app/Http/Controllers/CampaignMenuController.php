@@ -75,6 +75,7 @@ class CampaignMenuController extends Controller
                     $accessToken = (string) $request->session()->get('myads.access_token', '');
                     if ($accessToken !== '') {
                         $gofoodLink = app(MyadsApiClient::class)->getMerchantGofoodLink($accessToken);
+                        app(MyadsApiClient::class)->logEvent($accessToken, 'click_product_inventory');
                     }
                 } catch (\Throwable $e) {}
 
@@ -118,6 +119,7 @@ class CampaignMenuController extends Controller
                     $accessToken = (string) $request->session()->get('myads.access_token', '');
                     if ($accessToken !== '') {
                         $gofoodLink = app(MyadsApiClient::class)->getMerchantGofoodLink($accessToken);
+                        app(MyadsApiClient::class)->logEvent($accessToken, 'click_product_inventory');
                     }
                 } catch (\Throwable $e) {}
 
@@ -162,6 +164,7 @@ class CampaignMenuController extends Controller
                     $accessToken = (string) $request->session()->get('myads.access_token', '');
                     if ($accessToken !== '') {
                         $gofoodLink = app(MyadsApiClient::class)->getMerchantGofoodLink($accessToken);
+                        app(MyadsApiClient::class)->logEvent($accessToken, 'click_product_inventory');
                     }
                 } catch (\Throwable $e) {}
 
@@ -207,6 +210,7 @@ class CampaignMenuController extends Controller
                     $accessToken = (string) $request->session()->get('myads.access_token', '');
                     if ($accessToken !== '') {
                         $gofoodLink = app(MyadsApiClient::class)->getMerchantGofoodLink($accessToken);
+                        app(MyadsApiClient::class)->logEvent($accessToken, 'click_product_inventory');
                     }
                 } catch (\Throwable $e) {}
 

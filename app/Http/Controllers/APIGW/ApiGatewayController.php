@@ -1044,4 +1044,20 @@ class ApiGatewayController extends Controller
 		// Fallback: keep as-is
 		return $raw;
 	}
+
+	public function trackEvent(Request $request, MyadsApiClient $client): JsonResponse
+	{
+		$request->validate([
+			'event_type' => 'required|string|max:100',
+		]);
+
+		$accessToken = session('access_token');
+		if (! $accessToken) {
+			return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+		}
+
+		$result = $client->logEvent($accessToken, $request->input('event_type'));
+
+		return response()->json($result);
+	}
 }

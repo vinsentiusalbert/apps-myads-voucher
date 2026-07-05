@@ -215,6 +215,19 @@
                 dashboardLink.closest('.portal-nav__item')?.classList.add('portal-nav__item--active');
             });
 
+            const buatIklanBtn = document.querySelector('[data-campaign-category-open]');
+            buatIklanBtn?.addEventListener('click', () => {
+                fetch("{{ route('campaign.track-event') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                    },
+                    body: JSON.stringify({ event_type: 'click_buat_iklan' })
+                }).catch(err => console.warn('Tracking failed:', err));
+            });
+
             subnavLinks.forEach((link) => {
                 link.addEventListener('click', (event) => {
                     const isPlaceholder = link.getAttribute('href') === '#';

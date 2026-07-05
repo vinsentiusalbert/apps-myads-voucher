@@ -829,4 +829,18 @@ class MyadsApiClient
             throw new RuntimeException('Tidak bisa konek ke API PDF invoice: ' . $e->getMessage(), previous: $e);
         }
     }
+
+    public function logEvent(string $accessToken, string $eventType): array
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->post('/api/reporting/event', [
+                'event_type' => $eventType
+            ]);
+            return (array) $response->json();
+        } catch (\Exception $e) {
+            // Log warning but don't break user flow if logging fails
+            \Log::warning('Tracking event failed: ' . $e->getMessage());
+            return ['success' => false];
+        }
+    }
 }

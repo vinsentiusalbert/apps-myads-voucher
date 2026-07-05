@@ -2269,6 +2269,16 @@
             openLocationModalButton?.addEventListener('click', openLocationModal);
             stepOneNext?.addEventListener('click', () => {
                 syncCampaignStep(2);
+                
+                fetch("{{ route('campaign.track-event') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ event_type: 'campaign_setup_page' })
+                }).catch(err => console.warn('Tracking failed:', err));
             });
             stepTwoBack?.addEventListener('click', () => syncCampaignStep(1));
             stepTwoNext?.addEventListener('click', () => {
@@ -2279,6 +2289,16 @@
                 syncReviewSummary();
                 collapseReviewCards();
                 syncCampaignStep(4);
+
+                fetch("{{ route('campaign.track-event') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ event_type: 'campaign_delivery_setup' })
+                }).catch(err => console.warn('Tracking failed:', err));
             });
             stepFourBack?.addEventListener('click', () => syncCampaignStep(3));
             addScheduleButton?.addEventListener('click', addScheduleItem);

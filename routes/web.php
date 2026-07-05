@@ -43,6 +43,7 @@ Route::middleware('web')->group(function (): void {
     Route::post('/campaign/wa-business/location-based-area/send', [ApiGatewayController::class, 'wabaLbaAdd'])->name('campaign.waba-lba.send');
     Route::post('/campaign/{channel}/targeted/send', [ApiGatewayController::class, 'targetedAdd'])->name('campaign.targeted.send');
     Route::post('/campaign/{channel}/location-based-area/send', [ApiGatewayController::class, 'lbaAdd'])->name('campaign.lba.send');
+    Route::post('/campaign/track-event', [ApiGatewayController::class, 'trackEvent'])->name('campaign.track-event');
 
     Route::get('/campaign/{channel}/{menu}', [CampaignMenuController::class, 'show'])->name('campaign.menu');
     Route::get('/invoice/{invoiceId}', [App\Http\Controllers\InvoiceController::class, 'show'])->name('invoice.show');
