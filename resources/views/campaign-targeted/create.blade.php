@@ -2434,7 +2434,7 @@
             const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
             const csrfToken = "{{ csrf_token() }}";
-            const paymentCustomerPhone = '62811456234';
+            const paymentCustomerPhone = '-';
             const defaultInvoiceEmail = 'myads@telkomsel.com';
             const paymentInvoiceEmail = document.getElementById('campaignPaymentInvoiceEmail');
             const paymentInvoiceEmailCheck = document.getElementById('campaignPaymentInvoiceEmailCheck');
