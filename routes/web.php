@@ -46,6 +46,7 @@ Route::middleware('web')->group(function (): void {
     Route::post('/campaign/track-event', [ApiGatewayController::class, 'trackEvent'])->name('campaign.track-event');
 
     Route::get('/campaign/{channel}/{menu}', [CampaignMenuController::class, 'show'])->name('campaign.menu');
+    Route::get('/campaign/{campaignId}/invoice/pdf', [App\Http\Controllers\InvoiceController::class, 'downloadPdfByCampaign'])->name('campaign.invoice.pdf');
     Route::get('/invoice/{invoiceId}', [App\Http\Controllers\InvoiceController::class, 'show'])->name('invoice.show');
     Route::get('/invoice/{invoiceId}/pdf', [App\Http\Controllers\InvoiceController::class, 'downloadPdf'])->name('invoice.pdf');
     Route::get('/admin', [App\Http\Controllers\AdminController::class, 'index'])->middleware('admin-session-auth')->name('admin.dashboard');

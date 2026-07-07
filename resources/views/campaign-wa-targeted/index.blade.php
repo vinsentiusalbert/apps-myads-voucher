@@ -93,6 +93,7 @@
                         <th>Tipe Kanal</th>
                         <th>Detil Status</th>
                         <th>Total Harga</th>
+                        <th>Unduh Invoice</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -108,10 +109,17 @@
                             <td>{{ $row['channel_type'] }}</td>
                             <td>{{ $row['status_detail'] }}</td>
                             <td>{{ $row['total_price'] }}</td>
+                            <td>
+                                @if(isset($row['id']) && $row['id'] !== '-' && $row['id'] !== '')
+                                    <a href="{{ route('campaign.invoice.pdf', ['campaignId' => $row['id']]) }}" class="btn btn-sm btn-primary" style="display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 12px; background-color: #E1000C; color: white; border: none; text-decoration: none; font-weight: bold; text-align: center;">Unduh</a>
+                                @else
+                                    -
+                                @endif
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8">Belum ada data campaign.</td>
+                            <td colspan="9">Belum ada data campaign.</td>
                         </tr>
                     @endforelse
                 </tbody>

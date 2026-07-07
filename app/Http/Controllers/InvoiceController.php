@@ -72,7 +72,32 @@ class InvoiceController extends Controller
 
             return response($pdfResponse->body())
                 ->header('Content-Type', 'application/pdf')
-                ->header('Content-Disposition', 'inline; filename="invoice-' . $invoiceId . '.pdf"');
+                ->header('Content-Disposition', 'attachment; filename="invoice-' . $invoiceId . '.pdf"');
+        } catch (Throwable $e) {
+            abort(500, 'Terjadi kesalahan saat mengunduh PDF: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadPdfByCampaign(Request $request, MyadsApiClient $client, string $campaignId)
+    {
+        try {
+            $accessToken = $this->ensureValidAccessToken($request, $client);
+            $invoiceDetails = $client->getInvoiceByCampaign($accessToken, $campaignId);
+
+            $invoiceId = $invoiceDetails['data']['invoice_id'] ?? null;
+            if (!$invoiceId) {
+                abort(404, 'Data Invoice tidak ditemukan untuk campaign ini.');
+            }
+
+            $pdfResponse = $client->getInvoicePdf($accessToken, $invoiceId);
+
+            if ($pdfResponse->failed()) {
+                abort($pdfResponse->status(), 'Gagal mengunduh PDF Invoice dari server API.');
+            }
+
+            return response($pdfResponse->body())
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'attachment; filename="invoice-' . $invoiceId . '.pdf"');
         } catch (Throwable $e) {
             abort(500, 'Terjadi kesalahan saat mengunduh PDF: ' . $e->getMessage());
         }

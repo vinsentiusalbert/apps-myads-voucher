@@ -821,6 +821,24 @@ class MyadsApiClient
         return (array) $response->json();
     }
 
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function getInvoiceByCampaign(string $accessToken, string $campaignId): array
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->get('/api/invoices/campaign/' . rawurlencode($campaignId));
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API invoice campaign: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal mengambil invoice campaign'));
+        }
+
+        return (array) $response->json();
+    }
+
     public function getInvoicePdf(string $accessToken, string $invoiceId): Response
     {
         try {
