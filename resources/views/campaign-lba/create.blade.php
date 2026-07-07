@@ -161,7 +161,7 @@
             <section class="campaign-block">
                 <div class="campaign-button-builder__head">
                     <div>
-                        <h2 class="campaign-block__title">{{ $isTargeted ? 'Tambah Link Singkat' : 'Buttons' }}</h2>
+                        <h2 class="campaign-block__title">Tambah Link Singkat</h2>
                         <p class="campaign-block__copy">
                             {{ $isTargeted
                                     ? 'Tambahkan call to action ke pesan Anda dan lihat preview-nya langsung di sisi kanan.'
@@ -170,7 +170,7 @@
                     </div>
                     <button type="button" class="campaign-outline-button campaign-outline-button--compact" id="campaignAddButton">
                         <span class="campaign-outline-button__icon">+</span>
-                        <span>Add Button</span>
+                        <span>Tambah Link Singkat</span>
                     </button>
                 </div>
                 <p class="campaign-button-builder__warning" id="campaignButtonWarning" hidden>Button hanya bisa 2.</p>
@@ -1656,26 +1656,9 @@
             '<span class="campaign-phone__url">$1</span>'
         );
 
-        const ctaUrlPrefix = 'https://gofood/';
-        const defaultCtaLink = "{{ $defaultCtaLink ?? '' }}";
-        const getDefaultCtaPath = () => {
-            if (!defaultCtaLink) return '';
-            return defaultCtaLink
-                .trim()
-                .replace(/^https?:\/\/gofood\.link\/a\/?/i, '')
-                .replace(/^https?:\/\/gofood\.link\/?/i, '')
-                .replace(/^https?:\/\/gofood\/?/i, '')
-                .replace(/^\/+/, '');
-        };
-        const normalizeCtaPath = (value) => String(value || '')
-            .trim()
-            .replace(/^https?:\/\/gofood\/?/i, '')
-            .replace(/^gofood\/?/i, '')
-            .replace(/^\/+/, '');
-        const buildCtaUrl = (value) => {
-            const path = normalizeCtaPath(value);
-            return path === '' ? '' : `${ctaUrlPrefix}${path}`;
-        };
+        const defaultCtaLink = @json($defaultCtaLink ?? '');
+        const normalizeCtaUrl = (value) => String(value || '').trim();
+        const buildCtaUrl = (value) => normalizeCtaUrl(value);
 
         const syncUrlIntoMessage = (card) => {
             if (!messageInput) {
@@ -1703,13 +1686,13 @@
         const updateButtonCardMeta = (card) => {
             const websiteInput = card.querySelector('[data-action-url]');
             const urlMeta = card.querySelector('[data-url-meta]');
-            const normalizedPath = normalizeCtaPath(websiteInput.value);
+            const normalizedUrl = normalizeCtaUrl(websiteInput.value);
 
-            if (websiteInput.value !== normalizedPath) {
-                websiteInput.value = normalizedPath;
+            if (websiteInput.value !== normalizedUrl) {
+                websiteInput.value = normalizedUrl;
             }
 
-            const fullUrlLength = buildCtaUrl(normalizedPath).length;
+            const fullUrlLength = buildCtaUrl(normalizedUrl).length;
             urlMeta.innerHTML = `${fullUrlLength} / 2000`;
             syncUrlIntoMessage(card);
             renderPhoneActions();
@@ -1729,7 +1712,7 @@
 
             buttonIndex += 1;
 
-            const defaultPath = getDefaultCtaPath();
+            const defaultUrl = normalizeCtaUrl(defaultCtaLink);
 
             const card = document.createElement('article');
             card.className = 'campaign-button-card';
@@ -1743,15 +1726,12 @@
                         <div class="campaign-button-card__field">
                             <label>Url Type</label>
                             <select class="text-input text-input--select" data-url-type>
-                                <option value="static">static</option>
+                                <option value="short_url">Short URL</option>
                             </select>
                         </div>
                         <div class="campaign-button-card__field">
                             <label>Website URL</label>
-                            <div class="campaign-prefixed-input">
-                                <span>${ctaUrlPrefix}</span>
-                                <input type="text" class="text-input" data-action-url maxlength="1985" value="${defaultPath}" placeholder="path">
-                            </div>
+                            <input type="url" class="text-input" data-action-url maxlength="2000" value="${defaultUrl}" placeholder="https://gofood.link/..." readonly>
                             <div class="campaign-button-card__meta" data-url-meta>0 / 2000</div>
                         </div>
                     </div>
@@ -2015,7 +1995,6 @@
         syncMessagePreview();
         syncSenderPreview();
         initCampaignMultiselects();
-        createButtonCard();
         calculateAudience();
         closeLocationModal();
         syncCampaignStep(1);

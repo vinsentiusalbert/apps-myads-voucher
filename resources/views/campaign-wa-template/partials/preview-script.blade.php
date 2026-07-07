@@ -24,17 +24,9 @@
         const oldPhoneNumberId = @json(old('phone_number_id'));
         const oldDisplayName = @json(old('display_name'));
         const isTemplateRead = @json($isWaTemplateRead);
-        const buttonUrlPrefix = 'https://gofood/';
-        const defaultCtaLink = "{{ $defaultCtaLink ?? '' }}";
-        const getDefaultCtaPath = () => {
-            if (!defaultCtaLink) return '';
-            return defaultCtaLink
-                .trim()
-                .replace(/^https?:\/\/gofood\.link\/a\/?/i, '')
-                .replace(/^https?:\/\/gofood\.link\/?/i, '')
-                .replace(/^https?:\/\/gofood\/?/i, '')
-                .replace(/^\/+/, '');
-        };
+        const defaultCtaLink = @json($defaultCtaLink ?? '');
+        const getDefaultCtaUrl = () => String(defaultCtaLink || '').trim();
+        const normalizeCtaUrl = (value) => String(value || '').trim();
         let templateButtonIndex = 0;
 
         const syncTemplateBodyPreview = () => {
@@ -135,7 +127,11 @@
                     urlField.hidden = !isUrl;
                     urlTypeField.hidden = !isUrl;
                     if (urlInput && urlSuffixInput) {
-                        urlInput.value = isUrl ? `${buttonUrlPrefix}${urlSuffixInput.value.replace(/^\/+/, '')}` : '';
+                        const normalizedUrl = normalizeCtaUrl(urlSuffixInput.value);
+                        if (urlSuffixInput.value !== normalizedUrl) {
+                            urlSuffixInput.value = normalizedUrl;
+                        }
+                        urlInput.value = isUrl ? normalizedUrl : '';
                     }
                 }
                 if (urlMeta && urlInput) {
@@ -339,8 +335,8 @@
             templateButtonIndex += 1;
             const inputName = `buttons[${templateButtonIndex}]`;
             
-            const defaultPath = getDefaultCtaPath();
-            const hasDefault = defaultPath !== '';
+            const defaultUrl = getDefaultCtaUrl();
+            const hasDefault = defaultUrl !== '';
 
             const card = document.createElement('article');
             card.className = 'template-builder-button-card';
@@ -365,17 +361,13 @@
                     <div class="template-builder-button-card__field" data-template-url-type-field ${hasDefault ? '' : 'hidden'}>
                         <label>Url Type</label>
                         <select name="${inputName}[show_modal_short_url]">
-                            <option value="0">Static</option>
                             <option value="1">Short URL</option>
                         </select>
                     </div>
                     <div class="template-builder-button-card__field" data-template-url-field ${hasDefault ? '' : 'hidden'}>
                         <label>Website URL</label>
-                        <div class="template-builder-url-lock">
-                            <span>${buttonUrlPrefix}</span>
-                            <input type="text" value="${defaultPath}" maxlength="1985" placeholder="path" data-template-button-url-suffix>
-                        </div>
-                        <input type="hidden" name="${inputName}[action_url_target]" value="${buttonUrlPrefix}" data-template-button-url>
+                        <input type="url" value="${defaultUrl}" maxlength="2000" placeholder="https://gofood.link/..." data-template-button-url-suffix readonly>
+                        <input type="hidden" name="${inputName}[action_url_target]" value="${defaultUrl}" data-template-button-url>
                         <span class="template-builder-button-card__meta" data-template-url-meta>0 / 2000</span>
                     </div>
                     <input type="hidden" name="${inputName}[action_replay]" value="" data-template-button-replay>
