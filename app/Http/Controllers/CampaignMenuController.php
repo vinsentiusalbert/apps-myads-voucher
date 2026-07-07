@@ -366,7 +366,7 @@ class CampaignMenuController extends Controller
                 $headerPathFile = $this->extractUploadedFileValue($uploadResp);
 
                 if ($headerPathFile === '') {
-                    throw new RuntimeException('Upload asset berhasil dipanggil, tetapi pathFile tidak ditemukan dari response API GW.');
+                    throw new RuntimeException('Upload asset berhasil dipanggil, tetapi pathFile tidak ditemukan.');
                 }
             }
 
@@ -385,7 +385,7 @@ class CampaignMenuController extends Controller
 
         return redirect()
             ->route('campaign-template.index')
-            ->with('status', 'Template WABA berhasil dikirim ke API GW.');
+            ->with('status', 'Template WABA berhasil dikirim.');
     }
 
     public function showCampaignTemplate(Request $request, string $template): View
