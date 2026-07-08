@@ -565,6 +565,15 @@
                                 </div>
                                 <p class="campaign-cost-card__footnote">Harga iklan sebesar <strong>Rp 1.100 per pesan</strong> karena menggunakan Display Name Default.</p>
                             </div>
+                                <div class="campaign-cost-card__row">
+                                    <span>Subtotal</span>
+                                    <strong id="waLbaReviewSubtotal">-</strong>
+                                </div>
+                                <div class="campaign-cost-card__row">
+                                    <span>PPN (11%)</span>
+                                    <strong id="waLbaReviewTax">-</strong>
+                                </div>
+                            </div>
                             <div class="campaign-cost-card__section">
                                 <div class="campaign-cost-card__row campaign-cost-card__row--total">
                                     <span>Grand Total</span>
@@ -582,6 +591,11 @@
                                 'inputId' => 'waLbaPaymentInvoiceEmail',
                                 'checkboxId' => 'waLbaPaymentInvoiceEmailCheck',
                             ])
+                            @if($errors->has('gw'))
+                                <div class="alert alert-danger" style="color: #ff1f3d; background: #ffeef0; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #ffaeb5; font-size: 14px; font-weight: bold; text-align: left;">
+                                    {{ $errors->first('gw') }}
+                                </div>
+                            @endif
                             <p class="campaign-payment-error" id="waLbaPaymentError" hidden></p>
                             <p class="campaign-payment-hint" id="waLbaPaymentHint" hidden></p>
                             <button type="button" class="campaign-cost-card__cta" id="waLbaGwSubmitButton">Bayar & Kirim Iklan</button>
@@ -684,6 +698,7 @@
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            window.paymentQrisRedirectUrl = "{{ route('campaign.menu', ['channel' => $channel, 'menu' => $menu]) }}";
             const templateSelect = document.getElementById('waLbaTemplate');
             const stepRoot = document.getElementById('waLbaStep');
             const nextButton = document.getElementById('waLbaNextButton');
@@ -751,6 +766,7 @@
             const waLbaPaymentHint = document.getElementById('waLbaPaymentHint');
             const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
+            const qrisDownloadUrl = "{{ route('campaign.payment.qris-download') }}";
             const csrfToken = "{{ csrf_token() }}";
             const paymentCustomerPhone = '6285129640197';
             const defaultInvoiceEmail = 'myads@telkomsel.com';
@@ -1108,17 +1124,42 @@
 
             const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
 
-            const setPaymentUi = ({ status, transactionId, qrisUrl } = {}) => {
+            const setPaymentUi = ({ status, transactionId, qrisUrl, forceSuccess } = {}) => {
                 const waLbaPaymentModal = waLbaPaymentPanel?.closest('.campaign-payment-modal');
                 const waLbaPaymentQrDownload = waLbaPaymentModal?.querySelector('[download]');
+                const qrisPanel = document.getElementById('waLbaPaymentPanel');
+                const successPanel = document.getElementById('waLbaPaymentPanelSuccess');
+                const failurePanel = document.getElementById('waLbaPaymentPanelFailure');
+
                 if (waLbaPaymentModal) {
                     waLbaPaymentModal.hidden = false;
                     waLbaPaymentModal.setAttribute('aria-hidden', 'false');
                     document.body.style.overflow = 'hidden';
                 }
-                if (waLbaPaymentPanel) {
-                    waLbaPaymentPanel.hidden = false;
+
+                if (forceSuccess || status === 'SUCCESS') {
+                    if (qrisPanel) qrisPanel.style.display = 'none';
+                    if (successPanel) successPanel.style.display = 'block';
+                    if (failurePanel) failurePanel.style.display = 'none';
+                } else if (status === 'FAILED' || status === 'EXPIRED') {
+                    if (qrisPanel) qrisPanel.style.display = 'none';
+                    if (successPanel) successPanel.style.display = 'none';
+                    if (failurePanel) {
+                        failurePanel.style.display = 'block';
+                        const msgEl = document.getElementById('waLbaPaymentPanelFailureMsg');
+                        if (msgEl) {
+                            msgEl.textContent = `Pembayaran gagal. Status: ${status}`;
+                        }
+                    }
+                } else {
+                    if (qrisPanel) {
+                        qrisPanel.hidden = false;
+                        qrisPanel.style.display = 'block';
+                    }
+                    if (successPanel) successPanel.style.display = 'none';
+                    if (failurePanel) failurePanel.style.display = 'none';
                 }
+
                 if (waLbaPaymentStatus) {
                     waLbaPaymentStatus.textContent = status || '-';
                 }
@@ -1126,17 +1167,23 @@
                     waLbaPaymentTransaction.textContent = transactionId || '-';
                 }
                 if (waLbaPaymentQr && qrisUrl) {
-                    waLbaPaymentQr.src = qrisUrl;
+                    const cleanedUrl = qrisUrl.replace(/\\/g, '');
+                    if (waLbaPaymentQr.getAttribute('data-src-raw') !== cleanedUrl) {
+                        waLbaPaymentQr.src = qrisDownloadUrl + '?url=' + encodeURIComponent(cleanedUrl) + '&disposition=inline';
+                        waLbaPaymentQr.setAttribute('data-src-raw', cleanedUrl);
+                    }
                 }
                 if (waLbaPaymentQrLink) {
                     if (qrisUrl) {
-                        waLbaPaymentQrLink.href = qrisUrl;
+                        const cleanedUrl = qrisUrl.replace(/\\/g, '');
+                        waLbaPaymentQrLink.href = qrisDownloadUrl + '?url=' + encodeURIComponent(cleanedUrl) + '&disposition=inline';
                         waLbaPaymentQrLink.hidden = false;
                     }
                 }
                 if (waLbaPaymentQrDownload) {
                     if (qrisUrl) {
-                        waLbaPaymentQrDownload.href = qrisUrl;
+                        const cleanedUrl = qrisUrl.replace(/\\/g, '');
+                        waLbaPaymentQrDownload.href = qrisDownloadUrl + '?url=' + encodeURIComponent(cleanedUrl) + '&filename=' + encodeURIComponent(`qris-${transactionId || 'payment'}.png`);
                         waLbaPaymentQrDownload.download = `qris-${transactionId || 'payment'}.png`;
                         waLbaPaymentQrDownload.hidden = false;
                     }
@@ -1193,6 +1240,7 @@
 
                 while ((Date.now() - startedAt) < timeoutMs) {
                     let status = '';
+                    let latestQrisUrl = '';
 
                     try {
                         const response = await fetch(statusUrl, {
@@ -1200,16 +1248,27 @@
                         });
                         const payload = await response.json().catch(() => null);
                         status = String(payload?.data?.status || '').toUpperCase();
+                        latestQrisUrl = String(payload?.data?.qris_url || '').trim();
                     } catch (error) {
                         // keep polling
                     }
 
                     if (status) {
-                        setPaymentUi({ status, transactionId });
+                        setPaymentUi({ status, transactionId, qrisUrl: latestQrisUrl });
                     }
 
                     if (status === 'SUCCESS') {
-                        return;
+                        setPaymentUi({ status, transactionId, qrisUrl: null, forceSuccess: true });
+                        return new Promise((resolve) => {
+                            const successBtn = document.getElementById('waLbaPaymentPanelSuccessBtn');
+                            const autoRedirect = setTimeout(resolve, 5000);
+                            if (successBtn) {
+                                successBtn.onclick = () => {
+                                    clearTimeout(autoRedirect);
+                                    resolve();
+                                };
+                            }
+                        });
                     }
 
                     if (status === 'FAILED' || status === 'EXPIRED') {
@@ -1353,6 +1412,9 @@
                 const recipientCount = Number(recipientCountInput?.value || 0);
                 const radius = Number(locationRadiusInput?.value || 0);
                 const totalCost = recipientCount * 1100;
+                const taxPercentage = 11.00;
+                const taxAmount = Number((totalCost * (taxPercentage / 100)).toFixed(2));
+                const grandTotal = Number((totalCost + taxAmount).toFixed(2));
 
                 const setText = (id, value) => {
                     const target = document.getElementById(id);
@@ -1375,8 +1437,10 @@
                 setText('waLbaReviewTestRecipient', testRecipient?.value || 'Belum dipilih');
                 setText('waLbaReviewRecipientCount', `${new Intl.NumberFormat('id-ID').format(recipientCount)} Pesan`);
                 setText('waLbaReviewPotentialRange', audienceEstimate?.textContent || '0');
-                setText('waLbaReviewGrandTotal', formatCurrency(totalCost));
-                setText('waLbaReviewPayment', formatCurrency(totalCost));
+                setText('waLbaReviewSubtotal', formatCurrency(totalCost));
+                setText('waLbaReviewTax', formatCurrency(taxAmount));
+                setText('waLbaReviewGrandTotal', formatCurrency(grandTotal));
+                setText('waLbaReviewPayment', formatCurrency(grandTotal));
 
                 if (reviewSchedules) {
                     const schedules = Array.from(scheduleList?.querySelectorAll('[data-schedule-item]') || []).map((item, index) => {

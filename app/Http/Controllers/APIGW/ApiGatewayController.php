@@ -20,6 +20,7 @@ class ApiGatewayController extends Controller
 			'transaction_amount' => ['required', 'numeric', 'min:1'],
 			'customer_phone' => ['required', 'string', 'max:32'],
 			'email_invoice' => ['nullable', 'email', 'max:255'],
+			'customer_email' => ['nullable', 'email', 'max:255'],
 			'product_category' => ['nullable', 'string', 'max:255'],
 			'product_type' => ['nullable', 'string', 'max:255'],
 			'product_detail' => ['nullable', 'string', 'max:500'],
@@ -30,7 +31,7 @@ class ApiGatewayController extends Controller
 			$user = $request->user();
 			$sessionUser = $request->session()->get('myads.user', []);
 			$defaultEmail = 'myads@telkomsel.com';
-			$email = (string) ($validated['customer_email'] ?? '');
+			$email = (string) ($validated['customer_email'] ?? $validated['email_invoice'] ?? '');
 			if (trim($email) === '') {
 				$email = is_object($user) ? (string) ($user->email ?? '') : '';
 			}
@@ -58,6 +59,8 @@ class ApiGatewayController extends Controller
 				'product_category' => $validated['product_category'] ?? 'MYADS',
 				'product_type' => $validated['product_type'] ?? 'ADVERTISEMENT',
 				'product_detail' => $validated['product_detail'] ?? 'Advertisement Payment',
+				'email_invoice' => $email,
+				'send_invoice' => true,
 			];
 
 			try {
@@ -70,7 +73,7 @@ class ApiGatewayController extends Controller
 				$accessToken = $this->ensureValidAccessToken($request, $client, true);
 				$resp = $client->paymentInitiate($accessToken, $payload);
 			}
-			return response()->json($resp);
+			return response()->json($resp, 200, [], JSON_UNESCAPED_SLASHES);
 		} catch (Throwable $e) {
 			return response()->json([
 				'success' => false,
@@ -94,7 +97,7 @@ class ApiGatewayController extends Controller
 				$accessToken = $this->ensureValidAccessToken($request, $client, true);
 				$resp = $client->paymentStatus($accessToken, $transactionId);
 			}
-			return response()->json($resp);
+			return response()->json($resp, 200, [], JSON_UNESCAPED_SLASHES);
 		} catch (Throwable $e) {
 			return response()->json([
 				'success' => false,
@@ -141,9 +144,11 @@ class ApiGatewayController extends Controller
 			$filename .= '.png';
 		}
 
+		$disposition = $request->query('disposition') === 'inline' ? 'inline' : 'attachment';
+
 		return response($body, 200, [
 			'Content-Type' => $contentType,
-			'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+			'Content-Disposition' => $disposition . '; filename="' . $filename . '"',
 		]);
 	}
 

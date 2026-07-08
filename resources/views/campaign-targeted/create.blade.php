@@ -671,6 +671,14 @@
                                     <span>Harga Satuan</span>
                                     <strong id="campaignReviewUnitPrice">{{ isset($unitPrice) && is_numeric($unitPrice) && (int) $unitPrice > 0 ? 'Rp ' . number_format((int) $unitPrice, 0, ',', '.') : '-' }}</strong>
                                 </div>
+                                <div class="campaign-cost-card__row">
+                                    <span>Subtotal</span>
+                                    <strong id="campaignReviewSubtotal">-</strong>
+                                </div>
+                                <div class="campaign-cost-card__row">
+                                    <span>PPN (11%)</span>
+                                    <strong id="campaignReviewTax">-</strong>
+                                </div>
                             </div>
                             <div class="campaign-cost-card__section">
                                 <div class="campaign-cost-card__row campaign-cost-card__row--total">
@@ -689,6 +697,11 @@
                                 'inputId' => 'campaignPaymentInvoiceEmail',
                                 'checkboxId' => 'campaignPaymentInvoiceEmailCheck',
                             ])
+                            @if($errors->has('gw'))
+                                <div class="alert alert-danger" style="color: #ff1f3d; background: #ffeef0; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #ffaeb5; font-size: 14px; font-weight: bold; text-align: left;">
+                                    {{ $errors->first('gw') }}
+                                </div>
+                            @endif
                             <p class="campaign-payment-error" id="campaignPaymentError" hidden></p>
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
                             @include('partials.payment-qris-modal', [
@@ -852,6 +865,7 @@
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
     <script>
         (async () => {
+            window.paymentQrisRedirectUrl = "{{ route('campaign.menu', ['channel' => $channel, 'menu' => $menu]) }}";
             const isTargeted = "{{ $isTargeted ? 'true' : 'false' }}" === 'true';
             const body = document.body;
             const titleInput = document.getElementById('campaign_title');
@@ -1627,7 +1641,13 @@
                 const recipientCount = Number(document.getElementById('campaignRecipientCount')?.value || 0);
                 const radius = Number(locationRadiusInput?.value || 0);
                 const totalCost = unitPrice > 0 ? recipientCount * unitPrice * getSmsSegmentCount() : 0;
+                const taxPercentage = 11.00;
+                const taxAmount = Number((totalCost * (taxPercentage / 100)).toFixed(2));
+                const grandTotal = Number((totalCost + taxAmount).toFixed(2));
+
                 const totalCostLabel = unitPrice > 0 ? formatCurrency(totalCost) : '-';
+                const taxLabel = unitPrice > 0 ? formatCurrency(taxAmount) : '-';
+                const grandTotalLabel = unitPrice > 0 ? formatCurrency(grandTotal) : '-';
 
                 setText('campaignReviewTitle', titleInput?.value?.trim() || 'Tanpa Judul');
                 setText('campaignReviewSender', sender?.value || '');
@@ -1652,8 +1672,10 @@
                 setText('campaignReviewRecipientCount', `${normalizeAudience(recipientCount)} Pesan`);
                 setText('campaignReviewPotentialRange', normalizeAudience(locationState.audience));
                 setText('campaignReviewUnitPrice', formatUnitPrice());
-                setText('campaignReviewGrandTotal', totalCostLabel);
-                setText('campaignReviewPaymentMonetary', totalCostLabel);
+                setText('campaignReviewSubtotal', totalCostLabel);
+                setText('campaignReviewTax', taxLabel);
+                setText('campaignReviewGrandTotal', grandTotalLabel);
+                setText('campaignReviewPaymentMonetary', grandTotalLabel);
 
                 if (reviewSchedules) {
                     const schedules = Array.from(scheduleList?.querySelectorAll('[data-schedule-item]') || []).map((item, index) => {
@@ -2433,6 +2455,7 @@
 
             const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
+            const qrisDownloadUrl = "{{ route('campaign.payment.qris-download') }}";
             const csrfToken = "{{ csrf_token() }}";
             const paymentCustomerPhone = '6285129640197';
             const defaultInvoiceEmail = 'myads@telkomsel.com';
@@ -2481,17 +2504,42 @@
                 return email;
             };
 
-            const setPaymentUi = ({ status, transactionId, qrisUrl } = {}) => {
+            const setPaymentUi = ({ status, transactionId, qrisUrl, forceSuccess } = {}) => {
                 const paymentModal = paymentPanel?.closest('.campaign-payment-modal');
                 const paymentQrDownload = paymentModal?.querySelector('[download]');
+                const qrisPanel = document.getElementById('campaignPaymentPanel');
+                const successPanel = document.getElementById('campaignPaymentPanelSuccess');
+                const failurePanel = document.getElementById('campaignPaymentPanelFailure');
+
                 if (paymentModal) {
                     paymentModal.hidden = false;
                     paymentModal.setAttribute('aria-hidden', 'false');
                     document.body.style.overflow = 'hidden';
                 }
-                if (paymentPanel) {
-                    paymentPanel.hidden = false;
+
+                if (forceSuccess || status === 'SUCCESS') {
+                    if (qrisPanel) qrisPanel.style.display = 'none';
+                    if (successPanel) successPanel.style.display = 'block';
+                    if (failurePanel) failurePanel.style.display = 'none';
+                } else if (status === 'FAILED' || status === 'EXPIRED') {
+                    if (qrisPanel) qrisPanel.style.display = 'none';
+                    if (successPanel) successPanel.style.display = 'none';
+                    if (failurePanel) {
+                        failurePanel.style.display = 'block';
+                        const msgEl = document.getElementById('campaignPaymentPanelFailureMsg');
+                        if (msgEl) {
+                            msgEl.textContent = `Pembayaran gagal. Status: ${status}`;
+                        }
+                    }
+                } else {
+                    if (qrisPanel) {
+                        qrisPanel.hidden = false;
+                        qrisPanel.style.display = 'block';
+                    }
+                    if (successPanel) successPanel.style.display = 'none';
+                    if (failurePanel) failurePanel.style.display = 'none';
                 }
+
                 if (paymentStatusLabel) {
                     paymentStatusLabel.textContent = status || '-';
                 }
@@ -2499,17 +2547,23 @@
                     paymentTransactionLabel.textContent = transactionId || '-';
                 }
                 if (paymentQr && qrisUrl) {
-                    paymentQr.src = qrisUrl;
+                    const cleanedUrl = qrisUrl.replace(/\\/g, '');
+                    if (paymentQr.getAttribute('data-src-raw') !== cleanedUrl) {
+                        paymentQr.src = qrisDownloadUrl + '?url=' + encodeURIComponent(cleanedUrl) + '&disposition=inline';
+                        paymentQr.setAttribute('data-src-raw', cleanedUrl);
+                    }
                 }
                 if (paymentQrLink) {
                     if (qrisUrl) {
-                        paymentQrLink.href = qrisUrl;
+                        const cleanedUrl = qrisUrl.replace(/\\/g, '');
+                        paymentQrLink.href = qrisDownloadUrl + '?url=' + encodeURIComponent(cleanedUrl) + '&disposition=inline';
                         paymentQrLink.hidden = false;
                     }
                 }
                 if (paymentQrDownload) {
                     if (qrisUrl) {
-                        paymentQrDownload.href = qrisUrl;
+                        const cleanedUrl = qrisUrl.replace(/\\/g, '');
+                        paymentQrDownload.href = qrisDownloadUrl + '?url=' + encodeURIComponent(cleanedUrl) + '&filename=' + encodeURIComponent(`qris-${transactionId || 'payment'}.png`);
                         paymentQrDownload.download = `qris-${transactionId || 'payment'}.png`;
                         paymentQrDownload.hidden = false;
                     }
@@ -2523,6 +2577,7 @@
 
                 while ((Date.now() - startedAt) < timeoutMs) {
                     let status = '';
+                    let latestQrisUrl = '';
 
                     try {
                         const response = await fetch(statusUrl, {
@@ -2530,16 +2585,27 @@
                         });
                         const payload = await response.json().catch(() => null);
                         status = String(payload?.data?.status || '').toUpperCase();
+                        latestQrisUrl = String(payload?.data?.qris_url || '').trim();
                     } catch (error) {
                         // keep polling (network blips)
                     }
 
                     if (status) {
-                        setPaymentUi({ status, transactionId });
+                        setPaymentUi({ status, transactionId, qrisUrl: latestQrisUrl });
                     }
 
                     if (status === 'SUCCESS') {
-                        return;
+                        setPaymentUi({ status, transactionId, qrisUrl: null, forceSuccess: true });
+                        return new Promise((resolve) => {
+                            const successBtn = document.getElementById('campaignPaymentPanelSuccessBtn');
+                            const autoRedirect = setTimeout(resolve, 5000);
+                            if (successBtn) {
+                                successBtn.onclick = () => {
+                                    clearTimeout(autoRedirect);
+                                    resolve();
+                                };
+                            }
+                        });
                     }
 
                     if (status === 'FAILED' || status === 'EXPIRED') {

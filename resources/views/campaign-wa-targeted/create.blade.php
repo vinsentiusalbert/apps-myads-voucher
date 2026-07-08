@@ -619,6 +619,11 @@
                                 'inputId' => 'waTargetedPaymentInvoiceEmail',
                                 'checkboxId' => 'waTargetedPaymentInvoiceEmailCheck',
                             ])
+                            @if($errors->has('gw'))
+                                <div class="alert alert-danger" style="color: #ff1f3d; background: #ffeef0; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #ffaeb5; font-size: 14px; font-weight: bold; text-align: left;">
+                                    {{ $errors->first('gw') }}
+                                </div>
+                            @endif
                             <p class="campaign-payment-error" id="waTargetedPaymentError" hidden></p>
                             <p class="campaign-payment-hint" id="waTargetedPaymentHint" hidden></p>
                             <button type="button" class="campaign-cost-card__cta" id="waTargetedGwSubmitButton">Bayar & Kirim Iklan</button>
@@ -672,6 +677,7 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            window.paymentQrisRedirectUrl = "{{ route('campaign.menu', ['channel' => $channel, 'menu' => $menu]) }}";
             const templateSelect = document.getElementById('waTargetedTemplate');
             const stepRoot = document.getElementById('waTargetedStep');
             const nextButton = document.getElementById('waTargetedNextButton');
@@ -725,6 +731,7 @@
             const profileDropdownUrl = "{{ route('campaign.targeted.profile-dropdown-list', ['channel' => $channel]) }}";
             const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
+            const qrisDownloadUrl = "{{ route('campaign.payment.qris-download') }}";
             const csrfToken = "{{ csrf_token() }}";
             const paymentCustomerPhone = '6285129640197';
             const defaultInvoiceEmail = 'myads@telkomsel.com';
@@ -1592,7 +1599,7 @@
                 }
             };
 
-            const setPaymentUi = ({ status, transactionId, qrisUrl } = {}) => {
+            const setPaymentUi = ({ status, transactionId, qrisUrl, forceSuccess } = {}) => {
                 const paymentPanel = document.getElementById('waTargetedPaymentPanel');
                 const paymentStatus = document.getElementById('waTargetedPaymentStatus');
                 const paymentTransaction = document.getElementById('waTargetedPaymentTransaction');
@@ -1600,15 +1607,39 @@
                 const paymentQrLink = document.getElementById('waTargetedPaymentQrLink');
                 const paymentModal = paymentPanel?.closest('.campaign-payment-modal');
                 const paymentQrDownload = paymentModal?.querySelector('[download]');
+                const qrisPanel = document.getElementById('waTargetedPaymentPanel');
+                const successPanel = document.getElementById('waTargetedPaymentPanelSuccess');
+                const failurePanel = document.getElementById('waTargetedPaymentPanelFailure');
 
                 if (paymentModal) {
                     paymentModal.hidden = false;
                     paymentModal.setAttribute('aria-hidden', 'false');
                     document.body.style.overflow = 'hidden';
                 }
-                if (paymentPanel) {
-                    paymentPanel.hidden = false;
+
+                if (forceSuccess || status === 'SUCCESS') {
+                    if (qrisPanel) qrisPanel.style.display = 'none';
+                    if (successPanel) successPanel.style.display = 'block';
+                    if (failurePanel) failurePanel.style.display = 'none';
+                } else if (status === 'FAILED' || status === 'EXPIRED') {
+                    if (qrisPanel) qrisPanel.style.display = 'none';
+                    if (successPanel) successPanel.style.display = 'none';
+                    if (failurePanel) {
+                        failurePanel.style.display = 'block';
+                        const msgEl = document.getElementById('waTargetedPaymentPanelFailureMsg');
+                        if (msgEl) {
+                            msgEl.textContent = `Pembayaran gagal. Status: ${status}`;
+                        }
+                    }
+                } else {
+                    if (qrisPanel) {
+                        qrisPanel.hidden = false;
+                        qrisPanel.style.display = 'block';
+                    }
+                    if (successPanel) successPanel.style.display = 'none';
+                    if (failurePanel) failurePanel.style.display = 'none';
                 }
+
                 if (paymentStatus) {
                     paymentStatus.textContent = status || '-';
                 }
@@ -1616,17 +1647,23 @@
                     paymentTransaction.textContent = transactionId || '-';
                 }
                 if (paymentQr && qrisUrl) {
-                    paymentQr.src = qrisUrl;
+                    const cleanedUrl = qrisUrl.replace(/\\/g, '');
+                    if (paymentQr.getAttribute('data-src-raw') !== cleanedUrl) {
+                        paymentQr.src = qrisDownloadUrl + '?url=' + encodeURIComponent(cleanedUrl) + '&disposition=inline';
+                        paymentQr.setAttribute('data-src-raw', cleanedUrl);
+                    }
                 }
                 if (paymentQrLink) {
                     if (qrisUrl) {
-                        paymentQrLink.href = qrisUrl;
+                        const cleanedUrl = qrisUrl.replace(/\\/g, '');
+                        paymentQrLink.href = qrisDownloadUrl + '?url=' + encodeURIComponent(cleanedUrl) + '&disposition=inline';
                         paymentQrLink.hidden = false;
                     }
                 }
                 if (paymentQrDownload) {
                     if (qrisUrl) {
-                        paymentQrDownload.href = qrisUrl;
+                        const cleanedUrl = qrisUrl.replace(/\\/g, '');
+                        paymentQrDownload.href = qrisDownloadUrl + '?url=' + encodeURIComponent(cleanedUrl) + '&filename=' + encodeURIComponent(`qris-${transactionId || 'payment'}.png`);
                         paymentQrDownload.download = `qris-${transactionId || 'payment'}.png`;
                         paymentQrDownload.hidden = false;
                     }
@@ -1640,6 +1677,7 @@
 
                 while ((Date.now() - startedAt) < timeoutMs) {
                     let status = '';
+                    let latestQrisUrl = '';
 
                     try {
                         const response = await fetch(statusUrl, {
@@ -1647,16 +1685,27 @@
                         });
                         const payload = await response.json().catch(() => null);
                         status = String(payload?.data?.status || '').toUpperCase();
+                        latestQrisUrl = String(payload?.data?.qris_url || '').trim();
                     } catch (error) {
                         // keep polling
                     }
 
                     if (status) {
-                        setPaymentUi({ status, transactionId });
+                        setPaymentUi({ status, transactionId, qrisUrl: latestQrisUrl });
                     }
 
                     if (status === 'SUCCESS') {
-                        return;
+                        setPaymentUi({ status, transactionId, qrisUrl: null, forceSuccess: true });
+                        return new Promise((resolve) => {
+                            const successBtn = document.getElementById('waTargetedPaymentPanelSuccessBtn');
+                            const autoRedirect = setTimeout(resolve, 5000);
+                            if (successBtn) {
+                                successBtn.onclick = () => {
+                                    clearTimeout(autoRedirect);
+                                    resolve();
+                                };
+                            }
+                        });
                     }
 
                     if (status === 'FAILED' || status === 'EXPIRED') {

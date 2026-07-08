@@ -144,6 +144,10 @@
             modal.hidden = true;
             modal.setAttribute('aria-hidden', 'true');
             document.body.style.overflow = '';
+
+            if (window.paymentQrisRedirectUrl) {
+                window.location.href = window.paymentQrisRedirectUrl;
+            }
         };
 
         document.addEventListener('click', (event) => {
