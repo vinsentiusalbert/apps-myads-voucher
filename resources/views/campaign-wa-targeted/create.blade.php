@@ -726,7 +726,7 @@
             const paymentInitiateUrl = "{{ route('campaign.payment.initiate') }}";
             const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
             const csrfToken = "{{ csrf_token() }}";
-            const paymentCustomerPhone = '-';
+            const paymentCustomerPhone = '6285129640197';
             const defaultInvoiceEmail = 'myads@telkomsel.com';
             const waTargetedUnitPrice = 1100;
             const waTargetedPaymentError = document.getElementById('waTargetedPaymentError');
