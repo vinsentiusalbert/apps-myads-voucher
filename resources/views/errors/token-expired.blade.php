@@ -39,7 +39,7 @@
                     Token akses ke layanan MyAds sudah tidak aktif, jadi proses sebelumnya tidak bisa dilanjutkan.
                 </p>
                 <p class="token-expired-text token-expired-text--muted">
-                    Silakan login ulang melalui alur SSO agar token baru bisa dibuat, lalu buka kembali halaman campaign Anda.
+                    Silakan login ulang melalui Gofood Merchant agar token baru bisa dibuat, lalu buka kembali halaman campaign Anda.
                 </p>
 
                 @if (! empty($message))
@@ -59,7 +59,7 @@
                 </div>
 
                 <p class="token-expired-help">
-                    Jika halaman ini terus muncul setelah login ulang, hubungi tim administrator atau cek integrasi token API Anda.
+                    Jika halaman ini terus muncul setelah login ulang, hubungi tim administrator.
                 </p>
             </section>
         </main>
