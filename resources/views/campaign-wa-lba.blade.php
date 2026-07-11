@@ -472,10 +472,6 @@
                                     <strong id="waLbaReviewRadius">300 meter</strong>
                                 </div>
                                 <div>
-                                    <span class="campaign-review-grid__label">Estimasi Penerima Potensial</span>
-                                    <strong id="waLbaReviewAudience">0</strong>
-                                </div>
-                                <div>
                                     <span class="campaign-review-grid__label">Jenis Kelamin</span>
                                     <strong id="waLbaReviewGender">Semua</strong>
                                 </div>
@@ -727,9 +723,12 @@
 
             const buildHourOptions = (selectedValue) => {
                 const options = [];
-                for (let hour = 0; hour < 24; hour += 1) {
+                const selectedHour = Math.min(18, Math.max(8, Number(selectedValue || 8)));
+                const normalizedSelectedValue = String(selectedHour).padStart(2, '0');
+
+                for (let hour = 8; hour <= 18; hour += 1) {
                     const value = String(hour).padStart(2, '0');
-                    options.push(`<option value="${value}"${value === selectedValue ? ' selected' : ''}>${value}</option>`);
+                    options.push(`<option value="${value}"${value === normalizedSelectedValue ? ' selected' : ''}>${value}</option>`);
                 }
                 return options.join('');
             };
@@ -760,6 +759,34 @@
                 return toDateInputValue(date);
             };
 
+            const defaultDeliveryTime = () => {
+                const now = new Date();
+                let start = new Date(now);
+                start.setSeconds(0, 0);
+
+                let end = new Date(start);
+                end.setHours(end.getHours() + 4);
+
+                const isAllowedTime = (date) => {
+                    const minutes = date.getHours() * 60 + date.getMinutes();
+                    return minutes >= (8 * 60) && minutes <= ((18 * 60) + 59);
+                };
+
+                if (!isAllowedTime(start) || !isAllowedTime(end)) {
+                    start = new Date(now);
+                    start.setHours(8, 0, 0, 0);
+                    end = new Date(start);
+                    end.setHours(12, 0, 0, 0);
+                }
+
+                const timeValue = (date) => `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+
+                return {
+                    startTime: timeValue(start),
+                    endTime: timeValue(end),
+                };
+            };
+
             const syncSchedulePreview = (scheduleId) => {
                 const dateStart = document.querySelector(`[data-schedule-date-start="${scheduleId}"]`);
                 const dateEnd = document.querySelector(`[data-schedule-date-end="${scheduleId}"]`);
@@ -785,7 +812,10 @@
                 }
             };
 
-            const initScheduleTimeSelects = (scheduleId, startValue = '13:00', endValue = '13:30') => {
+            const initScheduleTimeSelects = (scheduleId, startValue = null, endValue = null) => {
+                const defaults = defaultDeliveryTime();
+                startValue = startValue || defaults.startTime;
+                endValue = endValue || defaults.endTime;
                 const [startHour, startMinute] = startValue.split(':');
                 const [endHour, endMinute] = endValue.split(':');
                 const timeStartHour = document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`);
@@ -819,6 +849,19 @@
                 });
             };
 
+            const isScheduleTimeOrderValid = (scheduleId) => {
+                const startHour = Number(document.querySelector(`[data-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
+                const startMinute = Number(document.querySelector(`[data-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
+                const endHour = Number(document.querySelector(`[data-schedule-time-end-hour="${scheduleId}"]`)?.value || NaN);
+                const endMinute = Number(document.querySelector(`[data-schedule-time-end-minute="${scheduleId}"]`)?.value || NaN);
+
+                if ([startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
+                    return false;
+                }
+
+                return (startHour * 60 + startMinute) < (endHour * 60 + endMinute);
+            };
+
             const syncStepThreeState = () => {
                 const recipientCount = Number(recipientCountInput?.value || 0);
                 const audienceBase = Number((audienceEstimate?.textContent || '0').replace(/\./g, '')) || 0;
@@ -829,8 +872,24 @@
                     estimateRange.textContent = `${new Intl.NumberFormat('id-ID').format(minimum)}-${new Intl.NumberFormat('id-ID').format(maximum)}`;
                 }
 
+                let isScheduleValid = true;
+                document.querySelectorAll('[data-schedule-item]').forEach((item) => {
+                    const scheduleId = item.dataset.scheduleItem;
+                    const alert = item.querySelector('.campaign-step-two__alert');
+                    const isTimeOrderValid = isScheduleTimeOrderValid(scheduleId);
+
+                    if (alert) {
+                        alert.textContent = isTimeOrderValid
+                            ? 'Pembuatan iklan tidak boleh sebelum waktu sekarang.'
+                            : 'Jam mulai harus lebih kecil dari jam berakhir.';
+                        alert.hidden = isTimeOrderValid;
+                    }
+
+                    isScheduleValid = isScheduleValid && isTimeOrderValid;
+                });
+
                 if (stepThreeNext) {
-                    stepThreeNext.disabled = !(recipientCount >= 5 && termsCheck?.checked && testRecipient?.value);
+                    stepThreeNext.disabled = !(recipientCount >= 5 && termsCheck?.checked && testRecipient?.value && isScheduleValid);
                 }
             };
 
@@ -1018,6 +1077,7 @@
                     return;
                 }
 
+                const defaults = defaultDeliveryTime();
                 scheduleIndex += 1;
                 const item = document.createElement('article');
                 item.className = 'campaign-schedule-card';
@@ -1041,7 +1101,7 @@
                             <label class="field-label">Jam Kirim</label>
                             <div class="campaign-time-picker" data-time-picker="${scheduleIndex}">
                                 <button type="button" class="campaign-time-picker__trigger" data-time-trigger="${scheduleIndex}">
-                                    <span class="campaign-time-picker__value" id="waLbaScheduleTimePreview${scheduleIndex}">13:00-13:30 WIB</span>
+                                    <span class="campaign-time-picker__value" id="waLbaScheduleTimePreview${scheduleIndex}">${defaults.startTime}-${defaults.endTime} WIB</span>
                                     <span class="campaign-time-picker__clock">◷</span>
                                 </button>
                                 <div class="campaign-time-picker__panel" data-time-panel="${scheduleIndex}" hidden>
@@ -1350,6 +1410,26 @@
 
                 if (scheduleId) {
                     syncSchedulePreview(scheduleId);
+                    syncStepThreeState();
+                }
+            });
+            scheduleList?.addEventListener('change', (event) => {
+                const field = event.target.closest('[data-schedule-date-start], [data-schedule-date-end], [data-schedule-time-start-hour], [data-schedule-time-start-minute], [data-schedule-time-end-hour], [data-schedule-time-end-minute]');
+                if (!field) {
+                    return;
+                }
+
+                const scheduleId =
+                    field.dataset.scheduleDateStart ||
+                    field.dataset.scheduleDateEnd ||
+                    field.dataset.scheduleTimeStartHour ||
+                    field.dataset.scheduleTimeStartMinute ||
+                    field.dataset.scheduleTimeEndHour ||
+                    field.dataset.scheduleTimeEndMinute;
+
+                if (scheduleId) {
+                    syncSchedulePreview(scheduleId);
+                    syncStepThreeState();
                 }
             });
             recipientCountInput?.addEventListener('input', syncStepThreeState);

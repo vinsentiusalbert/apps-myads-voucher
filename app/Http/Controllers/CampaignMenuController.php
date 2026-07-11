@@ -188,6 +188,7 @@ class CampaignMenuController extends Controller
                     'page' => $page,
                     'campaignRow' => $campaignRow,
                     'campaignReport' => $this->campaignReportFromApi($request, (string) ($campaignRow['id'] ?? '')),
+                    'campaignListReport' => $this->campaignListReportFromApi($request, (string) ($campaignRow['id'] ?? '')),
                 ]);
             }
 
@@ -234,6 +235,7 @@ class CampaignMenuController extends Controller
                     'page' => $page,
                     'campaignRow' => $campaignRow,
                     'campaignReport' => $this->campaignReportFromApi($request, (string) ($campaignRow['id'] ?? '')),
+                    'campaignListReport' => $this->campaignListReportFromApi($request, (string) ($campaignRow['id'] ?? '')),
                 ]);
             }
 
@@ -1018,6 +1020,27 @@ class CampaignMenuController extends Controller
             $gatewayToken = $this->requireGatewayToken($request);
 
             return $client->campaignReport($gatewayToken, [
+                'campaignId' => (int) $campaignId,
+            ], $this->gatewayRefreshCallback($request, $client));
+        } catch (Throwable) {
+            return [];
+        }
+    }
+
+    private function campaignListReportFromApi(Request $request, string $campaignId): array
+    {
+        $campaignId = trim($campaignId);
+
+        if ($campaignId === '' || ! ctype_digit($campaignId)) {
+            return [];
+        }
+
+        try {
+            /** @var MyadsApiClient $client */
+            $client = app(MyadsApiClient::class);
+            $gatewayToken = $this->requireGatewayToken($request);
+
+            return $client->campaignList($gatewayToken, [
                 'campaignId' => (int) $campaignId,
             ], $this->gatewayRefreshCallback($request, $client));
         } catch (Throwable) {

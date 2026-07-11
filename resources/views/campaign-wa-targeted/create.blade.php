@@ -1282,9 +1282,12 @@
 
             const buildHourOptions = (selectedValue) => {
                 const options = [];
-                for (let hour = 0; hour < 24; hour += 1) {
+                const selectedHour = Math.min(18, Math.max(8, Number(selectedValue || 8)));
+                const normalizedSelectedValue = String(selectedHour).padStart(2, '0');
+
+                for (let hour = 8; hour <= 18; hour += 1) {
                     const value = String(hour).padStart(2, '0');
-                    options.push(`<option value="${value}"${value === selectedValue ? ' selected' : ''}>${value}</option>`);
+                    options.push(`<option value="${value}"${value === normalizedSelectedValue ? ' selected' : ''}>${value}</option>`);
                 }
                 return options.join('');
             };
@@ -1315,12 +1318,23 @@
 
             const defaultDeliverySchedule = () => {
                 const now = new Date();
-                const start = new Date(now);
+                let start = new Date(now);
                 start.setSeconds(0, 0);
-                start.setMinutes(Math.ceil(start.getMinutes() / 30) * 30);
 
-                const end = new Date(start);
+                let end = new Date(start);
                 end.setHours(end.getHours() + 4);
+
+                const isAllowedTime = (date) => {
+                    const minutes = date.getHours() * 60 + date.getMinutes();
+                    return minutes >= (8 * 60) && minutes <= ((18 * 60) + 59);
+                };
+
+                if (!isAllowedTime(start) || !isAllowedTime(end)) {
+                    start = new Date(now);
+                    start.setHours(8, 0, 0, 0);
+                    end = new Date(start);
+                    end.setHours(12, 0, 0, 0);
+                }
 
                 const startDate = new Date(now);
                 startDate.setDate(startDate.getDate() + 1);
@@ -1471,6 +1485,19 @@
                 return startAt !== null && startAt >= minimumStartAt;
             };
 
+            const isScheduleTimeOrderValid = (scheduleId) => {
+                const startHour = Number(document.querySelector(`[data-wa-targeted-schedule-time-start-hour="${scheduleId}"]`)?.value || NaN);
+                const startMinute = Number(document.querySelector(`[data-wa-targeted-schedule-time-start-minute="${scheduleId}"]`)?.value || NaN);
+                const endHour = Number(document.querySelector(`[data-wa-targeted-schedule-time-end-hour="${scheduleId}"]`)?.value || NaN);
+                const endMinute = Number(document.querySelector(`[data-wa-targeted-schedule-time-end-minute="${scheduleId}"]`)?.value || NaN);
+
+                if ([startHour, startMinute, endHour, endMinute].some(Number.isNaN)) {
+                    return false;
+                }
+
+                return (startHour * 60 + startMinute) < (endHour * 60 + endMinute);
+            };
+
             const syncRecipientScheduleValidity = () => {
                 const recipientCount = Number(recipientCountInput?.value || 0);
                 const isRecipientValid = recipientCount >= 5;
@@ -1486,12 +1513,15 @@
                     const alert = item.querySelector('[data-wa-targeted-schedule-duration-alert]');
                     const isDurationValid = getScheduleDurationMinutes(scheduleId) >= 240;
                     const isStartValid = isScheduleStartAllowed(scheduleId);
-                    const isItemValid = isDurationValid && isStartValid;
+                    const isTimeOrderValid = isScheduleTimeOrderValid(scheduleId);
+                    const isItemValid = isDurationValid && isStartValid && isTimeOrderValid;
 
                     if (alert) {
                         alert.textContent = !isStartValid
                             ? 'Jadwal pengiriman minimal 4 jam dari waktu sekarang.'
-                            : 'Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal';
+                            : (!isTimeOrderValid
+                                ? 'Jam mulai harus lebih kecil dari jam berakhir.'
+                                : 'Atur jadwal minimal 4 jam/hari untuk memastikan target anda tercapai minimal');
                         alert.hidden = isItemValid;
                     }
 
@@ -2258,6 +2288,23 @@
             };
             scheduleList?.addEventListener('input', handleScheduleChange);
             scheduleList?.addEventListener('change', handleScheduleChange);
+
+            const syncDraftScheduleState = () => {
+                document.querySelectorAll('[data-wa-targeted-schedule-date-start]').forEach((field) => {
+                    const scheduleId = field.dataset.waTargetedScheduleDateStart;
+                    if (scheduleId) {
+                        syncSchedulePreview(scheduleId);
+                    }
+                });
+                syncScheduleRemoveState();
+                syncStepTwoValidity();
+                syncStepThreeValidity();
+                syncReviewSummary();
+                syncPaymentSubmitState();
+            };
+
+            document.addEventListener('campaign:draft-restored', syncDraftScheduleState);
+
             document.addEventListener('click', (event) => {
                 if (!event.target.closest('[data-wa-targeted-time-picker]')) {
                     document.querySelectorAll('[data-wa-targeted-time-picker]').forEach((picker) => {
@@ -2313,4 +2360,7 @@
             syncPaymentSubmitState();
         });
     </script>
+    @include('partials.campaign-draft-state', [
+        'storageKey' => "campaign-draft:{$channel}:{$menu}",
+    ])
 @endpush

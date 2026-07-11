@@ -6456,6 +6456,11 @@ body.campaign-map-open {
     padding: 8px 0 10px;
 }
 
+.campaign-report-head__copy {
+    min-width: 0;
+    max-width: 100%;
+}
+
 .campaign-report-head__breadcrumbs,
 .campaign-report-head__kicker,
 .campaign-report-head__meta,
@@ -6496,6 +6501,9 @@ body.campaign-map-open {
     font-size: clamp(2rem, 4vw, 3rem);
     line-height: 1.04;
     color: #082b26;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .campaign-report-head__meta {
@@ -7016,8 +7024,22 @@ body.campaign-map-open {
         padding-top: 12px;
     }
 
+    .campaign-report-head {
+        gap: 18px;
+    }
+
     .campaign-report-head__title {
-        font-size: 2rem;
+        font-size: 1.75rem;
+        line-height: 1.12;
+    }
+
+    .campaign-report-head__meta {
+        gap: 6px 14px;
+    }
+
+    .campaign-report-head__meta span {
+        max-width: 100%;
+        overflow-wrap: anywhere;
     }
 
     .campaign-report-head__actions {

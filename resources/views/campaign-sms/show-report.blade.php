@@ -7,10 +7,12 @@
     $listDetail = is_array($campaignRow['report_detail'] ?? null) ? $campaignRow['report_detail'] : [];
     $rawCampaign = (array) ($campaignRow['raw'] ?? []);
     $campaignReport = is_array($campaignReport ?? null) ? $campaignReport : [];
+    $campaignListReport = is_array($campaignListReport ?? null) ? $campaignListReport : [];
     $reportData = data_get($campaignReport, 'data.data')
         ?? data_get($campaignReport, 'data')
         ?? [];
     $reportData = is_array($reportData) ? $reportData : [];
+    $listReportData = [];
 
     $decodeNestedJson = function ($value) use (&$decodeNestedJson) {
         if (is_string($value)) {
@@ -36,6 +38,7 @@
 
     $rawCampaign = $decodeNestedJson($rawCampaign);
     $reportData = $decodeNestedJson($reportData);
+    $campaignListReport = $decodeNestedJson($campaignListReport);
 
     $formatNumber = function ($value, $default = '-') {
         if ($value === null || $value === '') {
@@ -82,6 +85,14 @@
         $value = trim((string) $value);
         if ($value === '') {
             return $default;
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}/', $value)) {
+            try {
+                return \Illuminate\Support\Carbon::parse($value)->format('H.i');
+            } catch (Throwable) {
+                return $value;
+            }
         }
 
         if (preg_match('/^\d{4}$/', $value)) {
@@ -141,6 +152,30 @@
         return $default;
     };
 
+    $listReportItems = data_get($campaignListReport, 'data.data.list', []);
+    $listReportItems = is_array($listReportItems) ? $listReportItems : [];
+    $listReportData = is_array($listReportItems[0] ?? null) ? $listReportItems[0] : [];
+
+    $firstListValue = function (array $keys, $default = null) use ($listReportData, $listDetail, $reportData, $rawCampaign, $campaignRow, $findNestedValue) {
+        foreach ($keys as $key) {
+            foreach ([$listReportData, $campaignRow, $listDetail, $rawCampaign, $reportData] as $source) {
+                $value = data_get($source, $key);
+                if ($value !== null && $value !== '') {
+                    return $value;
+                }
+            }
+        }
+
+        foreach ([$listReportData, $campaignRow, $listDetail, $rawCampaign, $reportData] as $source) {
+            $value = $findNestedValue($source, $keys);
+            if ($value !== null && $value !== '') {
+                return $value;
+            }
+        }
+
+        return $default;
+    };
+
     $firstAssoc = function (array $keys) use ($firstValue): array {
         $value = $firstValue($keys, []);
         if (! is_array($value)) {
@@ -166,15 +201,14 @@
     preg_match('/Sukses:\s*([\d\.,]+)/i', $campaignRow['status_detail'] ?? '', $successMatch);
     preg_match('/Gagal:\s*([\d\.,]+)/i', $campaignRow['status_detail'] ?? '', $failedMatch);
 
-    $campaignId = $firstValue(['campaignId', 'id'], $campaignRow['id'] ?? '-');
-    $campaignTitle = $firstValue(['campaignName', 'title', 'name'], $campaignRow['title'] ?? 'Belum diisi');
-    $campaignDate = $campaignRow['date']
-        ?? $formatDate($firstValue(['deliveryDate', 'deliveryStartDate', 'startDate', 'createdAt'], ''), '-');
+    $campaignId = $firstListValue(['id', 'campaignId'], $campaignRow['id'] ?? '-');
+    $campaignTitle = $firstListValue(['campaignName', 'title', 'name'], $campaignRow['title'] ?? 'Belum diisi');
+    $campaignDate = $formatDate($firstListValue(['startDate', 'deliveryDate', 'deliveryStartDate', 'createdDate', 'createdAt'], $campaignRow['date'] ?? ''), '-');
     $categoryLabel = $isTargeted ? 'Targeted' : 'Location Based Advertising';
-    $channelLabel = $firstValue(['inventoryType', 'channel', 'channel_type'], $campaignRow['channel_type'] ?? 'SMS');
-    $senderName = $firstValue(['sender_name', 'senderName', 'sender', 'from'], '-');
-    $messageText = $firstValue(['message', 'content.message', 'contents.message', 'messageText', 'smsMessage', 'bodyMessage'], '-');
-    $totalRecipient = $formatNumber($firstValue(['recipient_total', 'recepientTotal', 'recipientTotal', 'totalRecipient', 'totalRecepient', 'totalMessage'], null), '-');
+    $channelLabel = $firstListValue(['inventoryType', 'channel', 'channel_type'], $campaignRow['channel_type'] ?? 'SMS');
+    $senderName = $firstListValue(['sender_name', 'senderName', 'senderId', 'sender_id', 'sender', 'from'], '-');
+    $messageText = $firstListValue(['bodyMessage', 'body_message', 'messageText', 'smsMessage', 'smsContent', 'contentText', 'message', 'body', 'text', 'description', 'content.message', 'contents.message', 'content.body', 'contents.body'], '-');
+    $totalRecipient = $formatNumber($firstListValue(['totalTarget', 'recipient_total', 'recepientTotal', 'recipientTotal', 'totalRecipient', 'totalRecepient', 'totalMessage'], null), '-');
 
     $successCount = $formatNumber($firstValue(['success', 'successCount', 'totalSuccess', 'delivered', 'deliveredCount', 'sent', 'sentCount'], $successMatch[1] ?? null), '0');
     $failedCount = $formatNumber($firstValue(['failed', 'failedCount', 'totalFailed', 'undelivered', 'undeliveredCount', 'fail', 'failCount'], $failedMatch[1] ?? null), '0');
@@ -203,13 +237,13 @@
     $deliveries = $listValue(['deliveries', 'delivery', 'schedules', 'schedule']);
     if ($deliveries === []) {
         $deliveries = [[
-            'deliveryDate' => $firstValue(['deliveryDate', 'startDate'], ''),
-            'deliveryStartDate' => $firstValue(['deliveryStartDate', 'startDate'], ''),
-            'deliveryEndDate' => $firstValue(['deliveryEndDate', 'endDate'], ''),
-            'deliveryTime' => $firstValue(['deliveryTime'], ''),
-            'deliveryStartTime' => $firstValue(['deliveryStartTime'], ''),
-            'deliveryEndTime' => $firstValue(['deliveryEndTime'], ''),
-            'deliveryMethod' => $firstValue(['deliveryMethod', 'method'], '-'),
+            'deliveryDate' => $firstListValue(['deliveryDate', 'startDate'], ''),
+            'deliveryStartDate' => $firstListValue(['deliveryStartDate', 'startDate'], ''),
+            'deliveryEndDate' => $firstListValue(['deliveryEndDate', 'endDate'], ''),
+            'deliveryTime' => $firstListValue(['deliveryTime', 'startDatetime'], ''),
+            'deliveryStartTime' => $firstListValue(['deliveryStartTime', 'startDatetime'], ''),
+            'deliveryEndTime' => $firstListValue(['deliveryEndTime', 'endDatetime'], ''),
+            'deliveryMethod' => $firstListValue(['deliveryMethod', 'method', 'campaignServiceType'], '-'),
         ]];
     }
 
@@ -222,8 +256,8 @@
         $controlNumbers = [];
     }
 
-    $unitPrice = $formatMoney($firstValue(['unit_price', 'unitPrice', 'pricePerMessage', 'price'], null), '-');
-    $grandTotal = $formatMoney($firstValue(['grand_total', 'grandTotal', 'totalPrice', 'totalCost', 'bucketMain'], $campaignRow['total_price'] ?? null), '-');
+    $unitPrice = $formatMoney($firstListValue(['basePriceProduct', 'unit_price', 'unitPrice', 'pricePerMessage', 'price'], null), '-');
+    $grandTotal = $formatMoney($firstListValue(['bucketMain', 'grand_total', 'grandTotal', 'totalPrice', 'totalCost'], $campaignRow['total_price'] ?? null), '-');
     $balanceMain = $formatMoney($firstValue(['balanceMain', 'mainBalance', 'saldoUmum'], null), '-');
     $balanceMonetary = $formatMoney($firstValue(['balanceMonetary', 'monetaryBalance', 'saldoMonetary'], null), '-');
     $quota = $formatNumber($firstValue(['quota', 'quotaPackage', 'kuotaPaket'], 0), '0') . ' Pesan';
@@ -324,46 +358,6 @@
         <div class="campaign-report-card__delivery-result">
             <a href="#" class="campaign-report-card__link">Lihat Detil Pengiriman</a>
             <strong>Sukses: {{ $successCount }} | Gagal: {{ $failedCount }}</strong>
-        </div>
-    </section>
-
-    <section class="campaign-report-card campaign-report-card--evaluation">
-        <div class="campaign-report-card__section-head">
-            <h2>Evaluasi Jangkauan Iklan Berdasarkan Lokasi</h2>
-            <span class="campaign-report-card__muted-link">Selengkapnya</span>
-        </div>
-        <div class="campaign-report-card__empty-state">
-            <strong>{{ $estimatedPotential }}</strong>
-            <div>
-                <p>Estimasi penerima potensial</p>
-                <span>{{ $locationName }}</span>
-            </div>
-        </div>
-    </section>
-
-    <section class="campaign-report-card campaign-report-card--evaluation">
-        <div class="campaign-report-card__section-head">
-            <div>
-                <h2>Evaluasi Jangkauan Iklan Berdasarkan Total Klik</h2>
-                <p class="campaign-report-card__short-url">Short URL <strong>{{ $shortUrl }}</strong></p>
-            </div>
-            <a href="#" class="campaign-report-card__link">Selengkapnya</a>
-        </div>
-        <div class="campaign-report-metrics">
-            <div class="campaign-report-metrics__item">
-                <div class="campaign-report-card__status-badge">&#10003;</div>
-                <div>
-                    <span>Total Click</span>
-                    <strong>{{ $totalClick }} Click</strong>
-                    <small>{{ $successCount }} pesan terkirim</small>
-                </div>
-            </div>
-            <div class="campaign-report-metrics__item">
-                <div>
-                    <span>Click Rate</span>
-                    <strong>{{ $clickRate }}</strong>
-                </div>
-            </div>
         </div>
     </section>
 
@@ -482,7 +476,6 @@
                                     </div>
                                     <div class="campaign-report-billing__row"><span>Saldo Refund</span><strong class="campaign-report-billing__danger">{{ $balanceMain }}</strong></div>
                                     
-                                    <div class="campaign-report-billing__row"><span>Kuota Paket</span><strong>{{ $quota }}</strong></div>
                                 </div>
                             </div>
                         </div>

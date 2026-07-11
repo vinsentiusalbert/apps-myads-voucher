@@ -235,7 +235,6 @@
                             <div class="campaign-report-grid">
                                 <div><span>Radius</span><strong>3000 meter</strong></div>
                                 <div><span>Tipe Lokasi</span><strong>Indoor & Outdoor</strong></div>
-                                <div><span>Estimasi Penerima Potensial</span><strong>149042-182162</strong></div>
                             </div>
                         </div>
                     @elseif ($section['key'] === 'schedule')
@@ -282,7 +281,6 @@
                                         <span class="campaign-report-billing__caret"></span>
                                     </div>
                                     <div class="campaign-report-billing__row"><span>Saldo Umum</span><strong class="campaign-report-billing__danger">Rp 0</strong></div>
-                                    <div class="campaign-report-billing__row"><span>Kuota Paket</span><strong>10.000 Pesan</strong></div>
                                 </div>
                             </div>
                         </div>
