@@ -252,7 +252,7 @@
                         </span>
                         <span>Simpan Iklan Sebagai Draft</span>
                     </button> --}}
-                    <button type="button" class="submit-btn lba-primary-btn" id="campaignStepOneNext">Lanjutkan</button>
+                    <button type="button" class="submit-btn lba-primary-btn campaign-step-two__next" id="campaignStepOneNext" disabled>Lanjutkan</button>
                 </div>
             </div>
 
@@ -1744,6 +1744,14 @@
                 });
             };
 
+            const syncStepOneValidity = () => {
+                if (stepOneNext) {
+                    const hasSender = Boolean(senderInput?.value.trim());
+                    const hasMessage = Boolean(messageInput?.value.trim());
+                    stepOneNext.disabled = !hasSender || !hasMessage;
+                }
+            };
+
             const syncStepTwoValidity = () => {
                 if (stepTwoNext) {
                     stepTwoNext.disabled = !targetedRecipient?.value;
@@ -2274,8 +2282,14 @@
 
             syncMessagePreview();
             syncSenderPreview();
-            senderInput?.addEventListener('input', syncSenderPreview);
-            messageInput?.addEventListener('input', syncMessagePreview);
+            senderInput?.addEventListener('input', () => {
+                syncSenderPreview();
+                syncStepOneValidity();
+            });
+            messageInput?.addEventListener('input', () => {
+                syncMessagePreview();
+                syncStepOneValidity();
+            });
             addButton?.addEventListener('click', createButtonCard);
             initCampaignMultiselects();
             loadProfileDropdownOptions().then(() => {
@@ -2290,6 +2304,7 @@
             syncScheduleRemoveState();
             applyDefaultDeliverySchedule(1);
             syncTargetedProfileBuilder();
+            syncStepOneValidity();
             syncStepTwoValidity();
             syncStepThreeValidity();
             syncTargetedLocationRemoveState(homeLocationList);
@@ -2451,6 +2466,7 @@
                     }
                 });
                 syncScheduleRemoveState();
+                syncStepOneValidity();
                 syncStepTwoValidity();
                 syncStepThreeValidity();
                 syncReviewSummary();

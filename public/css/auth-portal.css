@@ -3193,6 +3193,10 @@ a {
     min-width: 160px;
 }
 
+.campaign-step-nav-btn[hidden] {
+    display: none !important;
+}
+
 .campaign-step-two {
     display: grid;
     gap: 30px;
@@ -3383,6 +3387,7 @@ a {
     font-weight: 600;
 }
 
+.campaign-step-nav-btn[disabled],
 .campaign-step-two__next[disabled] {
     opacity: 0.35;
     cursor: not-allowed;

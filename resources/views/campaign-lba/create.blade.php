@@ -256,7 +256,7 @@
                         </span>
                         <span>Simpan Iklan Sebagai Draft</span>
                     </button> --}}
-                <button type="button" class="submit-btn lba-primary-btn" id="campaignStepOneNext">Lanjutkan</button>
+                <button type="button" class="submit-btn lba-primary-btn campaign-step-two__next" id="campaignStepOneNext" disabled>Lanjutkan</button>
             </div>
         </div>
 
@@ -1500,7 +1500,9 @@
                 return;
             }
 
-            stepOneNext.disabled = !isTargeted && !hasSelectedLocation();
+            const hasSender = Boolean(senderInput?.value.trim());
+            const hasMessage = Boolean(messageInput?.value.trim());
+            stepOneNext.disabled = !isTargeted && (!hasSender || !hasMessage || !hasSelectedLocation());
         };
 
         const syncStepTwoValidity = () => {
@@ -2225,6 +2227,7 @@
                 }
             });
             syncScheduleRemoveState();
+            syncStepOneValidity();
             syncStepTwoValidity();
             syncReviewSummary();
         };
@@ -2264,8 +2267,14 @@
             }
         });
 
-        senderInput?.addEventListener('input', syncSenderPreview);
-        messageInput?.addEventListener('input', syncMessagePreview);
+        senderInput?.addEventListener('input', () => {
+            syncSenderPreview();
+            syncStepOneValidity();
+        });
+        messageInput?.addEventListener('input', () => {
+            syncMessagePreview();
+            syncStepOneValidity();
+        });
         addButton?.addEventListener('click', createButtonCard);
 
             const gwSubmitButton = document.getElementById('campaignGwSubmitButton');

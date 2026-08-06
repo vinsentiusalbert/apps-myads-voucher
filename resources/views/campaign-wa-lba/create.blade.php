@@ -282,7 +282,7 @@
                 </div> --}}
 
                 <div class="campaign-form-actions campaign-form-actions--step-two">
-                    <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="waLbaStepTwoBack">Sebelumnya</button>
+                    <button type="button" class="campaign-outline-button campaign-step-nav-btn" id="waLbaStepTwoBack" hidden>Sebelumnya</button>
                     <button type="button" class="submit-btn lba-primary-btn campaign-step-two__next" id="waLbaStepTwoNext" disabled>Lanjutkan</button>
                 </div>
             </section>
@@ -789,6 +789,16 @@
                 stepPanels.forEach((panel) => {
                     panel.hidden = Number(panel.dataset.waLbaPanel) !== stepNumber;
                 });
+
+                if (stepTwoBack) {
+                    stepTwoBack.hidden = stepNumber !== 2;
+                }
+                if (stepThreeBack) {
+                    stepThreeBack.hidden = stepNumber !== 3;
+                }
+                if (stepFourBack) {
+                    stepFourBack.hidden = stepNumber !== 4;
+                }
 
                 stepItems.forEach((item, index) => {
                     const current = index + 1;
@@ -1905,7 +1915,7 @@
                     return;
                 }
 
-                const selected = templates.find((template) => template.id === templateSelect.value);
+                const selected = templates.find((template) => String(template.id) === String(templateSelect.value));
                 const hasValue = Boolean(selected);
                 nextButton.disabled = !hasValue;
                 stepRoot?.classList.toggle('campaign-wa-lba-step--selected', hasValue);

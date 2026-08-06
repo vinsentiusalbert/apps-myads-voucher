@@ -250,7 +250,7 @@
                     return;
                 }
 
-                const selected = templates.find((template) => template.id === templateSelect.value);
+                const selected = templates.find((template) => String(template.id) === String(templateSelect.value));
                 const hasValue = Boolean(selected);
                 nextButton.disabled = !hasValue;
                 stepRoot?.classList.toggle('campaign-wa-lba-step--selected', hasValue);
