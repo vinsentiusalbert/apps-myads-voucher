@@ -602,12 +602,6 @@
                         Tentukan lokasi yang Anda inginkan dengan mengetik nama atau alamat lokasi pada kolom pencarian, lalu atur radius pengiriman.
                     </p>
 
-                    <label class="campaign-location-toggle">
-                        <input type="checkbox" disabled>
-                        <span>Gunakan Lokasi Saat Ini</span>
-                        <strong>Lokasi tidak aktif, mohon aktifkan lokasi</strong>
-                    </label>
-
                     <section class="campaign-map-settings">
                         <h3>Pengaturan</h3>
                         <div class="campaign-map-settings__grid">
@@ -631,6 +625,7 @@
 @push('scripts')
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    <script src="{{ asset('js/indonesia-map-geocoder.js') }}?v={{ filemtime(public_path('js/indonesia-map-geocoder.js')) }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const templateSelect = document.getElementById('waLbaTemplate');
@@ -1239,8 +1234,12 @@
 
                     if (locationSearchHost && typeof L.Control?.Geocoder !== 'undefined') {
                         geocoderControl = L.Control.geocoder({
+                            geocoder: window.createIndonesiaGeocoder(L),
                             defaultMarkGeocode: false,
-                            placeholder: 'Masukkan lokasi pencarian',
+                            placeholder: 'Cari jalan atau alamat di Indonesia',
+                            queryMinLength: 3,
+                            suggestMinLength: 3,
+                            suggestTimeout: 250,
                         })
                         .on('markgeocode', (event) => {
                             const center = event.geocode.center;
