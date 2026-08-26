@@ -27,6 +27,8 @@
         const defaultCtaLink = @json($defaultCtaLink ?? '');
         const getDefaultCtaUrl = () => String(defaultCtaLink || '').trim();
         const normalizeCtaUrl = (value) => String(value || '').trim();
+        const removeEmoticons = (value) => String(value || '')
+            .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '');
         let templateButtonIndex = 0;
 
         const syncTemplateBodyPreview = () => {
@@ -169,6 +171,13 @@
                 if (templatePreviewImage) {
                     templatePreviewImage.removeAttribute('src');
                     templatePreviewImage.hidden = true;
+                }
+            }
+
+            if (!isTemplateRead && templateHeaderLabelInput) {
+                const sanitizedHeader = removeEmoticons(templateHeaderLabelInput.value);
+                if (templateHeaderLabelInput.value !== sanitizedHeader) {
+                    templateHeaderLabelInput.value = sanitizedHeader;
                 }
             }
 

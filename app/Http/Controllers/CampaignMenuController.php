@@ -334,7 +334,17 @@ class CampaignMenuController extends Controller
             'category' => ['required', 'string', 'max:100'],
             'language' => ['required', 'string', 'max:100'],
             'header_type' => ['required', 'string', 'max:50'],
-            'header_label' => ['nullable', 'required_if:header_type,TEXT', 'string', 'max:60'],
+            'header_label' => [
+                'nullable',
+                'required_if:header_type,TEXT',
+                'string',
+                'max:60',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (preg_match('/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}\x{200D}]/u', (string) $value)) {
+                        $fail('Header Text tidak boleh mengandung emoticon.');
+                    }
+                },
+            ],
             'asset' => ['nullable', 'required_if:header_type,IMAGE', 'file', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'body' => ['required', 'string', 'max:550'],
             'footer' => ['nullable', 'string', 'max:60'],
