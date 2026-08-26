@@ -142,8 +142,8 @@
                                 @endif
                             </td>
                             <td>
-                                <strong>{{ $row['created_at']->format('d M Y') }}</strong>
-                                <span>{{ $row['created_at']->format('H:i') }} WIB</span>
+                                <strong>{{ $row['createDatetime']->format('d M Y') }}</strong>
+                                <span>{{ $row['createDatetime']->format('H:i') }} WIB</span>
                             </td>
                             <td>{{ $row['category'] }}</td>
                             <td>

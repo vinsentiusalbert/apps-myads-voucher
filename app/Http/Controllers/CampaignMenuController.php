@@ -286,7 +286,7 @@ class CampaignMenuController extends Controller
                     return $rows;
                 }
 
-                return $rows->filter(fn (array $row): bool => isset($row['created_at']) && $row['created_at'] >= $startDate->startOfDay());
+                return $rows->filter(fn (array $row): bool => isset($row['createDatetime']) && $row['createDatetime'] >= $startDate->startOfDay());
             })
             ->when($request->filled('end_date'), function ($rows) use ($request) {
                 $endDate = $request->date('end_date');
@@ -294,9 +294,9 @@ class CampaignMenuController extends Controller
                     return $rows;
                 }
 
-                return $rows->filter(fn (array $row): bool => isset($row['created_at']) && $row['created_at'] <= $endDate->endOfDay());
+                return $rows->filter(fn (array $row): bool => isset($row['createDatetime']) && $row['createDatetime'] <= $endDate->endOfDay());
             })
-            ->sortByDesc(fn (array $row) => $row['created_at'] ?? now())
+            ->sortByDesc(fn (array $row) => $row['createDatetime'] ?? now())
             ->values();
 
         if ($request->query('view') === 'create') {
@@ -687,7 +687,7 @@ class CampaignMenuController extends Controller
                 'headerPathFile' => data_get($raw, 'headerPathFile') ?? data_get($raw, 'header_path_file') ?? '',
                 'buttons' => $buttons,
             ],
-            'created_at' => $row['created_at'] ?? now(),
+            'createDatetime' => $row['createDatetime'] ?? now(),
         ];
     }
 
@@ -757,15 +757,16 @@ class CampaignMenuController extends Controller
                         ?? data_get($row, 'name')
                         ?? data_get($row, 'template_name')
                         ?? '');
-                    $createdAt = data_get($row, 'createdAt')
+                    $createDatetime = data_get($row, 'createDatetime')
+                        ?? data_get($row, 'createdAt')
                         ?? data_get($row, 'created_at')
                         ?? data_get($row, 'timeAdded')
                         ?? null;
 
                     try {
-                        $createdAt = $createdAt ? \Carbon\Carbon::parse($createdAt) : now();
+                        $createDatetime = $createDatetime ? \Carbon\Carbon::parse($createDatetime) : now();
                     } catch (Throwable) {
-                        $createdAt = now();
+                        $createDatetime = now();
                     }
 
                     return [
@@ -776,7 +777,7 @@ class CampaignMenuController extends Controller
                         'language' => (string) (data_get($row, 'language') ?? '-'),
                         'body' => (string) (data_get($row, 'bodyMessage') ?? data_get($row, 'body_message') ?? data_get($row, 'body') ?? data_get($row, 'message') ?? data_get($row, 'templateBody') ?? data_get($row, 'template_body') ?? ''),
                         'status' => (string) (data_get($row, 'activationStatus') ?? data_get($row, 'activation_status') ?? data_get($row, 'status') ?? '-'),
-                        'created_at' => $createdAt,
+                        'createDatetime' => $createDatetime,
                         'raw' => $row,
                     ];
                 })
