@@ -99,7 +99,12 @@ class MyadsApiClient
             $code = $inner['code'] ?? null;
             if (is_numeric($code) && (int) $code !== 0) {
                 $desc = $inner['desc'] ?? null;
-                $message = is_string($desc) && trim($desc) !== '' ? $desc : $fallback;
+                $innerData = $inner['data'] ?? null;
+                if (is_string($innerData) && trim($innerData) !== '') {
+                    $message = is_string($desc) && trim($desc) !== '' ? ($desc . ': ' . $innerData) : $innerData;
+                } else {
+                    $message = is_string($desc) && trim($desc) !== '' ? $desc : $fallback;
+                }
                 throw new RuntimeException($message);
             }
         }
