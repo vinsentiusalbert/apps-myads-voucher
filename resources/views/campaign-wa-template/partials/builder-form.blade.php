@@ -22,7 +22,7 @@
 @if ($isWaTemplateRead)
     <div class="template-builder-layout">
 @else
-    <form method="POST" action="{{ route('campaign-template.store') }}" enctype="multipart/form-data" class="template-builder-layout">
+    <form method="POST" action="{{ route('campaign-template.store') }}" enctype="multipart/form-data" class="template-builder-layout" id="templateCreateForm">
         @csrf
 @endif
     <div class="template-builder-main">
@@ -141,7 +141,7 @@
             <div class="template-builder-inline-actions">
                 <a href="{{ route('campaign-template.index') }}" class="template-builder-secondary">Cancel</a>
                 @unless ($isWaTemplateRead)
-                    <button type="submit" class="template-builder-add-button">
+                    <button type="submit" class="template-builder-add-button" id="templateSaveButton">
                         <span>Save Template</span>
                     </button>
                 @endunless
@@ -174,4 +174,11 @@
     </div>
 @else
     </form>
+    <div class="template-submit-loader" id="templateSubmitLoader" role="status" aria-live="polite" hidden>
+        <div class="template-submit-loader__card">
+            <span class="portal-page-loader__spinner" aria-hidden="true"></span>
+            <strong>Mengunggah dan menyimpan template...</strong>
+            <small>Mohon tunggu, jangan tutup halaman ini.</small>
+        </div>
+    </div>
 @endif

@@ -4541,6 +4541,43 @@ body.campaign-map-open {
     font-size: 14px;
 }
 
+.template-submit-loader {
+    position: fixed;
+    z-index: 1200;
+    inset: 0;
+    display: grid;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(3px);
+    place-items: center;
+}
+
+.template-submit-loader[hidden] {
+    display: none;
+}
+
+.template-submit-loader__card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min(390px, 100%);
+    padding: 28px;
+    color: #172033;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+    text-align: center;
+}
+
+.template-submit-loader__card strong {
+    margin-top: 14px;
+}
+
+.template-submit-loader__card small {
+    margin-top: 6px;
+    color: #64748b;
+}
+
 .template-library-tabs {
     display: flex;
     align-items: center;

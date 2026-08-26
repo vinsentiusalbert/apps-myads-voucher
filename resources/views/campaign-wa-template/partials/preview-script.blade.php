@@ -16,6 +16,9 @@
         const templateHeaderLabelInput = document.querySelector('[data-template-header-label-input]');
         const templateHeaderLabelCount = document.querySelector('[data-template-header-label-count]');
         const templateAssetField = document.querySelector('[data-template-asset-field]');
+        const templateCreateForm = document.getElementById('templateCreateForm');
+        const templateSaveButton = document.getElementById('templateSaveButton');
+        const templateSubmitLoader = document.getElementById('templateSubmitLoader');
         const wabaDisplayNameField = document.querySelector('[data-waba-display-name-field]');
         const wabaDisplayNameSelect = document.getElementById('wabaDisplayNameSelect');
         const wabaAccountIdInput = document.getElementById('wabaAccountIdInput');
@@ -333,6 +336,16 @@
             templateHeaderLabelInput?.addEventListener('input', () => syncHeaderFields());
             wabaDisplayNameSelect?.addEventListener('change', syncSelectedWabaDisplayName);
             loadWabaDisplayNames();
+
+            templateCreateForm?.addEventListener('submit', () => {
+                if (templateSaveButton) {
+                    templateSaveButton.disabled = true;
+                    templateSaveButton.querySelector('span').textContent = 'Menyimpan...';
+                }
+                if (templateSubmitLoader) {
+                    templateSubmitLoader.hidden = false;
+                }
+            });
         }
 
         templateAddButton?.addEventListener('click', () => {
