@@ -578,12 +578,8 @@ class MyadsApiClient
 
             $response = $client->asMultipart()
                 ->attach('file', fopen($uploadPath, 'r'), $uploadName)
-                ->post('/api/gw/content-upload', [
-                    [
-                        'name' => 'phone_number_id',
-                        'contents' => $phoneNumberId,
-                    ],
-                ]);
+                ->attach('phone_number_id', $phoneNumberId)
+                ->post('/api/gw/content-upload');
         } catch (ConnectionException $e) {
             throw new RuntimeException('Tidak bisa konek ke API GW content-upload: ' . $e->getMessage(), previous: $e);
         } finally {
