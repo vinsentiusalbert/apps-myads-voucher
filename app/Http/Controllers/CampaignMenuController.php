@@ -450,7 +450,7 @@ class CampaignMenuController extends Controller
                 'headerLabel' => $headerType === 'TEXT' ? trim((string) ($validated['header_label'] ?? '')) : '',
                 'headerPathFile' => $headerType === 'IMAGE' ? $headerPathFile : '',
             ] : []),
-            'bodyMessage' => $validated['body'],
+            'bodyMessage' => str_replace("\r", '', (string) $validated['body']),
             'bodyType' => 'STATIC',
             'bodyPathFile' => '',
             'useButton' => $buttons === [] ? 0 : 1,
