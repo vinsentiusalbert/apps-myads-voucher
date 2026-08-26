@@ -550,6 +550,10 @@ class MyadsApiClient
     {
         @set_time_limit(120);
         [$uploadPath, $uploadName, $cleanupPath] = $this->prepareContentUploadFile($file);
+        $uploadContents = file_get_contents($uploadPath);
+        if ($uploadContents === false) {
+            throw new RuntimeException('File gambar tidak dapat dibaca untuk proses upload.');
+        }
 
         $accessToken = '';
         try {
@@ -572,9 +576,10 @@ class MyadsApiClient
             }
 
             $response = $client->asMultipart()
-                ->attach('file', fopen($uploadPath, 'r'), $uploadName)
-                ->attach('type', 'MULTIMEDIA')
-                ->post('/api/gw/content-upload');
+                ->attach('file', $uploadContents, $uploadName)
+                ->post('/api/gw/content-upload', [
+                    'type' => 'MULTIMEDIA',
+                ]);
         } catch (ConnectionException $e) {
             throw new RuntimeException('Tidak bisa konek ke API GW content-upload: ' . $e->getMessage(), previous: $e);
         } finally {
