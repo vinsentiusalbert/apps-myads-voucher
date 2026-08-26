@@ -374,7 +374,7 @@ class CampaignMenuController extends Controller
             $accountIds = $this->resolveWabaAccountIds($request, $client, $gwToken, $validated);
 
             if ($request->hasFile('asset') && $this->mapWabaHeaderType($validated['header_type']) === 'IMAGE') {
-                $uploadResp = $client->contentUpload($gwToken, $request->file('asset'), $accountIds['phoneNumberId'], $this->gatewayRefreshCallback($request, $client));
+                $uploadResp = $client->contentUpload($gwToken, $request->file('asset'), $this->gatewayRefreshCallback($request, $client));
                 $headerPathFile = $this->extractUploadedFileValue($uploadResp);
 
                 if ($headerPathFile === '') {

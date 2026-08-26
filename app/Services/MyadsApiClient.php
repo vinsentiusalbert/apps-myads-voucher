@@ -387,10 +387,10 @@ class MyadsApiClient
     /**
      * @return array{success:bool, data?:array}
      */
-    public function contentUpload(string $gatewayToken, UploadedFile $file, int|string $phoneNumberId, ?callable $refreshGatewayToken = null): array
+    public function contentUpload(string $gatewayToken, UploadedFile $file, ?callable $refreshGatewayToken = null): array
     {
         try {
-            return $this->sendContentUpload($gatewayToken, $file, $phoneNumberId);
+            return $this->sendContentUpload($gatewayToken, $file);
         } catch (RuntimeException $e) {
             if ($refreshGatewayToken === null || ! $this->isGatewayAuthorizationCacheMiss($e->getMessage())) {
                 throw $e;
@@ -401,7 +401,7 @@ class MyadsApiClient
                 throw $e;
             }
 
-            return $this->sendContentUpload($freshToken, $file, $phoneNumberId);
+            return $this->sendContentUpload($freshToken, $file);
         }
     }
 
@@ -546,13 +546,8 @@ class MyadsApiClient
     /**
      * @return array{success:bool, data?:array}
      */
-    private function sendContentUpload(string $gatewayToken, UploadedFile $file, int|string $phoneNumberId): array
+    private function sendContentUpload(string $gatewayToken, UploadedFile $file): array
     {
-        $phoneNumberId = trim((string) $phoneNumberId);
-        if ($phoneNumberId === '') {
-            throw new RuntimeException('Phone Number ID wajib tersedia untuk upload konten.');
-        }
-
         @set_time_limit(120);
         [$uploadPath, $uploadName, $cleanupPath] = $this->prepareContentUploadFile($file);
 
@@ -578,7 +573,7 @@ class MyadsApiClient
 
             $response = $client->asMultipart()
                 ->attach('file', fopen($uploadPath, 'r'), $uploadName)
-                ->attach('phone_number_id', $phoneNumberId)
+                ->attach('type', 'MULTIMEDIA')
                 ->post('/api/gw/content-upload');
         } catch (ConnectionException $e) {
             throw new RuntimeException('Tidak bisa konek ke API GW content-upload: ' . $e->getMessage(), previous: $e);
