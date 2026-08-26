@@ -728,10 +728,10 @@
 
             const buildHourOptions = (selectedValue) => {
                 const options = [];
-                const selectedHour = Math.min(18, Math.max(8, Number(selectedValue || 8)));
+                const selectedHour = Math.min(20, Math.max(8, Number(selectedValue || 8)));
                 const normalizedSelectedValue = String(selectedHour).padStart(2, '0');
 
-                for (let hour = 8; hour <= 18; hour += 1) {
+                for (let hour = 8; hour <= 20; hour += 1) {
                     const value = String(hour).padStart(2, '0');
                     options.push(`<option value="${value}"${value === normalizedSelectedValue ? ' selected' : ''}>${value}</option>`);
                 }
@@ -811,6 +811,10 @@
                 if (datePreview && dateStart && dateEnd) {
                     datePreview.textContent = `${formatScheduleDate(dateStart.value)} - ${formatScheduleDate(dateEnd.value)}`;
                 }
+
+                [[timeStartHour, timeStartMinute], [timeEndHour, timeEndMinute]].forEach(([hour, minute]) => {
+                    if (hour?.value === '20') minute.value = '00';
+                });
 
                 if (timePreview && timeStartHour && timeStartMinute && timeEndHour && timeEndMinute) {
                     timePreview.textContent = `${timeStartHour.value}:${timeStartMinute.value}-${timeEndHour.value}:${timeEndMinute.value} WIB`;

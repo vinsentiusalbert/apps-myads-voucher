@@ -60,6 +60,9 @@
     ];
     $activeNav = 'wa-business';
     $activeSubnav = 'wa-campaign-template';
+    $activeStatusTab = strtolower(trim((string) request('status', 'all')));
+    $allTabQuery = request()->except(['status', 'page']);
+    $approvedTabQuery = [...$allTabQuery, 'status' => 'approved'];
 @endphp
 
 @extends('layouts.portal')
@@ -87,17 +90,26 @@
 
     <section class="template-library-card">
         <div class="template-library-tabs">
-            <button type="button" class="template-library-tab template-library-tab--active">
+            <a href="{{ route('campaign-template.index', $allTabQuery) }}" @class([
+                'template-library-tab',
+                'template-library-tab--active' => $activeStatusTab !== 'approved',
+            ])>
                 <span>All</span>
                 <strong>{{ $templateCount }}</strong>
-            </button>
-            <button type="button" class="template-library-tab">
+            </a>
+            <a href="{{ route('campaign-template.index', $approvedTabQuery) }}" @class([
+                'template-library-tab',
+                'template-library-tab--active' => $activeStatusTab === 'approved',
+            ])>
                 <span>Approved</span>
                 <strong>{{ $approvedTemplateCount }}</strong>
-            </button>
+            </a>
         </div>
 
         <form method="GET" action="{{ route('campaign-template.index') }}" class="template-library-filters">
+            @if ($activeStatusTab === 'approved')
+                <input type="hidden" name="status" value="approved">
+            @endif
             <label class="template-library-filter">
                 <span>Category Template</span>
                 <select name="category">
@@ -151,7 +163,12 @@
                                 <span>{{ \Illuminate\Support\Str::limit($row['body'] ?? '-', 80) }}</span>
                             </td>
                             <td>
-                                <span class="template-library-status">{{ $row['status'] }}</span>
+                                @php($templateStatus = strtoupper(trim((string) ($row['status'] ?? ''))))
+                                <span @class([
+                                    'template-library-status',
+                                    'template-library-status--pending' => $templateStatus === 'PENDING',
+                                    'template-library-status--reject' => in_array($templateStatus, ['REJECT', 'REJECTED'], true),
+                                ])>{{ $row['status'] }}</span>
                             </td>
                         </tr>
                     @empty

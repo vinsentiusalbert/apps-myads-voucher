@@ -299,6 +299,17 @@ class CampaignMenuController extends Controller
             ->sortByDesc(fn (array $row) => $row['createDatetime'] ?? now())
             ->values();
 
+        $templateCount = $templates->count();
+        $approvedTemplateCount = $templates
+            ->filter(fn (array $row): bool => strtoupper(trim((string) ($row['status'] ?? ''))) === 'APPROVED')
+            ->count();
+
+        if (strtolower(trim((string) $request->query('status', ''))) === 'approved') {
+            $templates = $templates
+                ->filter(fn (array $row): bool => strtoupper(trim((string) ($row['status'] ?? ''))) === 'APPROVED')
+                ->values();
+        }
+
         if ($request->query('view') === 'create') {
             $gofoodLink = null;
             try {
@@ -321,8 +332,8 @@ class CampaignMenuController extends Controller
             'menu' => 'campaign-template',
             'page' => $page,
             'templateRows' => $templates,
-            'templateCount' => $templates->count(),
-            'approvedTemplateCount' => $templates->filter(fn (array $row): bool => strtoupper((string) ($row['status'] ?? '')) === 'APPROVED')->count(),
+            'templateCount' => $templateCount,
+            'approvedTemplateCount' => $approvedTemplateCount,
         ]);
     }
 

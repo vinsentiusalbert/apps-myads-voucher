@@ -757,11 +757,15 @@ a {
 .portal-nav__item--active {
     padding-left: 14px;
     border-left: 4px solid var(--brand-lime);
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px #ffffff;
 }
 
 .portal-nav__item--selected {
     padding-left: 14px;
     border-left: 4px solid rgba(190, 255, 40, 0.72);
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px #ffffff;
 }
 
 .portal-nav__head {
@@ -881,7 +885,7 @@ a {
     color: #ffffff;
     background: rgba(255, 255, 255, 0.14);
     border-radius: 12px;
-    box-shadow: inset 0 0 0 1px rgba(190, 255, 40, 0.18);
+    box-shadow: inset 0 0 0 1px #ffffff;
 }
 
 .portal-main {
@@ -3709,6 +3713,7 @@ a {
     font-size: 0.98rem;
     font-weight: 700;
     cursor: pointer;
+    text-decoration: none;
 }
 
 .campaign-review-card__body {
@@ -4722,6 +4727,16 @@ body.campaign-map-open {
     font-weight: 800;
 }
 
+.template-library-status--pending {
+    background: #fef3c7;
+    color: #b45309 !important;
+}
+
+.template-library-status--reject {
+    background: #fee2e2;
+    color: #dc2626 !important;
+}
+
 .template-builder-hero {
     padding: 6px 0 0;
 }
@@ -5572,13 +5587,13 @@ body.campaign-map-open {
     .portal-nav__item--active {
         padding-left: 16px;
         border-left: 0;
-        box-shadow: inset 0 0 0 1px rgba(190, 255, 40, 0.32);
+        box-shadow: inset 0 0 0 1px #ffffff;
     }
 
     .portal-nav__item--selected {
         padding-left: 16px;
         border-left: 0;
-        box-shadow: inset 0 0 0 1px rgba(190, 255, 40, 0.22);
+        box-shadow: inset 0 0 0 1px #ffffff;
     }
 
     .portal-subnav {
