@@ -387,10 +387,10 @@ class MyadsApiClient
     /**
      * @return array{success:bool, data?:array}
      */
-    public function contentUpload(string $gatewayToken, UploadedFile $file, ?callable $refreshGatewayToken = null): array
+    public function contentUpload(string $gatewayToken, UploadedFile $file, string $type = 'MULTIMEDIA', ?callable $refreshGatewayToken = null): array
     {
         try {
-            return $this->sendContentUpload($gatewayToken, $file);
+            return $this->sendContentUpload($gatewayToken, $file, $type);
         } catch (RuntimeException $e) {
             if ($refreshGatewayToken === null || ! $this->isGatewayAuthorizationCacheMiss($e->getMessage())) {
                 throw $e;
@@ -401,7 +401,7 @@ class MyadsApiClient
                 throw $e;
             }
 
-            return $this->sendContentUpload($freshToken, $file);
+            return $this->sendContentUpload($freshToken, $file, $type);
         }
     }
 
@@ -546,8 +546,13 @@ class MyadsApiClient
     /**
      * @return array{success:bool, data?:array}
      */
-    private function sendContentUpload(string $gatewayToken, UploadedFile $file): array
+    private function sendContentUpload(string $gatewayToken, UploadedFile $file, string $type): array
     {
+        $type = trim($type);
+        if ($type === '') {
+            $type = 'MULTIMEDIA';
+        }
+
         @set_time_limit(120);
         [$uploadPath, $uploadName, $cleanupPath] = $this->prepareContentUploadFile($file);
         $uploadContents = file_get_contents($uploadPath);
@@ -576,10 +581,9 @@ class MyadsApiClient
             }
 
             $response = $client->asMultipart()
-                ->attach('file', $uploadContents, $uploadName)
-                ->post('/api/gw/content-upload', [
-                    'type' => 'MULTIMEDIA',
-                ]);
+                ->attach('type', $type)
+                ->attach('file', fopen($uploadPath, 'r'), $uploadName)
+                ->post('/api/gw/content-upload');
         } catch (ConnectionException $e) {
             throw new RuntimeException('Tidak bisa konek ke API GW content-upload: ' . $e->getMessage(), previous: $e);
         } finally {
