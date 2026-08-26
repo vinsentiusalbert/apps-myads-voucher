@@ -475,8 +475,11 @@ class MyadsApiClient
     {
         $message = strtolower($message);
 
-        return str_contains($message, 'authorization data')
-            && str_contains($message, 'in-memory cache');
+        return (str_contains($message, 'authorization data') && str_contains($message, 'in-memory cache'))
+            || str_contains($message, 'unauthorized')
+            || str_contains($message, 'expired')
+            || str_contains($message, 'invalid token')
+            || str_contains($message, 'missing x-api-gw-token');
     }
 
     /**

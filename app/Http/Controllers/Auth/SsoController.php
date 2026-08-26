@@ -27,14 +27,15 @@ class SsoController extends Controller
         }
 
         // 🔄 FETCH user data dari API (untuk mendapatkan nama, email, role terbaru)
-        // Jika API tidak dapat diakses, gunakan data fallback dari parameter URL
         $apiUser = null;
         try {
             $apiUserData = $client->getMe($accessToken);
             $apiUser = $apiUserData['data']['user'] ?? null;
-        } catch (Throwable) {
-            // API tidak dapat diakses — lanjutkan dengan data fallback dari URL params
-            // Session tetap dibuat agar user bisa masuk
+            if (!$apiUser) {
+                abort(401, 'Akses Ditolak');
+            }
+        } catch (Throwable $e) {
+            abort(401, 'Akses Ditolak');
         }
 
         // Store session
@@ -61,9 +62,11 @@ class SsoController extends Controller
 
             if ($gwToken !== '') {
                 $request->session()->put('myads.gw_token', $gwToken);
+            } else {
+                abort(401, 'Akses Ditolak');
             }
-        } catch (Throwable) {
-            // Gateway token gagal — tetap lanjutkan, middleware akan retry
+        } catch (Throwable $e) {
+            abort(401, 'Akses Ditolak');
         }
 
         return redirect()->route('dashboard');

@@ -22,6 +22,18 @@ Route::middleware('api-session-guest')->group(function (): void {
     Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 });
 
+Route::get('/error', function (\Illuminate\Http\Request $request) {
+    $message = $request->query('message', 'Terjadi kesalahan pada server.');
+    $status = (int) $request->query('status', 500);
+    $error = $request->query('error', 'Internal Server Error');
+
+    return response()->view('errors.any', [
+        'message' => $message,
+        'status' => $status,
+        'error' => $error,
+    ], $status);
+})->name('error.any');
+
 Route::middleware('web')->group(function (): void {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/campaign/wa-business/campaign-template', [CampaignMenuController::class, 'listCampaignTemplates'])->name('campaign-template.index');

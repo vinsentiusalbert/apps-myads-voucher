@@ -68,5 +68,12 @@
                 </div>
             </div>
         </main>
+        @if (request()->has('session_expired') || request()->query('session_expired'))
+            <script>
+                window.addEventListener('DOMContentLoaded', () => {
+                    alert("Session telah berakhir. Silakan login kembali melalui SSO.");
+                });
+            </script>
+        @endif
     </body>
 </html>

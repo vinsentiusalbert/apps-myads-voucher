@@ -26,8 +26,27 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
+            $isTokenExpiredMessage = function (string $message): bool {
+                $normalized = strtolower($message);
+
+                foreach ([
+                    'token expired',
+                    'session expired',
+                    'token sudah kadaluarsa',
+                    'token akses tidak valid',
+                    'silakan login ulang',
+                    'unauthorized',
+                ] as $needle) {
+                    if (str_contains($normalized, $needle)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            };
+
             $message = trim($e->getMessage());
-            if ($message === '' || ! isTokenExpiredMessage($message)) {
+            if ($message === '' || ! $isTokenExpiredMessage($message)) {
                 return null;
             }
 
@@ -50,23 +69,3 @@ return Application::configure(basePath: dirname(__DIR__))
             ], 401);
         });
     })->create();
-
-function isTokenExpiredMessage(string $message): bool
-{
-    $normalized = strtolower($message);
-
-    foreach ([
-        'token expired',
-        'session expired',
-        'token sudah kadaluarsa',
-        'token akses tidak valid',
-        'silakan login ulang',
-        'unauthorized',
-    ] as $needle) {
-        if (str_contains($normalized, $needle)) {
-            return true;
-        }
-    }
-
-    return false;
-}

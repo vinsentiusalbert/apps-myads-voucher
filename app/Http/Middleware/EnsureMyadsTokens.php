@@ -32,7 +32,12 @@ class EnsureMyadsTokens
             return $next($request);
         }
 
+        $hasSessionBefore = $session->has('myads.refresh_token') || $session->has('myads.user');
+
         if (trim($accessToken) === '') {
+            if ($hasSessionBefore && $request->path() !== '/' && !$this->isPublicRoute($request)) {
+                return redirect()->route('login', ['session_expired' => 1]);
+            }
             return response()->view('errors.401', [], 401);
         }
 
@@ -49,11 +54,25 @@ class EnsureMyadsTokens
                     $accessToken = $newAccessToken;
                 }
             } catch (Throwable) {
-                // Leave the session intact; refresh will be retried later.
+                // Clear session and redirect since token refresh failed
+                $session->forget([
+                    'myads.access_token',
+                    'myads.refresh_token',
+                    'myads.gw_token',
+                    'myads.merchant_id',
+                    'myads.partner_id',
+                    'myads.user',
+                ]);
+                if ($request->path() !== '/' && !$this->isPublicRoute($request)) {
+                    return redirect()->route('login', ['session_expired' => 1]);
+                }
             }
         }
 
         if (trim((string) $session->get('myads.access_token', $accessToken)) === '') {
+            if ($hasSessionBefore && $request->path() !== '/' && !$this->isPublicRoute($request)) {
+                return redirect()->route('login', ['session_expired' => 1]);
+            }
             return response()->view('errors.401', [], 401);
         }
 

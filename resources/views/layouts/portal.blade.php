@@ -64,6 +64,116 @@
 
         @yield('after_shell')
 
+        @if (session('status') || session('success') || $errors->any() || session('error'))
+            @php
+                $alertType = ($errors->any() || session('error')) ? 'error' : 'success';
+                $alertMessage = ($errors->any()) ? $errors->first() : (session('error') ?: (session('status') ?: session('success')));
+            @endphp
+            <div class="custom-portal-alert custom-portal-alert--{{ $alertType }}" id="customPortalAlert">
+                <div class="custom-portal-alert__icon">
+                    @if ($alertType === 'success')
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    @else
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    @endif
+                </div>
+                <div class="custom-portal-alert__content">
+                    <p class="custom-portal-alert__title">{{ $alertType === 'success' ? 'Berhasil' : 'Gagal' }}</p>
+                    <p class="custom-portal-alert__message">{{ $alertMessage }}</p>
+                </div>
+                <button type="button" class="custom-portal-alert__close" onclick="document.getElementById('customPortalAlert').remove()">✕</button>
+            </div>
+            <style>
+                .custom-portal-alert {
+                    position: fixed;
+                    top: 24px;
+                    right: 24px;
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                    padding: 16px 20px;
+                    border-radius: 12px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+                    background: rgba(255, 255, 255, 0.95);
+                    backdrop-filter: blur(10px);
+                    border: 1px solid rgba(0,0,0,0.05);
+                    max-width: 380px;
+                    animation: slideInAlert 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                .custom-portal-alert--success {
+                    border-left: 4px solid #10b981;
+                }
+                .custom-portal-alert--error {
+                    border-left: 4px solid #f43f5e;
+                }
+                .custom-portal-alert__icon {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                }
+                .custom-portal-alert--success .custom-portal-alert__icon {
+                    background: rgba(16, 185, 129, 0.1);
+                    color: #10b981;
+                }
+                .custom-portal-alert--error .custom-portal-alert__icon {
+                    background: rgba(244, 63, 94, 0.1);
+                    color: #f43f5e;
+                }
+                .custom-portal-alert__content {
+                    flex: 1;
+                }
+                .custom-portal-alert__title {
+                    margin: 0;
+                    font-weight: 700;
+                    font-size: 14px;
+                    color: #1f2937;
+                }
+                .custom-portal-alert__message {
+                    margin: 4px 0 0 0;
+                    font-size: 13px;
+                    color: #4b5563;
+                    line-height: 1.4;
+                }
+                .custom-portal-alert__close {
+                    background: none;
+                    border: none;
+                    font-size: 14px;
+                    color: #9ca3af;
+                    cursor: pointer;
+                    padding: 4px;
+                    transition: color 0.2s;
+                }
+                .custom-portal-alert__close:hover {
+                    color: #4b5563;
+                }
+                @keyframes slideInAlert {
+                    from {
+                        transform: translateX(120%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            </style>
+            <script>
+                setTimeout(() => {
+                    const alertEl = document.getElementById('customPortalAlert');
+                    if (alertEl) {
+                        alertEl.style.transition = 'all 0.4s ease';
+                        alertEl.style.opacity = '0';
+                        alertEl.style.transform = 'translateX(120%)';
+                        setTimeout(() => alertEl.remove(), 400);
+                    }
+                }, 7000);
+            </script>
+        @endif
+
         @include('partials.portal-campaign-category-modal')
         @include('partials.portal-menu-script')
         <script>

@@ -16,11 +16,8 @@ class RegisteredUserController extends Controller
         $merchantId = trim((string) $request->query('merchant_id', ''));
         $partnerId = trim((string) ($request->query('partner_id') ?? $request->query('parent_id', '')));
 
-        if ($merchantId === '') {
-            $merchantId = 'M-' . strtoupper(bin2hex(random_bytes(6)));
-        }
-        if ($partnerId === '') {
-            $partnerId = 'P-' . strtoupper(bin2hex(random_bytes(6)));
+        if ($merchantId === '' || $partnerId === '') {
+            abort(403, 'Merchant ID dan Partner ID wajib disediakan.');
         }
 
         $contextResp = [];
