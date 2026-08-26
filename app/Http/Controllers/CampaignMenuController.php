@@ -454,6 +454,11 @@ class CampaignMenuController extends Controller
 
         return collect($this->wabaTemplateRowsFromApi($request))
             ->filter(fn (array $row): bool => trim((string) ($row['gw_template_id'] ?? $row['id'] ?? '')) !== '')
+            ->filter(fn (array $row): bool => in_array(
+                strtoupper(trim((string) ($row['status'] ?? ''))),
+                ['APPROVE', 'APPROVED'],
+                true,
+            ))
             ->map(fn (array $row): array => $this->mapApiWaTemplateForSelect($row))
             ->values();
     }
