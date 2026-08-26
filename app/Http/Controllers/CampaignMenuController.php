@@ -775,7 +775,9 @@ class CampaignMenuController extends Controller
                         ?? null;
 
                     try {
-                        $createDatetime = $createDatetime ? \Carbon\Carbon::parse($createDatetime) : now();
+                        $createDatetime = $createDatetime
+                            ? \Carbon\Carbon::parse($createDatetime)->addHours(7)
+                            : now();
                     } catch (Throwable) {
                         $createDatetime = now();
                     }
