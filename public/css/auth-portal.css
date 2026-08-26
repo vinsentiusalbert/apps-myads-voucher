@@ -4490,6 +4490,57 @@ body.campaign-map-open {
     box-shadow: 0 22px 48px rgba(0, 88, 163, 0.08);
 }
 
+.template-success-popup {
+    position: fixed;
+    z-index: 1100;
+    top: 24px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: min(380px, calc(100vw - 32px));
+    padding: 16px 18px;
+    color: #14532d;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 14px;
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18);
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.template-success-popup--hidden {
+    opacity: 0;
+    transform: translateY(-12px);
+    pointer-events: none;
+}
+
+.template-success-popup__icon {
+    display: grid;
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    color: #fff;
+    background: #16a34a;
+    border-radius: 50%;
+    place-items: center;
+    font-size: 19px;
+    font-weight: 700;
+}
+
+.template-success-popup strong,
+.template-success-popup p {
+    display: block;
+    margin: 0;
+}
+
+.template-success-popup p {
+    margin-top: 2px;
+    color: #166534;
+    font-size: 14px;
+}
+
 .template-library-tabs {
     display: flex;
     align-items: center;

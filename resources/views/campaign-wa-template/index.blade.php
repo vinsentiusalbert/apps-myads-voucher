@@ -76,9 +76,13 @@
     </section>
 
     @if (session('status'))
-        <section class="template-library-card">
-            <strong>{{ session('status') }}</strong>
-        </section>
+        <div class="template-success-popup" id="templateSuccessPopup" role="status" aria-live="polite">
+            <span class="template-success-popup__icon" aria-hidden="true">&#10003;</span>
+            <div>
+                <strong>Berhasil</strong>
+                <p>{{ session('status') }}</p>
+            </div>
+        </div>
     @endif
 
     <section class="template-library-card">
@@ -160,3 +164,21 @@
         </div>
     </section>
 @endsection
+
+@if (session('status'))
+    @push('scripts')
+        <script>
+            (() => {
+                const popup = document.getElementById('templateSuccessPopup');
+                if (!popup) {
+                    return;
+                }
+
+                window.setTimeout(() => {
+                    popup.classList.add('template-success-popup--hidden');
+                    window.setTimeout(() => popup.remove(), 250);
+                }, 3000);
+            })();
+        </script>
+    @endpush
+@endif
