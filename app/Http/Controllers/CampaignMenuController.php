@@ -340,7 +340,7 @@ class CampaignMenuController extends Controller
                 'string',
                 'max:60',
                 function (string $attribute, mixed $value, \Closure $fail): void {
-                    if (preg_match('/[\x{1F000}-\x{1FAFF}\x{2600}-\x{27BF}\x{FE0F}\x{200D}]/u', (string) $value)) {
+                    if (preg_match('/[\p{S}\x{FE0F}\x{200D}\x{20E3}]/u', (string) $value)) {
                         $fail('Header Text tidak boleh mengandung emoticon.');
                     }
                 },

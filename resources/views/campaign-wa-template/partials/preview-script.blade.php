@@ -28,7 +28,7 @@
         const getDefaultCtaUrl = () => String(defaultCtaLink || '').trim();
         const normalizeCtaUrl = (value) => String(value || '').trim();
         const removeEmoticons = (value) => String(value || '')
-            .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '');
+            .replace(/[\p{Symbol}\u{FE0F}\u{200D}\u{20E3}]/gu, '');
         let templateButtonIndex = 0;
 
         const syncTemplateBodyPreview = () => {
