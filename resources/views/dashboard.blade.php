@@ -291,8 +291,8 @@
                         type="tel"
                         id="membership-phone"
                         name="customer_phone"
+                        value="{{ session('myads.user.msisdn') ?? session('myads.user.phone') ?? '' }}"
                         placeholder="08xxxxxxxxxx"
-                        required
                         class="membership-modal__input"
                     >
                 </div>
@@ -312,10 +312,15 @@
         <div id="membership-step-qris" style="display:none;text-align:center">
             <div class="membership-modal__icon">📱</div>
             <h2 class="membership-modal__title">Scan QRIS</h2>
-            <p class="membership-modal__subtitle">Scan kode di bawah dengan aplikasi dompet digital Anda</p>
+            <p class="membership-modal__subtitle">Scan kode di bawah dengan aplikasi dompet digital / m-banking Anda</p>
 
             <div style="background:#fff;border-radius:12px;padding:12px;display:inline-block;margin:12px 0;box-shadow:0 2px 12px rgba(0,0,0,.15)">
-                <img id="membership-qris-img" src="" alt="QRIS" style="width:220px;height:220px;display:block;border-radius:8px">
+                <img id="membership-qris-img" src="" alt="QRIS" style="width:220px;height:220px;display:block;border-radius:8px;object-fit:contain;margin:0 auto">
+                <div style="margin-top:10px;display:flex;justify-content:center;gap:12px;font-size:12px">
+                    <a id="membership-qris-link" href="#" target="_blank" rel="noreferrer" style="color:#d8232a;text-decoration:none;font-weight:600">Buka QRIS</a>
+                    <span style="color:#ddd">|</span>
+                    <a id="membership-qris-download" href="#" target="_blank" download="qris-membership.png" style="color:#071d3a;text-decoration:none;font-weight:600">Download QRIS</a>
+                </div>
             </div>
 
             <div style="margin:8px 0">
@@ -324,13 +329,33 @@
                 <p id="membership-qris-countdown" style="font-size:22px;font-weight:700;color:#f39c12;margin:4px 0">--:--</p>
             </div>
 
-            <div id="membership-qris-status" style="margin:8px 0;font-size:13px;opacity:.7">Menunggu pembayaran...</div>
+            <div id="membership-qris-status" style="margin:8px 0;font-size:13px;color:#6b7280">Menunggu pembayaran...</div>
 
             <button type="button" id="membership-paid-btn" class="membership-modal__cta" style="margin-top:8px">
                 ✅ Saya Sudah Bayar
             </button>
             <button type="button" id="membership-qris-cancel" style="margin-top:8px;background:none;border:none;color:inherit;opacity:.5;font-size:13px;cursor:pointer;display:block;width:100%;text-align:center">
-                Batalkan
+                Kembali
+            </button>
+        </div>
+
+        {{-- Step 3: Success State --}}
+        <div id="membership-step-success" style="display:none;padding:24px 12px;text-align:center">
+            <div style="font-size:56px;color:#10b981;margin-bottom:12px;line-height:1">✓</div>
+            <h2 class="membership-modal__title" style="color:#071d3a;margin-bottom:8px">Pembayaran Berhasil!</h2>
+            <p class="membership-modal__subtitle" style="margin-bottom:20px;font-size:14px">Terima kasih! MyAds Membership Anda telah aktif. Kuota 5.000 SMS gratis siap digunakan.</p>
+            <button type="button" id="membership-success-btn" class="membership-modal__cta" style="background:#10b981;border:none;color:#fff;cursor:pointer">
+                Lanjutkan ke Dashboard
+            </button>
+        </div>
+
+        {{-- Step 4: Failure State --}}
+        <div id="membership-step-failure" style="display:none;padding:24px 12px;text-align:center">
+            <div style="font-size:56px;color:#ef4444;margin-bottom:12px;line-height:1">✗</div>
+            <h2 class="membership-modal__title" style="color:#071d3a;margin-bottom:8px">Pembayaran Gagal</h2>
+            <p id="membership-failure-msg" class="membership-modal__subtitle" style="margin-bottom:20px;font-size:14px">Terjadi kesalahan atau waktu pembayaran telah habis. Silakan coba kembali.</p>
+            <button type="button" id="membership-retry-btn" class="membership-modal__cta" style="background:#ef4444;border:none;color:#fff;cursor:pointer">
+                Coba Lagi
             </button>
         </div>
     </div>
@@ -393,32 +418,42 @@
     {{-- Membership Modal JS --}}
     <script>
     (() => {
-        const modal        = document.getElementById('membership-modal');
-        const backdrop     = document.getElementById('membership-modal-backdrop');
-        const closeBtn     = document.getElementById('membership-modal-close');
-        const joinBtn      = document.getElementById('btn-join-membership');
-        const form         = document.getElementById('membership-join-form');
-        const errorDiv     = document.getElementById('membership-join-error');
-        const submitBtn    = document.getElementById('membership-join-btn');
-        const submitText   = document.getElementById('membership-join-btn-text');
-        const submitLoader = document.getElementById('membership-join-loading');
-        const stepForm     = document.getElementById('membership-step-form');
-        const stepQris     = document.getElementById('membership-step-qris');
-        const qrisImg      = document.getElementById('membership-qris-img');
-        const qrisExpire   = document.getElementById('membership-qris-expire');
-        const qrisCountdown = document.getElementById('membership-qris-countdown');
-        const qrisStatus   = document.getElementById('membership-qris-status');
-        const paidBtn      = document.getElementById('membership-paid-btn');
-        const cancelBtn    = document.getElementById('membership-qris-cancel');
+        const modal          = document.getElementById('membership-modal');
+        const backdrop       = document.getElementById('membership-modal-backdrop');
+        const closeBtn       = document.getElementById('membership-modal-close');
+        const joinBtn        = document.getElementById('btn-join-membership');
+        const form           = document.getElementById('membership-join-form');
+        const errorDiv       = document.getElementById('membership-join-error');
+        const submitBtn      = document.getElementById('membership-join-btn');
+        const submitText     = document.getElementById('membership-join-btn-text');
+        const submitLoader   = document.getElementById('membership-join-loading');
+        const stepForm       = document.getElementById('membership-step-form');
+        const stepQris       = document.getElementById('membership-step-qris');
+        const stepSuccess    = document.getElementById('membership-step-success');
+        const stepFailure    = document.getElementById('membership-step-failure');
+        const qrisImg        = document.getElementById('membership-qris-img');
+        const qrisLink       = document.getElementById('membership-qris-link');
+        const qrisDownload   = document.getElementById('membership-qris-download');
+        const qrisExpire     = document.getElementById('membership-qris-expire');
+        const qrisCountdown  = document.getElementById('membership-qris-countdown');
+        const qrisStatus     = document.getElementById('membership-qris-status');
+        const paidBtn        = document.getElementById('membership-paid-btn');
+        const cancelBtn      = document.getElementById('membership-qris-cancel');
+        const successBtn     = document.getElementById('membership-success-btn');
+        const retryBtn       = document.getElementById('membership-retry-btn');
+        const failureMsg     = document.getElementById('membership-failure-msg');
 
         if (!modal) return; // Already a member — modal not rendered
+
+        const qrisDownloadBase = "{{ route('campaign.payment.qris-download') }}";
+        const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
 
         let countdownTimer  = null;
         let pollingTimer    = null;
         let currentTxnId    = null;
 
         // ── Countdown timer ─────────────────────────────────────────────────
-        const stopCountdown = () => { clearInterval(countdownTimer); countdownTimer = null; };
+        const stopCountdown = () => { if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; } };
 
         const startCountdown = (expireIso) => {
             stopCountdown();
@@ -426,49 +461,88 @@
             const tick = () => {
                 const diff = expireMs - Date.now();
                 if (diff <= 0) {
-                    qrisCountdown.textContent = '00:00';
-                    qrisCountdown.style.color = '#e74c3c';
+                    if (qrisCountdown) {
+                        qrisCountdown.textContent = '00:00';
+                        qrisCountdown.style.color = '#e74c3c';
+                    }
                     stopCountdown();
+                    onPaymentFailure('Waktu pembayaran telah habis. Silakan coba kembali.');
                     return;
                 }
                 const m = String(Math.floor(diff / 60000)).padStart(2, '0');
                 const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
-                qrisCountdown.textContent = `${m}:${s}`;
-                qrisCountdown.style.color = diff < 60000 ? '#e74c3c' : '#f39c12';
+                if (qrisCountdown) {
+                    qrisCountdown.textContent = `${m}:${s}`;
+                    qrisCountdown.style.color = diff < 60000 ? '#e74c3c' : '#f39c12';
+                }
             };
             tick();
             countdownTimer = setInterval(tick, 1000);
         };
 
         // ── Payment status polling ───────────────────────────────────────────
-        const stopPolling = () => { clearInterval(pollingTimer); pollingTimer = null; };
+        const stopPolling = () => { if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; } };
+
+        const onPaymentSuccess = () => {
+            stopPolling();
+            stopCountdown();
+            showStep('success');
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
+        };
+
+        const onPaymentFailure = (msg) => {
+            stopPolling();
+            stopCountdown();
+            if (failureMsg) {
+                failureMsg.textContent = msg || 'Terjadi kesalahan saat memproses pembayaran.';
+            }
+            showStep('failure');
+        };
 
         const checkPaymentStatus = async () => {
             if (!currentTxnId) return;
             try {
-                const r = await fetch('{{ route("membership.status") }}', {
+                // 1. Cek status via transaction ID endpoint
+                const statusUrl = paymentStatusUrlTemplate.replace('__TRANSACTION_ID__', encodeURIComponent(currentTxnId));
+                const r = await fetch(statusUrl, {
                     headers: { 'Accept': 'application/json' }
                 });
-                const d = await r.json();
-                if (d?.data?.is_member) {
-                    stopPolling();
-                    stopCountdown();
-                    qrisStatus.textContent = '✅ Pembayaran berhasil!';
-                    qrisStatus.style.color  = '#2ecc71';
-                    setTimeout(() => { closeModal(); location.reload(); }, 1500);
+                const d = await r.json().catch(() => null);
+                const status = String(d?.data?.status || '').toUpperCase();
+
+                if (status === 'SUCCESS') {
+                    onPaymentSuccess();
+                    return;
+                } else if (status === 'FAILED' || status === 'EXPIRED') {
+                    onPaymentFailure(`Status pembayaran: ${status}. Silakan coba kembali.`);
+                    return;
                 }
-            } catch (_) { /* ignore */ }
+
+                // 2. Cek status via membership status
+                const mr = await fetch('{{ route("membership.status") }}', {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const md = await mr.json().catch(() => null);
+                if (md?.data?.is_member) {
+                    onPaymentSuccess();
+                    return;
+                }
+            } catch (_) { /* ignore polling error */ }
         };
 
         const startPolling = () => {
             stopPolling();
-            pollingTimer = setInterval(checkPaymentStatus, 5000);
+            pollingTimer = setInterval(checkPaymentStatus, 3000);
         };
 
-        // ── Open / Close ────────────────────────────────────────────────────
+        // ── Steps Display ────────────────────────────────────────────────────
         const showStep = (step) => {
-            stepForm.style.display = step === 'form' ? '' : 'none';
-            stepQris.style.display = step === 'qris' ? '' : 'none';
+            if (stepForm) stepForm.style.display = step === 'form' ? '' : 'none';
+            if (stepQris) stepQris.style.display = step === 'qris' ? '' : 'none';
+            if (stepSuccess) stepSuccess.style.display = step === 'success' ? '' : 'none';
+            if (stepFailure) stepFailure.style.display = step === 'failure' ? '' : 'none';
         };
 
         const openModal = () => {
@@ -492,6 +566,8 @@
         closeBtn?.addEventListener('click', closeModal);
         backdrop?.addEventListener('click', closeModal);
         cancelBtn?.addEventListener('click', closeModal);
+        successBtn?.addEventListener('click', () => location.reload());
+        retryBtn?.addEventListener('click', () => showStep('form'));
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 
         // ── "Sudah bayar" manual check ────────────────────────────────────
@@ -505,23 +581,46 @@
 
         // ── Show QRIS step ───────────────────────────────────────────────────
         const showQris = (payment) => {
-            qrisImg.src = payment.qris_url;
-            qrisImg.onerror = () => {
-                qrisImg.style.display = 'none';
-                qrisImg.insertAdjacentHTML('afterend', '<p style="color:#e74c3c;font-size:13px">Gagal memuat QR. Coba refresh.</p>');
-            };
+            const rawUrl = String(payment.qris_url || '').replace(/\\/g, '');
+            const proxiedUrl = qrisDownloadBase + '?url=' + encodeURIComponent(rawUrl) + '&disposition=inline';
+            const downloadUrl = qrisDownloadBase + '?url=' + encodeURIComponent(rawUrl) + '&filename=' + encodeURIComponent(`qris-${payment.transaction_id || 'membership'}.png`);
 
-            if (payment.transaction_expire) {
+            if (qrisImg) {
+                qrisImg.style.display = 'block';
+                qrisImg.src = proxiedUrl;
+                qrisImg.onerror = () => {
+                    // Fallback to raw URL directly if proxy fails
+                    if (qrisImg.src !== rawUrl) {
+                        qrisImg.src = rawUrl;
+                    }
+                };
+            }
+
+            if (qrisLink) {
+                qrisLink.href = proxiedUrl;
+                qrisLink.hidden = false;
+            }
+
+            if (qrisDownload) {
+                qrisDownload.href = downloadUrl;
+                qrisDownload.download = `qris-${payment.transaction_id || 'membership'}.png`;
+                qrisDownload.hidden = false;
+            }
+
+            if (payment.transaction_expire && qrisExpire) {
                 const expireDate = new Date(payment.transaction_expire);
                 qrisExpire.textContent = expireDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                 startCountdown(payment.transaction_expire);
-            } else {
+            } else if (qrisExpire) {
                 qrisExpire.textContent = '-';
             }
 
             currentTxnId = payment.transaction_id;
-            qrisStatus.textContent = 'Menunggu pembayaran...';
-            qrisStatus.style.color  = '';
+            if (qrisStatus) {
+                qrisStatus.textContent = 'Menunggu pembayaran...';
+                qrisStatus.style.color = '#6b7280';
+            }
+
             showStep('qris');
             startPolling();
         };
@@ -556,9 +655,7 @@
 
                     // Langsung SUCCESS (force success / refund)
                     if (!payment || payment.status === 'SUCCESS') {
-                        closeModal();
-                        alert('🎉 Membership berhasil diaktifkan!');
-                        location.reload();
+                        onPaymentSuccess();
                         return;
                     }
 
@@ -575,8 +672,7 @@
                     }
 
                     // Fallback
-                    alert('Pembayaran dimulai. Silakan selesaikan dan refresh halaman.');
-                    closeModal();
+                    showQris(payment);
                 } else {
                     const msg = data.message || 'Gagal memproses permintaan membership.';
                     errorDiv.textContent = msg;
