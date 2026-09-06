@@ -301,7 +301,7 @@
 
                 <button type="submit" class="membership-modal__cta" id="membership-join-btn">
                     <span id="membership-join-btn-text">💳 Bayar &amp; Aktifkan Membership</span>
-                    <span id="membership-join-loading" style="display:none">Memproses...</span>
+                    <span id="membership-join-loading" style="display:none">⏳ Menyiapkan QRIS...</span>
                 </button>
             </form>
 

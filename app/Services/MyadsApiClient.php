@@ -26,7 +26,7 @@ class MyadsApiClient
         return Http::baseUrl($this->baseUrl)
             ->acceptJson()
             ->asJson()
-            ->timeout(20);
+            ->timeout(60);
     }
 
     private function bearerClient(string $accessToken): PendingRequest
