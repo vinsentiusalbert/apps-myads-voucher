@@ -60,6 +60,22 @@
         ],
     ];
     $activeNav = 'dashboard';
+
+    // Membership data
+    $isMember = (bool) data_get($membership ?? [], 'is_member', false);
+    $membershipData = data_get($membership ?? [], 'membership', null);
+    $membershipPrice = (int) data_get($membership ?? [], 'price', 25000);
+    $membershipQuota = (int) data_get($membership ?? [], 'quota', 5000);
+    $membershipRemainingQuota = $isMember ? (int) data_get($membershipData ?? [], 'remaining_quota', 0) : 0;
+    $membershipExpiredAt = $isMember && $membershipData ? data_get($membershipData, 'expired_at') : null;
+    $membershipExpiredLabel = null;
+    if ($membershipExpiredAt) {
+        try {
+            $membershipExpiredLabel = \Carbon\Carbon::parse($membershipExpiredAt)->translatedFormat('d M Y');
+        } catch (Throwable) {
+            $membershipExpiredLabel = $membershipExpiredAt;
+        }
+    }
 @endphp
 
 @extends('layouts.portal')
@@ -126,22 +142,6 @@
     $smsTargetedPrice = $formatPrice(data_get($campaignPrices ?? [], 'sms_targeted'));
     $waLbaPrice = $formatPrice(data_get($campaignPrices ?? [], 'wa_lba'));
     $waTargetedPrice = $formatPrice(data_get($campaignPrices ?? [], 'wa_targeted'));
-
-    // Membership data
-    $isMember = (bool) data_get($membership ?? [], 'is_member', false);
-    $membershipData = data_get($membership ?? [], 'membership', null);
-    $membershipPrice = (int) data_get($membership ?? [], 'price', 25000);
-    $membershipQuota = (int) data_get($membership ?? [], 'quota', 5000);
-    $membershipRemainingQuota = $isMember ? (int) data_get($membershipData ?? [], 'remaining_quota', 0) : 0;
-    $membershipExpiredAt = $isMember && $membershipData ? data_get($membershipData, 'expired_at') : null;
-    $membershipExpiredLabel = null;
-    if ($membershipExpiredAt) {
-        try {
-            $membershipExpiredLabel = \Carbon\Carbon::parse($membershipExpiredAt)->translatedFormat('d M Y');
-        } catch (Throwable) {
-            $membershipExpiredLabel = $membershipExpiredAt;
-        }
-    }
 @endphp
 
     <section class="portal-hero">
