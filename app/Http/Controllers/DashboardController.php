@@ -83,6 +83,11 @@ class DashboardController extends Controller
             }
         }
 
+        $membershipStatus = $this->fetchMembershipStatus($request, $client);
+
+        // Simpan ke session agar bisa diakses dari sidebar di semua halaman
+        $request->session()->put('myads.membership', $membershipStatus);
+
         return view('dashboard', [
             'balanceFormatted' => $balanceFormatted,
             'balanceExpiry' => $balanceExpiry,
@@ -90,6 +95,7 @@ class DashboardController extends Controller
             'campaignSmsTotal' => $campaignSmsTotal,
             'campaignWaTotal' => $campaignWaTotal,
             'campaignPrices' => $campaignPrices,
+            'membership' => $membershipStatus,
         ]);
     }
 
@@ -104,6 +110,28 @@ class DashboardController extends Controller
             return ($this->gatewayRefreshCallback($request, $client))();
         } catch (\Throwable) {
             return '';
+        }
+    }
+
+    private function fetchMembershipStatus(Request $request, MyadsApiClient $client): array
+    {
+        $defaults = [
+            'is_member' => false,
+            'membership' => null,
+            'price' => 25000,
+            'quota' => 5000,
+        ];
+
+        $accessToken = (string) $request->session()->get('myads.access_token', '');
+        if ($accessToken === '') {
+            return $defaults;
+        }
+
+        try {
+            $resp = $client->getMembershipStatus($accessToken);
+            return array_merge($defaults, (array) data_get($resp, 'data', []));
+        } catch (\Throwable) {
+            return $defaults;
         }
     }
 

@@ -65,31 +65,84 @@
 @extends('layouts.portal')
 
 @section('content')
+    {{-- ── Membership Banner ───────────────────────────────────────────── --}}
+    @if ($isMember)
+        <div class="membership-banner membership-banner--active">
+            <div class="membership-banner__left">
+                <span class="membership-banner__icon">⭐</span>
+                <div>
+                    <p class="membership-banner__title">Member Aktif</p>
+                    <p class="membership-banner__desc">
+                        Sisa kuota SMS: <strong>{{ number_format($membershipRemainingQuota, 0, ',', '.') }} penerima</strong>
+                        @if ($membershipExpiredLabel)
+                            &nbsp;·&nbsp; Aktif hingga <strong>{{ $membershipExpiredLabel }}</strong>
+                        @endif
+                    </p>
+                </div>
+            </div>
+            <span class="membership-banner__badge">✦ Member</span>
+        </div>
+    @else
+        <div class="membership-banner membership-banner--promo">
+            <div class="membership-banner__left">
+                <span class="membership-banner__icon">✨</span>
+                <div>
+                    <p class="membership-banner__title">Tingkatkan ke MyAds Membership</p>
+                    <p class="membership-banner__desc">Kirim hingga <strong>5.000 SMS gratis</strong> per bulan tanpa biaya iklan tambahan!</p>
+                </div>
+            </div>
+            <button
+                type="button"
+                class="membership-banner__cta"
+                id="btn-join-membership"
+                data-price="{{ $membershipPrice }}"
+            >
+                ⭐ Join Membership &nbsp;·&nbsp; Rp {{ number_format($membershipPrice, 0, ',', '.') }}/bln
+            </button>
+        </div>
+    @endif
+    {{-- ── End Membership Banner ───────────────────────────────────────── --}}
     @php
-        $expiryLabel = '-';
+    $expiryLabel = '-';
 
-        if (!empty($balanceExpiry) && is_string($balanceExpiry)) {
-            try {
-                $expiryLabel = 'Exp. ' . \Carbon\Carbon::parse($balanceExpiry)->translatedFormat('d M Y');
-            } catch (Throwable) {
-                $expiryLabel = 'Exp. ' . $balanceExpiry;
-            }
+    if (!empty($balanceExpiry) && is_string($balanceExpiry)) {
+        try {
+            $expiryLabel = 'Exp. ' . \Carbon\Carbon::parse($balanceExpiry)->translatedFormat('d M Y');
+        } catch (Throwable) {
+            $expiryLabel = 'Exp. ' . $balanceExpiry;
         }
+    }
 
-        $campaignTotalLabel = $campaignTotal === null ? '-' : (string) $campaignTotal;
-        $campaignSmsLabel = $campaignSmsTotal === null ? '-' : (string) $campaignSmsTotal;
-        $campaignWaLabel = $campaignWaTotal === null ? '-' : (string) $campaignWaTotal;
-        $gwStatusLabel = session()->has('myads.gw_token') ? 'OK' : '-';
-        $clientId = (string) session()->get('myads.merchant_id', '');
-        $clientLabel = $clientId !== '' ? 'Client ID: ' . $clientId : null;
-        $formatPrice = static fn ($value): string => is_numeric($value)
-            ? 'Rp ' . number_format((float) $value, 0, ',', '.') . ' / pesan'
-            : 'Harga belum tersedia';
-        $smsLbaPrice = $formatPrice(data_get($campaignPrices ?? [], 'sms_lba'));
-        $smsTargetedPrice = $formatPrice(data_get($campaignPrices ?? [], 'sms_targeted'));
-        $waLbaPrice = $formatPrice(data_get($campaignPrices ?? [], 'wa_lba'));
-        $waTargetedPrice = $formatPrice(data_get($campaignPrices ?? [], 'wa_targeted'));
-    @endphp
+    $campaignTotalLabel = $campaignTotal === null ? '-' : (string) $campaignTotal;
+    $campaignSmsLabel = $campaignSmsTotal === null ? '-' : (string) $campaignSmsTotal;
+    $campaignWaLabel = $campaignWaTotal === null ? '-' : (string) $campaignWaTotal;
+    $gwStatusLabel = session()->has('myads.gw_token') ? 'OK' : '-';
+    $clientId = (string) session()->get('myads.merchant_id', '');
+    $clientLabel = $clientId !== '' ? 'Client ID: ' . $clientId : null;
+    $formatPrice = static fn ($value): string => is_numeric($value)
+        ? 'Rp ' . number_format((float) $value, 0, ',', '.') . ' / pesan'
+        : 'Harga belum tersedia';
+    $smsLbaPrice = $formatPrice(data_get($campaignPrices ?? [], 'sms_lba'));
+    $smsTargetedPrice = $formatPrice(data_get($campaignPrices ?? [], 'sms_targeted'));
+    $waLbaPrice = $formatPrice(data_get($campaignPrices ?? [], 'wa_lba'));
+    $waTargetedPrice = $formatPrice(data_get($campaignPrices ?? [], 'wa_targeted'));
+
+    // Membership data
+    $isMember = (bool) data_get($membership ?? [], 'is_member', false);
+    $membershipData = data_get($membership ?? [], 'membership', null);
+    $membershipPrice = (int) data_get($membership ?? [], 'price', 25000);
+    $membershipQuota = (int) data_get($membership ?? [], 'quota', 5000);
+    $membershipRemainingQuota = $isMember ? (int) data_get($membershipData ?? [], 'remaining_quota', 0) : 0;
+    $membershipExpiredAt = $isMember && $membershipData ? data_get($membershipData, 'expired_at') : null;
+    $membershipExpiredLabel = null;
+    if ($membershipExpiredAt) {
+        try {
+            $membershipExpiredLabel = \Carbon\Carbon::parse($membershipExpiredAt)->translatedFormat('d M Y');
+        } catch (Throwable) {
+            $membershipExpiredLabel = $membershipExpiredAt;
+        }
+    }
+@endphp
 
     <section class="portal-hero">
         <div class="portal-welcome">
@@ -194,6 +247,66 @@
 
 @endsection
 
+{{-- ============================================================
+     MEMBERSHIP MODAL (Join Membership)
+     ============================================================ --}}
+<div id="membership-modal" class="membership-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="membership-modal-title" style="display:none">
+    <div class="membership-modal__backdrop" id="membership-modal-backdrop"></div>
+    <div class="membership-modal__box">
+        <button type="button" class="membership-modal__close" id="membership-modal-close" aria-label="Tutup">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+
+        <div class="membership-modal__icon">⭐</div>
+        <h2 class="membership-modal__title" id="membership-modal-title">MyAds Membership</h2>
+        <p class="membership-modal__subtitle">Dapatkan keuntungan eksklusif untuk bisnis Anda</p>
+
+        <ul class="membership-modal__benefits">
+            <li>
+                <span class="membership-modal__benefit-icon">📨</span>
+                <span><strong>5.000 penerima SMS gratis</strong> per bulan tanpa biaya tambahan</span>
+            </li>
+            <li>
+                <span class="membership-modal__benefit-icon">⚡</span>
+                <span>Campaign SMS langsung diproses <strong>tanpa perlu pembayaran</strong> (kuota berlaku)</span>
+            </li>
+            <li>
+                <span class="membership-modal__benefit-icon">📅</span>
+                <span>Periode aktif <strong>30 hari</strong> sejak pembayaran berhasil</span>
+            </li>
+        </ul>
+
+        <div class="membership-modal__price-box">
+            <span class="membership-modal__price">Rp {{ number_format($membershipPrice, 0, ',', '.') }}</span>
+            <span class="membership-modal__period">/ bulan</span>
+        </div>
+
+        <form id="membership-join-form">
+            @csrf
+            <div class="membership-modal__field">
+                <label for="membership-phone">Nomor Telepon <span style="color:#e74c3c">*</span></label>
+                <input
+                    type="tel"
+                    id="membership-phone"
+                    name="customer_phone"
+                    placeholder="08xxxxxxxxxx"
+                    required
+                    class="membership-modal__input"
+                >
+            </div>
+
+            <div id="membership-join-error" class="membership-modal__error" style="display:none"></div>
+
+            <button type="submit" class="membership-modal__cta" id="membership-join-btn">
+                <span id="membership-join-btn-text">💳 Bayar & Aktifkan Membership</span>
+                <span id="membership-join-loading" style="display:none">Memproses...</span>
+            </button>
+        </form>
+
+        <p class="membership-modal__note">Pembayaran via QRIS. Setelah pembayaran berhasil, membership langsung aktif.</p>
+    </div>
+</div>
+
 @push('scripts')
     <script>
         (() => {
@@ -246,5 +359,121 @@
                 });
             });
         })();
+    </script>
+
+    {{-- Membership Modal JS --}}
+    <script>
+    (() => {
+        const modal        = document.getElementById('membership-modal');
+        const backdrop     = document.getElementById('membership-modal-backdrop');
+        const closeBtn     = document.getElementById('membership-modal-close');
+        const joinBtn      = document.getElementById('btn-join-membership');
+        const form         = document.getElementById('membership-join-form');
+        const errorDiv     = document.getElementById('membership-join-error');
+        const submitBtn    = document.getElementById('membership-join-btn');
+        const submitText   = document.getElementById('membership-join-btn-text');
+        const submitLoader = document.getElementById('membership-join-loading');
+
+        if (!modal) return;  // Already a member — modal not rendered
+
+        const openModal = () => {
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        };
+
+        const closeModal = () => {
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            if (errorDiv) { errorDiv.style.display = 'none'; errorDiv.textContent = ''; }
+        };
+
+        joinBtn?.addEventListener('click', openModal);
+        closeBtn?.addEventListener('click', closeModal);
+        backdrop?.addEventListener('click', closeModal);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        form?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (errorDiv) { errorDiv.style.display = 'none'; errorDiv.textContent = ''; }
+
+            submitBtn.disabled = true;
+            submitText.style.display = 'none';
+            submitLoader.style.display = 'inline';
+
+            const phone = form.querySelector('#membership-phone')?.value || '';
+            const csrf  = form.querySelector('[name="_token"]')?.value || '';
+
+            try {
+                const resp = await fetch('{{ route("membership.join") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrf
+                    },
+                    body: JSON.stringify({ customer_phone: phone })
+                });
+
+                const data = await resp.json();
+
+                if (data.success) {
+                    const payment = data.data?.payment;
+
+                    // Jika langsung SUCCESS (force success / paid via refund)
+                    if (!payment || payment.status === 'SUCCESS') {
+                        closeModal();
+                        alert('🎉 Membership berhasil diaktifkan! Halaman akan direfresh.');
+                        location.reload();
+                        return;
+                    }
+
+                    // Ada QRIS url — tampilkan ke user
+                    if (payment.qris_url) {
+                        closeModal();
+                        const qrisWin = window.open('', '_blank', 'width=500,height=600');
+                        if (qrisWin) {
+                            qrisWin.document.write(`
+                                <html><head><title>QRIS Membership</title></head>
+                                <body style="text-align:center;font-family:sans-serif;padding:24px">
+                                    <h2>Scan QRIS untuk Aktivasi Membership</h2>
+                                    <p>Rp {{ number_format($membershipPrice, 0, ',', '.') }} / bulan</p>
+                                    <img src="${payment.qris_url}" alt="QRIS" style="max-width:280px;border:1px solid #eee;border-radius:8px">
+                                    <p style="font-size:12px;color:#888">Setelah pembayaran berhasil, refresh halaman dashboard.</p>
+                                    <button onclick="window.opener?.location?.reload(); window.close();" style="margin-top:16px;padding:10px 24px;background:#2980b9;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">Saya sudah bayar — Refresh Dashboard</button>
+                                </body></html>
+                            `);
+                        }
+                        return;
+                    }
+
+                    // Ada redirect url
+                    if (payment.redirect_url) {
+                        window.location.href = payment.redirect_url;
+                        return;
+                    }
+
+                    // Fallback
+                    alert('Pembayaran dimulai. Silakan selesaikan pembayaran dan refresh halaman.');
+                    closeModal();
+                } else {
+                    const msg = data.message || 'Gagal memproses permintaan membership.';
+                    errorDiv.textContent = msg;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (err) {
+                errorDiv.textContent = 'Terjadi kesalahan jaringan. Coba lagi.';
+                errorDiv.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitText.style.display = 'inline';
+                submitLoader.style.display = 'none';
+            }
+        });
+    })();
     </script>
 @endpush

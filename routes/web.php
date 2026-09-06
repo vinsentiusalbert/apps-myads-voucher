@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CampaignMenuController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\APIGW\ApiGatewayController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -51,4 +52,8 @@ Route::middleware('web')->group(function (): void {
     Route::get('/invoice/{invoiceId}/pdf', [App\Http\Controllers\InvoiceController::class, 'downloadPdf'])->name('invoice.pdf');
     Route::get('/admin', [App\Http\Controllers\AdminController::class, 'index'])->middleware('admin-session-auth')->name('admin.dashboard');
     Route::post('/logout', [SessionController::class, 'destroy'])->name('logout');
+
+    // Membership routes
+    Route::get('/membership/status', [MembershipController::class, 'status'])->name('membership.status');
+    Route::post('/membership/join', [MembershipController::class, 'join'])->name('membership.join');
 });

@@ -51,6 +51,7 @@
                 'activeSubnav' => $activeSubnav ?? null,
                 'createButtonLabel' => $createButtonLabel ?? 'Buat Iklan',
                 'createButtonHref' => $createButtonHref ?? null,
+                'sidebarMembership' => session('myads.membership', ['is_member' => false]),
             ])
 
             <section class="portal-main {{ $mainClass ?? '' }}">

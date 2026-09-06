@@ -774,6 +774,8 @@ class CampaignMenuController extends Controller
                         ?? data_get($row, 'template_name')
                         ?? '');
                     $createDatetime = data_get($row, 'createDatetime')
+                        ?? data_get($row, 'createDatetime')
+                        ?? data_get($row, 'create_datetime')
                         ?? data_get($row, 'createdAt')
                         ?? data_get($row, 'created_at')
                         ?? data_get($row, 'timeAdded')

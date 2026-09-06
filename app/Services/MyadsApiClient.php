@@ -866,4 +866,42 @@ class MyadsApiClient
             return ['success' => false];
         }
     }
+
+    /**
+     * Ambil status membership user yang sedang login.
+     * @return array{success:bool, data?:array{is_member:bool, membership:array|null, price:int, quota:int}}
+     */
+    public function getMembershipStatus(string $accessToken): array
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->get('/api/membership/status');
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API membership status: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal mengambil status membership'));
+        }
+
+        return (array) $response->json();
+    }
+
+    /**
+     * Inisiasi pembayaran join membership.
+     * @return array{success:bool, data?:array}
+     */
+    public function joinMembership(string $accessToken, array $payload): array
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->post('/api/membership/join', $payload);
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API join membership: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal join membership'));
+        }
+
+        return (array) $response->json();
+    }
 }
