@@ -89,9 +89,9 @@
                 <div>
                     <p class="membership-banner__title">Member Aktif</p>
                     <p class="membership-banner__desc">
-                        Sisa kuota SMS: <strong>{{ number_format($membershipRemainingQuota, 0, ',', '.') }} penerima</strong>
+                        Sisa kuota: <strong>{{ number_format($membershipRemainingQuota, 0, ',', '.') }} SMS</strong>
                         @if ($membershipExpiredLabel)
-                            &nbsp;·&nbsp; Aktif hingga <strong>{{ $membershipExpiredLabel }}</strong>
+                            &nbsp;·&nbsp; Berlaku hingga <strong>{{ $membershipExpiredLabel }}</strong>
                         @endif
                     </p>
                 </div>
@@ -103,8 +103,8 @@
             <div class="membership-banner__left">
                 <span class="membership-banner__icon">✨</span>
                 <div>
-                    <p class="membership-banner__title">Tingkatkan ke MyAds Membership</p>
-                    <p class="membership-banner__desc">Kirim hingga <strong>5.000 SMS gratis</strong> per bulan tanpa biaya iklan tambahan!</p>
+                    <p class="membership-banner__title">MyAds Membership</p>
+                    <p class="membership-banner__desc">Kirim <strong>5.000 SMS gratis/bulan</strong> — hanya Rp {{ number_format($membershipPrice, 0, ',', '.') }}/bln</p>
                 </div>
             </div>
             <button
@@ -113,7 +113,7 @@
                 id="btn-join-membership"
                 data-price="{{ $membershipPrice }}"
             >
-                ⭐ Join Membership &nbsp;·&nbsp; Rp {{ number_format($membershipPrice, 0, ',', '.') }}/bln
+                ⭐ Join Sekarang
             </button>
         </div>
     @endif

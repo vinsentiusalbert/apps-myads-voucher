@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Http\Controllers;
 
@@ -50,9 +50,11 @@ class MembershipController extends Controller
 
         try {
             $result = $client->joinMembership($accessToken, [
-                'customer_phone' => $phone,
-                'customer_email' => $email,
-                'customer_name' => trim($name) !== '' ? $name : $email,
+                'customer_phone'  => $phone,
+                'customer_email'  => $email,
+                'customer_name'   => trim($name) !== '' ? $name : $email,
+                'email_invoice'   => $email,
+                'send_invoice'    => true,
             ]);
 
             return response()->json($result);
