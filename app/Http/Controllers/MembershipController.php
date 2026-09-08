@@ -59,11 +59,12 @@ class MembershipController extends Controller
 
         try {
             $result = $client->joinMembership($accessToken, [
-                'customer_phone'  => $phone,
-                'customer_email'  => $email,
-                'customer_name'   => trim($name) !== '' ? $name : $email,
-                'email_invoice'   => $email,
-                'send_invoice'    => true,
+                'customer_phone'   => $phone,
+                'customer_email'   => $email,
+                'customer_name'    => trim($name) !== '' ? $name : $email,
+                'product_category' => 'MYADS',
+                'email_invoice'    => $email,
+                'send_invoice'     => true,
             ]);
 
             return response()->json($result);
