@@ -62,7 +62,7 @@ class MembershipController extends Controller
                 'customer_phone'   => $phone,
                 'customer_email'   => $email,
                 'customer_name'    => trim($name) !== '' ? $name : $email,
-                'product_category' => 'MEMBERSHIP',
+                'product_category' => 'MYADS',
                 'product_type'     => 'MYADS_MEMBERSHIP',
                 'product_detail'   => 'MyAds Membership - 30 Hari (Unlimited SMS, Maks. 5.000 Penerima/Campaign)',
                 'email_invoice'    => $email,
