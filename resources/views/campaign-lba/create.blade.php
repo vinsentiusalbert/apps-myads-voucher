@@ -418,8 +418,8 @@
                     <div class="campaign-send-grid">
                         <div class="field-group campaign-field-group--compact">
                             <label for="campaignRecipientCount" class="field-label">Jumlah Penerima</label>
-                            <input id="campaignRecipientCount" name="recipient_total" form="campaignGwSubmitForm" type="number" class="text-input" min="5" value="0" placeholder="Jumlah Penerima">
-                            <p class="campaign-step-two__alert" data-recipient-count-alert>Jumlah penerima minimal 5 perhari</p>
+                            <input id="campaignRecipientCount" name="recipient_total" form="campaignGwSubmitForm" type="number" class="text-input" min="5" max="5000" value="0" placeholder="Jumlah Penerima">
+                            <p class="campaign-step-two__alert" data-recipient-count-alert>Jumlah penerima minimal 5 dan maksimal 5.000 per iklan</p>
                         </div>
                         <strong id="campaignStepTwoEstimate" hidden>-</strong>
                     </div>
@@ -1569,9 +1569,14 @@
 
         const syncRecipientScheduleValidity = () => {
             const recipientCount = Number(recipientCountInput?.value || 0);
-            const isRecipientValid = recipientCount >= 5;
+            const isRecipientValid = recipientCount >= 5 && recipientCount <= 5000;
             const recipientAlert = document.querySelector('[data-recipient-count-alert]');
             if (recipientAlert) {
+                if (recipientCount > 5000) {
+                    recipientAlert.textContent = 'Jumlah penerima maksimal 5.000 per iklan.';
+                } else {
+                    recipientAlert.textContent = 'Jumlah penerima minimal 5 perhari';
+                }
                 recipientAlert.hidden = isRecipientValid;
             }
 

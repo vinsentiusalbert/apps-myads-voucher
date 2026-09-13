@@ -120,14 +120,14 @@
                 <span class="sidebar-membership__star">⭐</span>
                 <div class="sidebar-membership__info">
                     <span class="sidebar-membership__label">Member Aktif</span>
-                    <span class="sidebar-membership__quota">Kuota SMS: {{ number_format((int)($sidebarMembership['membership']['remaining_quota'] ?? 0), 0, ',', '.') }}</span>
+                    <span class="sidebar-membership__quota">Unlimited SMS (Maks 5k/iklan)</span>
                 </div>
             </div>
         @else
             <a href="{{ route('dashboard') }}#membership" class="sidebar-membership sidebar-membership--join" id="sidebar-join-membership">
                 <span class="sidebar-membership__star">⭐</span>
                 <span class="sidebar-membership__label">Join Membership</span>
-                <span class="sidebar-membership__badge">Gratis 5k SMS</span>
+                <span class="sidebar-membership__badge">Unlimited SMS</span>
             </a>
         @endif
     </div>

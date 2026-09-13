@@ -120,6 +120,7 @@ class DashboardController extends Controller
             'membership' => null,
             'price' => 25000,
             'quota' => 5000,
+            'max_per_campaign' => 5000,
         ];
 
         $accessToken = (string) $request->session()->get('myads.access_token', '');

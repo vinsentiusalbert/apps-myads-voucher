@@ -89,7 +89,7 @@
                 <div>
                     <p class="membership-banner__title">Member Aktif</p>
                     <p class="membership-banner__desc">
-                        Sisa kuota: <strong>{{ number_format($membershipRemainingQuota, 0, ',', '.') }} SMS</strong>
+                        Benefit: <strong>Unlimited SMS (Maks. 5.000 penerima/campaign)</strong>
                         @if ($membershipExpiredLabel)
                             &nbsp;·&nbsp; Berlaku hingga <strong>{{ $membershipExpiredLabel }}</strong>
                         @endif
@@ -104,7 +104,7 @@
                 <span class="membership-banner__icon">✨</span>
                 <div>
                     <p class="membership-banner__title">MyAds Membership</p>
-                    <p class="membership-banner__desc">Kirim <strong>5.000 SMS gratis/bulan</strong> — hanya Rp {{ number_format($membershipPrice, 0, ',', '.') }}/bln</p>
+                    <p class="membership-banner__desc">Kirim <strong>Unlimited SMS (Maks. 5.000 penerima/iklan)</strong> — hanya Rp {{ number_format($membershipPrice, 0, ',', '.') }}/bln (tanpa pajak)</p>
                 </div>
             </div>
             <button
@@ -266,21 +266,29 @@
             <ul class="membership-modal__benefits">
                 <li>
                     <span class="membership-modal__benefit-icon">📨</span>
-                    <span><strong>5.000 penerima SMS gratis</strong> per bulan tanpa biaya tambahan</span>
+                    <span><strong>Unlimited SMS gratis</strong> per bulan (maks. 5.000 nomor penerima per 1 campaign)</span>
+                </li>
+                <li>
+                    <span class="membership-modal__benefit-icon">🚀</span>
+                    <span>Bebas buat campaign <strong>sebanyak mungkin</strong> tanpa batasan jumlah iklan (s.d 5.000 penerima/iklan)</span>
                 </li>
                 <li>
                     <span class="membership-modal__benefit-icon">⚡</span>
-                    <span>Campaign SMS langsung diproses <strong>tanpa perlu pembayaran</strong> (kuota berlaku)</span>
+                    <span>Campaign SMS langsung diproses <strong>tanpa perlu pembayaran tambahan</strong></span>
                 </li>
                 <li>
                     <span class="membership-modal__benefit-icon">📅</span>
                     <span>Periode aktif <strong>30 hari</strong> sejak pembayaran berhasil</span>
                 </li>
+                <li>
+                    <span class="membership-modal__benefit-icon">🏷️</span>
+                    <span>Harga pas <strong>Rp 25.000</strong> (tanpa pajak &amp; biaya admin)</span>
+                </li>
             </ul>
 
             <div class="membership-modal__price-box">
                 <span class="membership-modal__price">Rp {{ number_format($membershipPrice, 0, ',', '.') }}</span>
-                <span class="membership-modal__period">/ bulan</span>
+                <span class="membership-modal__period">/ bulan (Pas tanpa pajak)</span>
             </div>
 
             <form id="membership-join-form">
@@ -300,19 +308,19 @@
                 <div id="membership-join-error" class="membership-modal__error" style="display:none"></div>
 
                 <button type="submit" class="membership-modal__cta" id="membership-join-btn">
-                    <span id="membership-join-btn-text">💳 Bayar &amp; Aktifkan Membership</span>
+                    <span id="membership-join-btn-text">💳 Bayar &amp; Aktifkan Membership (Rp 25.000)</span>
                     <span id="membership-join-loading" style="display:none">⏳ Menyiapkan QRIS...</span>
                 </button>
             </form>
 
-            <p class="membership-modal__note">Pembayaran via QRIS. Setelah pembayaran berhasil, membership langsung aktif.</p>
+            <p class="membership-modal__note">Pembayaran pas Rp 25.000 via QRIS tanpa biaya tambahan. Setelah pembayaran berhasil, membership langsung aktif.</p>
         </div>
 
         {{-- Step 2: QRIS display (hidden initially) --}}
         <div id="membership-step-qris" style="display:none;text-align:center">
             <div class="membership-modal__icon">📱</div>
             <h2 class="membership-modal__title">Scan QRIS</h2>
-            <p class="membership-modal__subtitle">Scan kode di bawah dengan aplikasi dompet digital / m-banking Anda</p>
+            <p class="membership-modal__subtitle">Scan kode di bawah dengan nominal <strong>Rp 25.000</strong> menggunakan dompet digital / m-banking Anda</p>
 
             <div style="background:#fff;border-radius:12px;padding:12px;display:inline-block;margin:12px 0;box-shadow:0 2px 12px rgba(0,0,0,.15)">
                 <img id="membership-qris-img" src="" alt="QRIS" style="width:220px;height:220px;display:block;border-radius:8px;object-fit:contain;margin:0 auto">
@@ -343,7 +351,7 @@
         <div id="membership-step-success" style="display:none;padding:24px 12px;text-align:center">
             <div style="font-size:56px;color:#10b981;margin-bottom:12px;line-height:1">✓</div>
             <h2 class="membership-modal__title" style="color:#071d3a;margin-bottom:8px">Pembayaran Berhasil!</h2>
-            <p class="membership-modal__subtitle" style="margin-bottom:20px;font-size:14px">Terima kasih! MyAds Membership Anda telah aktif. Kuota 5.000 SMS gratis siap digunakan.</p>
+            <p class="membership-modal__subtitle" style="margin-bottom:20px;font-size:14px">Terima kasih! MyAds Membership Anda telah aktif. Unlimited SMS gratis (maks. 5.000 penerima per campaign) siap digunakan.</p>
             <button type="button" id="membership-success-btn" class="membership-modal__cta" style="background:#10b981;border:none;color:#fff;cursor:pointer">
                 Lanjutkan ke Dashboard
             </button>
