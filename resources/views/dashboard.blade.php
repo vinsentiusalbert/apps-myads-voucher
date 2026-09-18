@@ -65,6 +65,9 @@
     $isMember = (bool) data_get($membership ?? [], 'is_member', false);
     $membershipData = data_get($membership ?? [], 'membership', null);
     $membershipPrice = (int) data_get($membership ?? [], 'price', 25000);
+    $membershipTaxRate = 0.11;
+    $membershipTaxAmount = (int) data_get($membership ?? [], 'tax_amount', round($membershipPrice * $membershipTaxRate));
+    $membershipTotalPrice = (int) data_get($membership ?? [], 'total_price', $membershipPrice + $membershipTaxAmount);
     $membershipQuota = (int) data_get($membership ?? [], 'quota', 5000);
     $membershipRemainingQuota = $isMember ? (int) data_get($membershipData ?? [], 'remaining_quota', 0) : 0;
     $membershipExpiredAt = $isMember && $membershipData ? data_get($membershipData, 'expired_at') : null;
@@ -104,14 +107,14 @@
                 <span class="membership-banner__icon">✨</span>
                 <div>
                     <p class="membership-banner__title">MyAds Membership</p>
-                    <p class="membership-banner__desc">Kirim <strong>Unlimited SMS (Maks. 5.000 penerima/iklan)</strong> — hanya Rp {{ number_format($membershipPrice, 0, ',', '.') }}/bln (tanpa pajak)</p>
+                    <p class="membership-banner__desc">Kirim <strong>Unlimited SMS (Maks. 5.000 penerima/iklan)</strong> — hanya Rp {{ number_format($membershipPrice, 0, ',', '.') }}/bln (+ PPN 11%)</p>
                 </div>
             </div>
             <button
                 type="button"
                 class="membership-banner__cta"
                 id="btn-join-membership"
-                data-price="{{ $membershipPrice }}"
+                data-price="{{ $membershipTotalPrice }}"
             >
                 ⭐ Join Sekarang
             </button>
@@ -282,13 +285,13 @@
                 </li>
                 <li>
                     <span class="membership-modal__benefit-icon">🏷️</span>
-                    <span>Harga pas <strong>Rp 25.000</strong> (tanpa pajak &amp; biaya admin)</span>
+                    <span>Harga <strong>Rp {{ number_format($membershipPrice, 0, ',', '.') }}</strong>/bulan (+ PPN 11% = Rp {{ number_format($membershipTotalPrice, 0, ',', '.') }})</span>
                 </li>
             </ul>
 
             <div class="membership-modal__price-box">
-                <span class="membership-modal__price">Rp {{ number_format($membershipPrice, 0, ',', '.') }}</span>
-                <span class="membership-modal__period">/ bulan (Pas tanpa pajak)</span>
+                <span class="membership-modal__price">Rp {{ number_format($membershipTotalPrice, 0, ',', '.') }}</span>
+                <span class="membership-modal__period">/ bulan (Termasuk PPN 11%)</span>
             </div>
 
             <form id="membership-join-form">
@@ -308,19 +311,19 @@
                 <div id="membership-join-error" class="membership-modal__error" style="display:none"></div>
 
                 <button type="submit" class="membership-modal__cta" id="membership-join-btn">
-                    <span id="membership-join-btn-text">💳 Bayar &amp; Aktifkan Membership (Rp 25.000)</span>
+                    <span id="membership-join-btn-text">💳 Bayar &amp; Aktifkan Membership (Rp {{ number_format($membershipTotalPrice, 0, ',', '.') }})</span>
                     <span id="membership-join-loading" style="display:none">⏳ Menyiapkan QRIS...</span>
                 </button>
             </form>
 
-            <p class="membership-modal__note">Pembayaran pas Rp 25.000 via QRIS tanpa biaya tambahan. Setelah pembayaran berhasil, membership langsung aktif.</p>
+            <p class="membership-modal__note">Total pembayaran Rp {{ number_format($membershipTotalPrice, 0, ',', '.') }} (termasuk PPN 11%) via QRIS. Setelah pembayaran berhasil, membership langsung aktif.</p>
         </div>
 
         {{-- Step 2: QRIS display (hidden initially) --}}
         <div id="membership-step-qris" style="display:none;text-align:center">
             <div class="membership-modal__icon">📱</div>
             <h2 class="membership-modal__title">Scan QRIS</h2>
-            <p class="membership-modal__subtitle">Scan kode di bawah dengan nominal <strong>Rp 25.000</strong> menggunakan dompet digital / m-banking Anda</p>
+            <p class="membership-modal__subtitle">Scan kode di bawah dengan nominal <strong>Rp {{ number_format($membershipTotalPrice, 0, ',', '.') }}</strong> menggunakan dompet digital / m-banking Anda</p>
 
             <div style="background:#fff;border-radius:12px;padding:12px;display:inline-block;margin:12px 0;box-shadow:0 2px 12px rgba(0,0,0,.15)">
                 <img id="membership-qris-img" src="" alt="QRIS" style="width:220px;height:220px;display:block;border-radius:8px;object-fit:contain;margin:0 auto">

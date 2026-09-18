@@ -119,6 +119,9 @@ class DashboardController extends Controller
             'is_member' => false,
             'membership' => null,
             'price' => 25000,
+            'tax_percentage' => 11.00,
+            'tax_amount' => 2750,
+            'total_price' => 27750,
             'quota' => 5000,
             'max_per_campaign' => 5000,
         ];
