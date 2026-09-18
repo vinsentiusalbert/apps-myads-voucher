@@ -281,7 +281,7 @@ class ApiGatewayController extends Controller
 		abort_unless($channel === 'sms', 404);
 
 		$validated = $request->validate([
-			'payment_transaction_id' => ['required', 'string', 'max:128'],
+			'payment_transaction_id' => ['nullable', 'string', 'max:128'],
 			'email_invoice' => ['nullable', 'email', 'max:255'],
 			'campaign_name' => ['nullable', 'string', 'max:255'],
 			'sender_name' => ['required', 'string', 'max:11'],
@@ -317,19 +317,24 @@ class ApiGatewayController extends Controller
 
 		try {
 			$paymentTransactionId = trim((string) ($validated['payment_transaction_id'] ?? ''));
-			if ($paymentTransactionId === '') {
-				throw new RuntimeException('Pembayaran belum diinisiasi.');
+
+			// Cek status membership terlebih dahulu
+			$isMember = false;
+			try {
+				$memberResp = $client->getMembershipStatus($this->ensureValidAccessToken($request, $client));
+				$isMember = (bool) data_get($memberResp, 'data.is_member', false);
+			} catch (Throwable) {}
+
+			if (! $isMember && $paymentTransactionId !== '') {
+				$isMember = str_starts_with(strtoupper($paymentTransactionId), 'MEMBER');
 			}
 
-			$isMember = str_starts_with(strtoupper($paymentTransactionId), 'MEMBER');
+			// Jika bukan member, validasi pembayaran Finnet
 			if (! $isMember) {
-				try {
-					$memberResp = $client->getMembershipStatus($this->ensureValidAccessToken($request, $client));
-					$isMember = (bool) data_get($memberResp, 'data.is_member', false);
-				} catch (Throwable) {}
-			}
+				if ($paymentTransactionId === '') {
+					throw new RuntimeException('Pembayaran belum diinisiasi.');
+				}
 
-			if (! $isMember) {
 				$paymentResp = $client->paymentStatus($this->ensureValidAccessToken($request, $client), $paymentTransactionId);
 				$paymentStatus = strtoupper(trim((string) data_get($paymentResp, 'data.status')));
 				if ($paymentStatus !== 'SUCCESS') {
@@ -434,7 +439,7 @@ class ApiGatewayController extends Controller
 		abort_unless($channel === 'sms', 404);
 
 		$validated = $request->validate([
-			'payment_transaction_id' => ['required', 'string', 'max:128'],
+			'payment_transaction_id' => ['nullable', 'string', 'max:128'],
 			'email_invoice' => ['nullable', 'email', 'max:255'],
 			'campaign_name' => ['nullable', 'string', 'max:255'],
 			'sender_name' => ['required', 'string', 'max:11'],
@@ -455,19 +460,24 @@ class ApiGatewayController extends Controller
 
 		try {
 			$paymentTransactionId = trim((string) ($validated['payment_transaction_id'] ?? ''));
-			if ($paymentTransactionId === '') {
-				throw new RuntimeException('Pembayaran belum diinisiasi.');
+
+			// Cek status membership terlebih dahulu
+			$isMember = false;
+			try {
+				$memberResp = $client->getMembershipStatus($this->ensureValidAccessToken($request, $client));
+				$isMember = (bool) data_get($memberResp, 'data.is_member', false);
+			} catch (Throwable) {}
+
+			if (! $isMember && $paymentTransactionId !== '') {
+				$isMember = str_starts_with(strtoupper($paymentTransactionId), 'MEMBER');
 			}
 
-			$isMember = str_starts_with(strtoupper($paymentTransactionId), 'MEMBER');
+			// Jika bukan member, validasi pembayaran Finnet
 			if (! $isMember) {
-				try {
-					$memberResp = $client->getMembershipStatus($this->ensureValidAccessToken($request, $client));
-					$isMember = (bool) data_get($memberResp, 'data.is_member', false);
-				} catch (Throwable) {}
-			}
+				if ($paymentTransactionId === '') {
+					throw new RuntimeException('Pembayaran belum diinisiasi.');
+				}
 
-			if (! $isMember) {
 				$paymentResp = $client->paymentStatus($this->ensureValidAccessToken($request, $client), $paymentTransactionId);
 				$paymentStatus = strtoupper(trim((string) data_get($paymentResp, 'data.status')));
 				if ($paymentStatus !== 'SUCCESS') {

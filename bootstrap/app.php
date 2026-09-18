@@ -6,6 +6,28 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
+if (! function_exists('isTokenExpiredMessage')) {
+    function isTokenExpiredMessage(string $message): bool
+    {
+        $normalized = strtolower($message);
+
+        foreach ([
+            'token expired',
+            'session expired',
+            'token sudah kadaluarsa',
+            'token akses tidak valid',
+            'silakan login ulang',
+            'unauthorized',
+        ] as $needle) {
+            if (str_contains($normalized, $needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+}
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
@@ -51,22 +73,3 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })->create();
 
-function isTokenExpiredMessage(string $message): bool
-{
-    $normalized = strtolower($message);
-
-    foreach ([
-        'token expired',
-        'session expired',
-        'token sudah kadaluarsa',
-        'token akses tidak valid',
-        'silakan login ulang',
-        'unauthorized',
-    ] as $needle) {
-        if (str_contains($normalized, $needle)) {
-            return true;
-        }
-    }
-
-    return false;
-}

@@ -665,21 +665,21 @@
                                 </div>
                                 <div class="campaign-cost-card__row">
                                     <span>Harga Satuan</span>
-                                    <strong id="campaignReviewUnitPrice">{{ isset($unitPrice) && is_numeric($unitPrice) && (int) $unitPrice > 0 ? 'Rp ' . number_format((int) $unitPrice, 0, ',', '.') : '-' }}</strong>
+                                    <strong id="campaignReviewUnitPrice">{{ !empty($isMember) ? 'Rp 0' : (isset($unitPrice) && is_numeric($unitPrice) && (int) $unitPrice > 0 ? 'Rp ' . number_format((int) $unitPrice, 0, ',', '.') : '-') }}</strong>
                                 </div>
                                 <div class="campaign-cost-card__row">
                                     <span>Subtotal</span>
-                                    <strong id="campaignReviewSubtotal">-</strong>
+                                    <strong id="campaignReviewSubtotal">{{ !empty($isMember) ? 'Rp 0' : '-' }}</strong>
                                 </div>
                                 <div class="campaign-cost-card__row">
                                     <span>PPN (11%)</span>
-                                    <strong id="campaignReviewTax">-</strong>
+                                    <strong id="campaignReviewTax">{{ !empty($isMember) ? 'Rp 0' : '-' }}</strong>
                                 </div>
                             </div>
                             <div class="campaign-cost-card__section">
                                 <div class="campaign-cost-card__row campaign-cost-card__row--total">
                                     <span>Grand Total</span>
-                                    <strong id="campaignReviewGrandTotal">-</strong>
+                                    <strong id="campaignReviewGrandTotal">{{ !empty($isMember) ? 'Rp 0' : '-' }}</strong>
                                 </div>
                             </div>
                             @if(!empty($isMember))
@@ -698,11 +698,11 @@
                                     <strong class="campaign-cost-card__danger">-</strong>
                                 </div>
                             </div>
-                            @endif
                             @include('partials.payment-invoice-email', [
                                 'inputId' => 'campaignPaymentInvoiceEmail',
                                 'checkboxId' => 'campaignPaymentInvoiceEmailCheck',
                             ])
+                            @endif
                             @if($errors->has('gw'))
                                 <div class="alert alert-danger" style="color: #ff1f3d; background: #ffeef0; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #ffaeb5; font-size: 14px; font-weight: bold; text-align: left;">
                                     {{ $errors->first('gw') }}
@@ -710,6 +710,7 @@
                             @endif
                             <p class="campaign-payment-error" id="campaignPaymentError" hidden></p>
                             <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">{{ !empty($isMember) ? 'Kirim Iklan' : 'Bayar & Kirim Iklan' }}</button>
+                            @if(empty($isMember))
                             @include('partials.payment-qris-modal', [
                                 'modalId' => 'campaignPaymentModal',
                                 'panelId' => 'campaignPaymentPanel',
@@ -719,6 +720,7 @@
                                 'qrLinkId' => 'campaignPaymentQrLink',
                                 'downloadId' => 'campaignPaymentQrDownload',
                             ])
+                            @endif
                             <form id="campaignGwSubmitForm" method="POST" action="{{ route('campaign.targeted.send', ['channel' => $channel]) }}" hidden>
                                 @csrf
                                 <input type="hidden" name="campaign_name" id="campaign_title" value="{{ $autoCampaignName }}">
@@ -1690,11 +1692,19 @@
                 setText('campaignReviewTestRecipient', testRecipient?.value || 'Belum dipilih');
                 setText('campaignReviewRecipientCount', `${normalizeAudience(recipientCount)} Pesan`);
                 setText('campaignReviewPotentialRange', normalizeAudience(locationState.audience));
-                setText('campaignReviewUnitPrice', formatUnitPrice());
-                setText('campaignReviewSubtotal', totalCostLabel);
-                setText('campaignReviewTax', taxLabel);
-                setText('campaignReviewGrandTotal', grandTotalLabel);
-                setText('campaignReviewPaymentMonetary', grandTotalLabel);
+                if (isMember) {
+                    setText('campaignReviewUnitPrice', 'Rp 0');
+                    setText('campaignReviewSubtotal', 'Rp 0');
+                    setText('campaignReviewTax', 'Rp 0');
+                    setText('campaignReviewGrandTotal', 'Rp 0');
+                    setText('campaignReviewPaymentMonetary', 'Rp 0');
+                } else {
+                    setText('campaignReviewUnitPrice', formatUnitPrice());
+                    setText('campaignReviewSubtotal', totalCostLabel);
+                    setText('campaignReviewTax', taxLabel);
+                    setText('campaignReviewGrandTotal', grandTotalLabel);
+                    setText('campaignReviewPaymentMonetary', grandTotalLabel);
+                }
 
                 if (reviewSchedules) {
                     const schedules = Array.from(scheduleList?.querySelectorAll('[data-schedule-item]') || []).map((item, index) => {
@@ -2792,7 +2802,7 @@
                         const hourValue = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
                         const minuteValue = pickScheduleValue(`[data-schedule-time-start-minute="${scheduleId}"]`);
                         gwDeliveryTime.value = hourValue && minuteValue ? `${hourValue}:${minuteValue}` : '';
-                        gwCustomerEmail.value = resolvePaymentInvoiceEmail();
+                        gwCustomerEmail.value = defaultInvoiceEmail;
                         gwPaymentTransactionId.value = 'MEMBER-' + Date.now();
 
                         gwSubmitForm.submit();
@@ -2802,7 +2812,9 @@
                     await submitCampaignAfterPayment();
                 } catch (error) {
                     const message = normalizePaymentErrorMessage(error?.message ? String(error.message) : '');
-                    setPaymentUi({ status: 'FAILED' });
+                    if (!isMember) {
+                        setPaymentUi({ status: 'FAILED' });
+                    }
                     setPaymentError(message);
                     gwSubmitButton.disabled = false;
                     gwSubmitButton.textContent = isMember ? 'Kirim Iklan' : 'Bayar & Kirim Iklan';
