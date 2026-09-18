@@ -107,7 +107,7 @@
                 <span class="membership-banner__icon">✨</span>
                 <div>
                     <p class="membership-banner__title">MyAds Membership</p>
-                    <p class="membership-banner__desc">Kirim <strong>Unlimited SMS (Maks. 5.000 penerima/iklan)</strong> — hanya Rp {{ number_format($membershipPrice, 0, ',', '.') }}/bln (+ PPN 11%)</p>
+                    <p class="membership-banner__desc">Kirim <strong>Unlimited SMS (Maks. 5.000 penerima/iklan)</strong> — hanya Rp {{ number_format($membershipPrice, 0, ',', '.') }}/bln (belum termasuk pajak)</p>
                 </div>
             </div>
             <button
@@ -285,13 +285,13 @@
                 </li>
                 <li>
                     <span class="membership-modal__benefit-icon">🏷️</span>
-                    <span>Harga <strong>Rp {{ number_format($membershipPrice, 0, ',', '.') }}</strong>/bulan (+ PPN 11% = Rp {{ number_format($membershipTotalPrice, 0, ',', '.') }})</span>
+                    <span>Harga <strong>Rp {{ number_format($membershipPrice, 0, ',', '.') }}</strong>/bulan (belum termasuk pajak / PPN 11%)</span>
                 </li>
             </ul>
 
             <div class="membership-modal__price-box">
-                <span class="membership-modal__price">Rp {{ number_format($membershipTotalPrice, 0, ',', '.') }}</span>
-                <span class="membership-modal__period">/ bulan (Termasuk PPN 11%)</span>
+                <span class="membership-modal__price">Rp {{ number_format($membershipPrice, 0, ',', '.') }}</span>
+                <span class="membership-modal__period">/ bulan (belum termasuk pajak)</span>
             </div>
 
             <form id="membership-join-form">
