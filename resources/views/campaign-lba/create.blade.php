@@ -677,6 +677,15 @@
                                     <strong id="campaignReviewGrandTotal">-</strong>
                                 </div>
                             </div>
+                            @if(!empty($isMember))
+                            <div class="campaign-cost-card__section">
+                                <span class="campaign-cost-card__section-title">Pembayaran Anda Menggunakan</span>
+                                <div class="campaign-cost-card__row">
+                                    <span>Status Membership</span>
+                                    <strong style="color: #00875a; font-size: 14px;">Member Aktif (Saldo Monetary)</strong>
+                                </div>
+                            </div>
+                            @else
                             <div class="campaign-cost-card__section">
                                 <span class="campaign-cost-card__section-title">Pembayaran Anda Menggunakan</span>
                                 <div class="campaign-cost-card__row">
@@ -684,6 +693,7 @@
                                     <strong class="campaign-cost-card__danger">Rp 0</strong>
                                 </div>
                             </div>
+                            @endif
                             @include('partials.payment-invoice-email', [
                                 'inputId' => 'campaignPaymentInvoiceEmail',
                                 'checkboxId' => 'campaignPaymentInvoiceEmailCheck',
@@ -694,7 +704,7 @@
                                 </div>
                             @endif
                             <p class="campaign-payment-error" id="campaignPaymentError" hidden></p>
-                            <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">Bayar & Kirim Iklan</button>
+                            <button type="button" class="campaign-cost-card__cta" id="campaignGwSubmitButton">{{ !empty($isMember) ? 'Kirim Iklan' : 'Bayar & Kirim Iklan' }}</button>
                             @include('partials.payment-qris-modal', [
                                 'modalId' => 'campaignPaymentModal',
                                 'panelId' => 'campaignPaymentPanel',
@@ -2286,6 +2296,7 @@
         addButton?.addEventListener('click', createButtonCard);
         createButtonCard();
 
+            const isMember = @json((bool) ($isMember ?? false));
             const gwSubmitButton = document.getElementById('campaignGwSubmitButton');
             const gwSubmitForm = document.getElementById('campaignGwSubmitForm');
             const gwDeliveryStartTime = document.getElementById('gwDeliveryStartTime');
@@ -2564,13 +2575,45 @@
 
         gwSubmitButton?.addEventListener('click', async () => {
             try {
+                if (isMember) {
+                    setPaymentError('');
+                    if (!testRecipientField?.value && testRecipientInput?.value?.trim()) {
+                        addTestRecipient();
+                    }
+                    gwSubmitButton.disabled = true;
+                    gwSubmitButton.textContent = 'Mengirim campaign...';
+
+                    const scheduleId = '1';
+                    const startHour = pickScheduleValue(`[data-schedule-time-start-hour="${scheduleId}"]`);
+                    const startMinute = pickScheduleValue(`[data-schedule-time-start-minute="${scheduleId}"]`);
+                    const endHour = pickScheduleValue(`[data-schedule-time-end-hour="${scheduleId}"]`);
+                    const endMinute = pickScheduleValue(`[data-schedule-time-end-minute="${scheduleId}"]`);
+
+                    if (titleInput && titleInput.value.trim() === '') {
+                        titleInput.value = `UAT SMS LBA ${toIsoStamp()}`;
+                    }
+
+                    gwDeliveryStartTime.value = startHour && startMinute ? `${startHour}:${startMinute}` : '';
+                    gwDeliveryEndTime.value = endHour && endMinute ? `${endHour}:${endMinute}` : '';
+
+                    const state = window.campaignLocationState || {};
+                    gwLocationName.value = String(state.name || 'Lokasi dipilih');
+                    gwLocationLat.value = String(state.lat ?? '');
+                    gwLocationLng.value = String(state.lng ?? '');
+                    gwCustomerEmail.value = resolvePaymentInvoiceEmail();
+                    gwPaymentTransactionId.value = 'MEMBER-' + Date.now();
+
+                    gwSubmitForm.submit();
+                    return;
+                }
+
                 await submitCampaignAfterPayment();
             } catch (error) {
                 const message = normalizePaymentErrorMessage(error?.message ? String(error.message) : '');
                 setPaymentUi({ status: 'FAILED' });
                 setPaymentError(message);
                 gwSubmitButton.disabled = false;
-                gwSubmitButton.textContent = 'Bayar & Kirim Iklan';
+                gwSubmitButton.textContent = isMember ? 'Kirim Iklan' : 'Bayar & Kirim Iklan';
             }
         });
     })();

@@ -160,11 +160,17 @@ class CampaignMenuController extends Controller
             if ($view === 'create') {
                 $unitPrice = $this->resolveUnitPrice($request, $channel, $menu);
                 $gofoodLink = null;
+                $isMember = false;
                 try {
                     $accessToken = (string) $request->session()->get('myads.access_token', '');
                     if ($accessToken !== '') {
                         $gofoodLink = app(MyadsApiClient::class)->getMerchantGofoodLink($accessToken);
                         app(MyadsApiClient::class)->logEvent($accessToken, 'click_product_inventory');
+
+                        if ($channel === 'sms') {
+                            $memberResp = app(MyadsApiClient::class)->getMembershipStatus($accessToken);
+                            $isMember = (bool) data_get($memberResp, 'data.is_member', false);
+                        }
                     }
                 } catch (\Throwable $e) {}
 
@@ -174,6 +180,7 @@ class CampaignMenuController extends Controller
                     'page' => $page,
                     'unitPrice' => $unitPrice,
                     'defaultCtaLink' => $gofoodLink,
+                    'isMember' => $isMember,
                 ]);
             }
 
@@ -207,11 +214,17 @@ class CampaignMenuController extends Controller
             if ($view === 'create') {
                 $unitPrice = $this->resolveUnitPrice($request, $channel, $menu);
                 $gofoodLink = null;
+                $isMember = false;
                 try {
                     $accessToken = (string) $request->session()->get('myads.access_token', '');
                     if ($accessToken !== '') {
                         $gofoodLink = app(MyadsApiClient::class)->getMerchantGofoodLink($accessToken);
                         app(MyadsApiClient::class)->logEvent($accessToken, 'click_product_inventory');
+
+                        if ($channel === 'sms') {
+                            $memberResp = app(MyadsApiClient::class)->getMembershipStatus($accessToken);
+                            $isMember = (bool) data_get($memberResp, 'data.is_member', false);
+                        }
                     }
                 } catch (\Throwable $e) {}
 
@@ -221,6 +234,7 @@ class CampaignMenuController extends Controller
                     'page' => $page,
                     'unitPrice' => $unitPrice,
                     'defaultCtaLink' => $gofoodLink,
+                    'isMember' => $isMember,
                 ]);
             }
 

@@ -320,11 +320,22 @@ class ApiGatewayController extends Controller
 			if ($paymentTransactionId === '') {
 				throw new RuntimeException('Pembayaran belum diinisiasi.');
 			}
-			$paymentResp = $client->paymentStatus($this->ensureValidAccessToken($request, $client), $paymentTransactionId);
-			$paymentStatus = strtoupper(trim((string) data_get($paymentResp, 'data.status')));
-			if ($paymentStatus !== 'SUCCESS') {
-				$label = $paymentStatus !== '' ? $paymentStatus : 'PENDING';
-				throw new RuntimeException('Pembayaran belum berhasil. Status: ' . $label);
+
+			$isMember = str_starts_with(strtoupper($paymentTransactionId), 'MEMBER');
+			if (! $isMember) {
+				try {
+					$memberResp = $client->getMembershipStatus($this->ensureValidAccessToken($request, $client));
+					$isMember = (bool) data_get($memberResp, 'data.is_member', false);
+				} catch (Throwable) {}
+			}
+
+			if (! $isMember) {
+				$paymentResp = $client->paymentStatus($this->ensureValidAccessToken($request, $client), $paymentTransactionId);
+				$paymentStatus = strtoupper(trim((string) data_get($paymentResp, 'data.status')));
+				if ($paymentStatus !== 'SUCCESS') {
+					$label = $paymentStatus !== '' ? $paymentStatus : 'PENDING';
+					throw new RuntimeException('Pembayaran belum berhasil. Status: ' . $label);
+				}
 			}
 
 			$gwToken = $this->requireGatewayToken($request);
@@ -363,6 +374,10 @@ class ApiGatewayController extends Controller
 				],
 				'controlNumbers' => $controlNumbers,
 			];
+
+			if ($isMember) {
+				$payload['useBonusBalance'] = 1;
+			}
 
 			if ($mmsFile !== '') {
 				$payload['mmsFile'] = $mmsFile;
@@ -443,11 +458,22 @@ class ApiGatewayController extends Controller
 			if ($paymentTransactionId === '') {
 				throw new RuntimeException('Pembayaran belum diinisiasi.');
 			}
-			$paymentResp = $client->paymentStatus($this->ensureValidAccessToken($request, $client), $paymentTransactionId);
-			$paymentStatus = strtoupper(trim((string) data_get($paymentResp, 'data.status')));
-			if ($paymentStatus !== 'SUCCESS') {
-				$label = $paymentStatus !== '' ? $paymentStatus : 'PENDING';
-				throw new RuntimeException('Pembayaran belum berhasil. Status: ' . $label);
+
+			$isMember = str_starts_with(strtoupper($paymentTransactionId), 'MEMBER');
+			if (! $isMember) {
+				try {
+					$memberResp = $client->getMembershipStatus($this->ensureValidAccessToken($request, $client));
+					$isMember = (bool) data_get($memberResp, 'data.is_member', false);
+				} catch (Throwable) {}
+			}
+
+			if (! $isMember) {
+				$paymentResp = $client->paymentStatus($this->ensureValidAccessToken($request, $client), $paymentTransactionId);
+				$paymentStatus = strtoupper(trim((string) data_get($paymentResp, 'data.status')));
+				if ($paymentStatus !== 'SUCCESS') {
+					$label = $paymentStatus !== '' ? $paymentStatus : 'PENDING';
+					throw new RuntimeException('Pembayaran belum berhasil. Status: ' . $label);
+				}
 			}
 
 			$gwToken = $this->requireGatewayToken($request);
@@ -514,6 +540,10 @@ class ApiGatewayController extends Controller
 					],
 				],
 			];
+
+			if ($isMember) {
+				$payload['useBonusBalance'] = 1;
+			}
 
 			$resp = $client->campaignLbaAdd($gwToken, $payload, $this->gatewayRefreshCallback($request, $client));
 			$campaignId = (string) (data_get($resp, 'data.data.campaignId')
