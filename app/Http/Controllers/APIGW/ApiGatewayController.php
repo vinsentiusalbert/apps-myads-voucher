@@ -1096,8 +1096,8 @@ class ApiGatewayController extends Controller
 			'event_type' => 'required|string|max:100',
 		]);
 
-		$accessToken = session('access_token');
-		if (! $accessToken) {
+		$accessToken = (string) ($request->session()->get('myads.access_token') ?? session('access_token') ?? '');
+		if ($accessToken === '') {
 			return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
 		}
 

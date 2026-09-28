@@ -49,6 +49,10 @@ class InvoiceController extends Controller
                 abort(404, 'Data Invoice tidak ditemukan.');
             }
 
+            try {
+                $client->logEvent($accessToken, 'view_invoice_detail');
+            } catch (Throwable) {}
+
             return view('invoice.show', [
                 'invoice' => $data['invoice'] ?? [],
                 'transaction' => $data['transaction'] ?? [],
@@ -64,6 +68,10 @@ class InvoiceController extends Controller
     {
         try {
             $accessToken = $this->ensureValidAccessToken($request, $client);
+            try {
+                $client->logEvent($accessToken, 'download_invoice_pdf');
+            } catch (Throwable) {}
+
             $pdfResponse = $client->getInvoicePdf($accessToken, $invoiceId);
 
             if ($pdfResponse->failed()) {
@@ -94,6 +102,10 @@ class InvoiceController extends Controller
             if ($pdfResponse->failed()) {
                 abort($pdfResponse->status(), 'Gagal mengunduh PDF Invoice dari server API.');
             }
+
+            try {
+                $client->logEvent($accessToken, 'download_invoice_pdf');
+            } catch (Throwable) {}
 
             return response($pdfResponse->body())
                 ->header('Content-Type', 'application/pdf')

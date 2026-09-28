@@ -10,7 +10,7 @@
     </section>
 
     <!-- Stats Grid -->
-    <section class="portal-card" style="margin-bottom: 2.5rem; padding: 2rem;">
+    <section class="portal-card" style="margin-bottom: 2rem; padding: 2rem;">
         <h2 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700; color: #1f2937;">Statistik Sistem & API</h2>
         <div class="portal-stats" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem;">
             <div class="portal-stats__item">
@@ -28,6 +28,158 @@
             <div class="portal-stats__item">
                 <p class="portal-stats__value" style="color: #f59e0b;">{{ $stats['avg_latency_ms'] ?? 0 }} ms</p>
                 <p class="portal-stats__label">Rata-rata Latensi</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reporting Events Monitoring -->
+    <section class="portal-card" style="margin-bottom: 2.5rem; padding: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h2 style="font-size: 1.25rem; font-weight: 700; color: #1f2937; margin: 0;">Monitoring Reporting Events & Action Tracking</h2>
+                <p style="font-size: 0.875rem; color: #6b7280; margin: 0.25rem 0 0 0;">Pelacakan aksi pengguna secara real-time (Membership, Top-up Campaign vs Member, Setup & Aktivasi Iklan).</p>
+            </div>
+            <span style="font-size: 0.875rem; font-weight: 600; background: #e0e7ff; color: #3730a3; padding: 0.35rem 0.75rem; border-radius: 9999px;">
+                {{ $reportingData['summary']['total_events'] ?? 0 }} Total Events
+            </span>
+        </div>
+
+        <!-- Event Summary Metrics -->
+        <div class="portal-stats" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="portal-stats__item" style="border-left: 4px solid #6366f1;">
+                <p class="portal-stats__value" style="color: #4338ca;">{{ $reportingData['summary']['total_events'] ?? 0 }}</p>
+                <p class="portal-stats__label">Total Event Hits</p>
+            </div>
+            <div class="portal-stats__item" style="border-left: 4px solid #10b981;">
+                <p class="portal-stats__value" style="color: #047857;">{{ $reportingData['summary']['total_merchants'] ?? 0 }}</p>
+                <p class="portal-stats__label">Unique Merchants</p>
+            </div>
+            <div class="portal-stats__item" style="border-left: 4px solid #06b6d4;">
+                <p class="portal-stats__value" style="color: #0e7490;">{{ $reportingData['summary']['total_users'] ?? 0 }}</p>
+                <p class="portal-stats__label">Unique Users</p>
+            </div>
+            @php
+                $eventMap = collect($reportingData['event_types'] ?? [])->keyBy('event_type');
+                $topupCampCount = ($eventMap->get('top_up_campaign_success')['total_hits'] ?? 0) ?: ($eventMap->get('top_up_success')['total_hits'] ?? 0);
+                $topupMemberCount = $eventMap->get('top_up_member_success')['total_hits'] ?? 0;
+                $activationCount = $eventMap->get('campaign_activation')['total_hits'] ?? 0;
+            @endphp
+            <div class="portal-stats__item" style="border-left: 4px solid #f59e0b;">
+                <p class="portal-stats__value" style="color: #b45309;">{{ $activationCount }}</p>
+                <p class="portal-stats__label">Campaign Activations</p>
+            </div>
+        </div>
+
+        <!-- Breakdown Event Types Table -->
+        <div style="margin-bottom: 2.5rem;">
+            <h3 style="font-size: 1rem; font-weight: 700; color: #374151; margin-bottom: 1rem;">Frekuensi Event Berdasarkan Kategori</h3>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e5e7eb; color: #374151; font-weight: 600;">
+                            <th style="padding: 0.75rem 1rem;">Event Type</th>
+                            <th style="padding: 0.75rem 1rem;">Kategori / Alur</th>
+                            <th style="padding: 0.75rem 1rem; text-align: center;">Total Hits</th>
+                            <th style="padding: 0.75rem 1rem; text-align: center;">Unique Merchants</th>
+                            <th style="padding: 0.75rem 1rem; text-align: right;">Terakhir Terpicu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($reportingData['event_types'] ?? [] as $evt)
+                            @php
+                                $type = $evt['event_type'];
+                                $badgeColor = '#e0f2fe';
+                                $badgeText = '#0369a1';
+                                $category = 'General';
+
+                                if (str_contains($type, 'member')) {
+                                    $badgeColor = '#fef3c7';
+                                    $badgeText = '#92400e';
+                                    $category = 'Membership';
+                                } elseif (str_contains($type, 'top_up') || str_contains($type, 'payment')) {
+                                    $badgeColor = '#dcfce7';
+                                    $badgeText = '#15803d';
+                                    $category = 'Payment / Top-up';
+                                } elseif (str_contains($type, 'campaign') || str_contains($type, 'iklan') || str_contains($type, 'product')) {
+                                    $badgeColor = '#ede9fe';
+                                    $badgeText = '#6d28d9';
+                                    $category = 'Campaign Funnel';
+                                } elseif (str_contains($type, 'abandoned') || str_contains($type, 'fail') || str_contains($type, 'cancel')) {
+                                    $badgeColor = '#fee2e2';
+                                    $badgeText = '#b91c1c';
+                                    $category = 'Drop-off / Incomplete';
+                                }
+                            @endphp
+                            <tr style="border-bottom: 1px solid #f3f4f6; color: #4b5563;">
+                                <td style="padding: 0.75rem 1rem; font-weight: 600; font-family: monospace; color: #111827;">
+                                    {{ $type }}
+                                </td>
+                                <td style="padding: 0.75rem 1rem;">
+                                    <span style="background: {{ $badgeColor }}; color: {{ $badgeText }}; padding: 0.2rem 0.5rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600;">
+                                        {{ $category }}
+                                    </span>
+                                </td>
+                                <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700; color: #111827;">
+                                    {{ number_format((float) ($evt['total_hits'] ?? 0), 0, ',', '.') }}
+                                </td>
+                                <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 600; color: #4f46e5;">
+                                    {{ number_format((float) ($evt['unique_merchants'] ?? 0), 0, ',', '.') }}
+                                </td>
+                                <td style="padding: 0.75rem 1rem; text-align: right; color: #9ca3af; font-size: 0.75rem;">
+                                    {{ !empty($evt['last_triggered_at']) ? \Carbon\Carbon::parse($evt['last_triggered_at'])->timezone(config('app.timezone'))->format('d M Y H:i') : '-' }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" style="padding: 1.5rem; text-align: center; color: #9ca3af;">Belum ada reporting event yang tercatat.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent 50 Events Table -->
+        <div>
+            <h3 style="font-size: 1rem; font-weight: 700; color: #374151; margin-bottom: 1rem;">Log Aktivitas Event Terkini (50 Terakhir)</h3>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid #e5e7eb; color: #374151; font-weight: 600;">
+                            <th style="padding: 0.75rem 1rem;">Waktu</th>
+                            <th style="padding: 0.75rem 1rem;">Event Type</th>
+                            <th style="padding: 0.75rem 1rem;">Merchant ID</th>
+                            <th style="padding: 0.75rem 1rem;">User Email / Nama</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($reportingData['recent_events'] ?? [] as $rev)
+                            <tr style="border-bottom: 1px solid #f3f4f6; color: #4b5563;">
+                                <td style="padding: 0.75rem 1rem; color: #9ca3af; font-size: 0.75rem; white-space: nowrap;">
+                                    {{ !empty($rev['created_at']) ? \Carbon\Carbon::parse($rev['created_at'])->timezone(config('app.timezone'))->format('H:i:s d M Y') : '-' }}
+                                </td>
+                                <td style="padding: 0.75rem 1rem;">
+                                    <code style="background: #f3f4f6; color: #1e293b; padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
+                                        {{ $rev['event_type'] }}
+                                    </code>
+                                </td>
+                                <td style="padding: 0.75rem 1rem; font-family: monospace; font-size: 0.75rem; color: #4f46e5;">
+                                    {{ $rev['merchant_id'] ?: 'None' }}
+                                </td>
+                                <td style="padding: 0.75rem 1rem;">
+                                    <div style="font-weight: 600; color: #111827;">{{ $rev['user_email'] }}</div>
+                                    @if(!empty($rev['user_name']) && $rev['user_name'] !== 'Unknown')
+                                        <div style="font-size: 0.75rem; color: #6b7280;">{{ $rev['user_name'] }}</div>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="4" style="padding: 1.5rem; text-align: center; color: #9ca3af;">Belum ada aktivitas event yang tercatat.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </section>

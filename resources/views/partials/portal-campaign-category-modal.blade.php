@@ -132,6 +132,23 @@
             button.addEventListener('click', closeCategoryModal);
         });
 
+        document.querySelectorAll('.portal-category-card').forEach((card) => {
+            card.addEventListener('click', () => {
+                const href = card.getAttribute('href') || '';
+                let specificEvent = 'click_product_inventory';
+                if (href.includes('sms') && href.includes('location-based-area')) specificEvent = 'click_product_sms_lba';
+                else if (href.includes('sms') && href.includes('targeted')) specificEvent = 'click_product_sms_targeted';
+                else if (href.includes('wa-business') && href.includes('location-based-area')) specificEvent = 'click_product_waba_lba';
+                else if (href.includes('wa-business') && href.includes('targeted')) specificEvent = 'click_product_waba_targeted';
+
+                fetch("{{ route('campaign.track-event') }}", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
+                    body: JSON.stringify({ event_type: specificEvent })
+                }).catch(() => {});
+            });
+        });
+
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && categoryModal && !categoryModal.hidden) {
                 closeCategoryModal();

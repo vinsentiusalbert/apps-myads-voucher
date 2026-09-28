@@ -489,6 +489,16 @@
 @push('scripts')
     <script>
         (() => {
+            fetch("{{ route('campaign.track-event') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({ event_type: 'view_campaign_report' })
+            }).catch(() => {});
+
             document.querySelectorAll('[data-report-toggle]').forEach((button) => {
                 button.addEventListener('click', () => {
                     const key = button.dataset.reportToggle;

@@ -97,6 +97,14 @@ class AdminController extends Controller
             // Keep empty
         }
 
+        $reportingData = [];
+        try {
+            $repResp = $client->getAdminReportingEvents($accessToken);
+            $reportingData = data_get($repResp, 'data', []);
+        } catch (\Throwable $e) {
+            // Keep empty
+        }
+
         // We build the standard sidebar structure
         $navMenus = [
             [
@@ -113,6 +121,7 @@ class AdminController extends Controller
             'stats' => $stats,
             'users' => $users,
             'logs' => $logs,
+            'reportingData' => $reportingData,
             'navMenus' => $navMenus,
             'activeNav' => 'admin',
         ]);

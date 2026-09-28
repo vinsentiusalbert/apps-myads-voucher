@@ -777,6 +777,21 @@ class MyadsApiClient
         return (array) $response->json();
     }
 
+    public function getAdminReportingEvents(string $accessToken): array
+    {
+        try {
+            $response = $this->bearerClient($accessToken)->get('/api/admin/reporting-events');
+        } catch (ConnectionException $e) {
+            throw new RuntimeException('Tidak bisa konek ke API admin reporting events: ' . $e->getMessage(), previous: $e);
+        }
+
+        if ($response->failed()) {
+            throw new RuntimeException($this->extractErrorMessage($response, 'Gagal mengambil reporting events admin'));
+        }
+
+        return (array) $response->json();
+    }
+
     public function getMerchantGofoodLink(string $accessToken): ?string
     {
         try {

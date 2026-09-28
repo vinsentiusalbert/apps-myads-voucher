@@ -736,6 +736,40 @@
             const paymentCustomerPhone = '6285129640197';
             const defaultInvoiceEmail = 'myads@telkomsel.com';
             const waTargetedUnitPrice = 1100;
+            let formSubmitted = false;
+
+            const trackEvent = (eventType) => {
+                fetch("{{ route('campaign.track-event') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ event_type: eventType })
+                }).catch(err => console.warn('Tracking failed:', err));
+            };
+
+            // Track incomplete / abandoned campaign creation on unload
+            window.addEventListener('beforeunload', () => {
+                if (!formSubmitted) {
+                    const payload = JSON.stringify({ event_type: 'campaign_abandoned', _token: csrfToken });
+                    if (navigator.sendBeacon) {
+                        navigator.sendBeacon("{{ route('campaign.track-event') }}", new Blob([payload], { type: 'application/json' }));
+                    }
+                }
+            });
+
+            // Track payment cancel when user closes QRIS modal
+            document.querySelectorAll('[data-payment-modal-close]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const paymentTransactionId = document.getElementById('waTargetedPaymentTransactionId');
+                    if (paymentTransactionId?.value && !formSubmitted) {
+                        trackEvent('campaign_payment_cancelled');
+                    }
+                });
+            });
+
             const waTargetedPaymentError = document.getElementById('waTargetedPaymentError');
             const waTargetedPaymentHint = document.getElementById('waTargetedPaymentHint');
             const waTargetedPaymentInvoiceEmail = document.getElementById('waTargetedPaymentInvoiceEmail');
@@ -1743,6 +1777,7 @@
                     }
 
                     if (status === 'FAILED' || status === 'EXPIRED') {
+                        trackEvent('campaign_payment_failed');
                         throw new Error('Pembayaran gagal. Status: ' + status);
                     }
 
@@ -1874,6 +1909,7 @@
                 setHiddenValue('waTargetedGwProfileHometown', locationRowsValue(homeLocationList));
                 setHiddenValue('waTargetedGwProfileWork', locationRowsValue(workLocationList));
 
+                formSubmitted = true;
                 submitForm.submit();
             };
 

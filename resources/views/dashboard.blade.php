@@ -459,6 +459,23 @@
         const qrisDownloadBase = "{{ route('campaign.payment.qris-download') }}";
         const paymentStatusUrlTemplate = "{{ route('campaign.payment.status', ['transactionId' => '__TRANSACTION_ID__']) }}";
 
+        const trackEvent = (eventType) => {
+            fetch("{{ route('campaign.track-event') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({ event_type: eventType })
+            }).catch(err => console.warn('Tracking failed:', err));
+        };
+
+        // Track sidebar membership click
+        document.getElementById('sidebar-join-membership')?.addEventListener('click', () => {
+            trackEvent('click_membership_menu');
+        });
+
         let countdownTimer  = null;
         let pollingTimer    = null;
         let currentTxnId    = null;
@@ -506,6 +523,7 @@
         const onPaymentFailure = (msg) => {
             stopPolling();
             stopCountdown();
+            trackEvent('membership_payment_failed');
             if (failureMsg) {
                 failureMsg.textContent = msg || 'Terjadi kesalahan saat memproses pembayaran.';
             }
@@ -573,13 +591,38 @@
             showStep('form');
         };
 
-        joinBtn?.addEventListener('click', openModal);
-        closeBtn?.addEventListener('click', closeModal);
-        backdrop?.addEventListener('click', closeModal);
-        cancelBtn?.addEventListener('click', closeModal);
+        joinBtn?.addEventListener('click', () => {
+            trackEvent('click_membership_join');
+            openModal();
+        });
+        closeBtn?.addEventListener('click', () => {
+            if (currentTxnId && stepQris && stepQris.style.display !== 'none') {
+                trackEvent('membership_payment_cancelled');
+            }
+            closeModal();
+        });
+        backdrop?.addEventListener('click', () => {
+            if (currentTxnId && stepQris && stepQris.style.display !== 'none') {
+                trackEvent('membership_payment_cancelled');
+            }
+            closeModal();
+        });
+        cancelBtn?.addEventListener('click', () => {
+            if (currentTxnId) {
+                trackEvent('membership_payment_cancelled');
+            }
+            closeModal();
+        });
         successBtn?.addEventListener('click', () => location.reload());
         retryBtn?.addEventListener('click', () => showStep('form'));
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (currentTxnId && stepQris && stepQris.style.display !== 'none') {
+                    trackEvent('membership_payment_cancelled');
+                }
+                closeModal();
+            }
+        });
 
         // ── "Sudah bayar" manual check ────────────────────────────────────
         paidBtn?.addEventListener('click', async () => {

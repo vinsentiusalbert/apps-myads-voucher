@@ -2535,6 +2535,8 @@
             });
 
             const isMember = @json((bool) ($isMember ?? false));
+            let formSubmitted = false;
+
             const gwSubmitButton = document.getElementById('campaignGwSubmitButton');
             const gwSubmitForm = document.getElementById('campaignGwSubmitForm');
             const gwDeliveryTime = document.getElementById('gwDeliveryTime');
@@ -2547,6 +2549,37 @@
             const csrfToken = "{{ csrf_token() }}";
             const paymentCustomerPhone = '6285129640197';
             const defaultInvoiceEmail = 'myads@telkomsel.com';
+
+            const trackEvent = (eventType) => {
+                fetch("{{ route('campaign.track-event') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    body: JSON.stringify({ event_type: eventType })
+                }).catch(err => console.warn('Tracking failed:', err));
+            };
+
+            // Track incomplete / abandoned campaign creation on unload
+            window.addEventListener('beforeunload', () => {
+                if (!formSubmitted && typeof currentCampaignStep !== 'undefined' && currentCampaignStep >= 1) {
+                    const payload = JSON.stringify({ event_type: 'campaign_abandoned', _token: csrfToken });
+                    if (navigator.sendBeacon) {
+                        navigator.sendBeacon("{{ route('campaign.track-event') }}", new Blob([payload], { type: 'application/json' }));
+                    }
+                }
+            });
+
+            // Track payment cancel when user closes QRIS modal
+            document.querySelectorAll('[data-payment-modal-close]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (gwPaymentTransactionId?.value && !formSubmitted) {
+                        trackEvent('campaign_payment_cancelled');
+                    }
+                });
+            });
             const paymentInvoiceEmail = document.getElementById('campaignPaymentInvoiceEmail');
             const paymentInvoiceEmailCheck = document.getElementById('campaignPaymentInvoiceEmailCheck');
             const paymentError = document.getElementById('campaignPaymentError');
@@ -2697,6 +2730,7 @@
                     }
 
                     if (status === 'FAILED' || status === 'EXPIRED') {
+                        trackEvent('campaign_payment_failed');
                         throw new Error('Pembayaran gagal. Status: ' + status);
                     }
 
@@ -2785,6 +2819,7 @@
                 gwDeliveryTime.value = hourValue && minuteValue ? `${hourValue}:${minuteValue}` : '';
                 gwCustomerEmail.value = invoiceEmail;
 
+                formSubmitted = true;
                 gwSubmitForm.submit();
             };
 
@@ -2805,6 +2840,7 @@
                         gwCustomerEmail.value = defaultInvoiceEmail;
                         gwPaymentTransactionId.value = 'MEMBER-' + Date.now();
 
+                        formSubmitted = true;
                         gwSubmitForm.submit();
                         return;
                     }
