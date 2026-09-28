@@ -171,7 +171,7 @@
                             <div class="campaign-wa-lba-preview__carousel">
                                 <img src="{{ asset('assets/logo.png') }}" alt="Preview template" id="waLbaPreviewAsset">
                                 <div class="campaign-wa-lba-preview__carousel-copy">
-                                    <span class="campaign-wa-lba-preview__brand">MyAds</span>
+                                    <span class="campaign-wa-lba-preview__brand">ShopAds</span>
                                     <strong id="waLbaPreviewCardTitle">Template Carousel</strong>
                                     <p id="waLbaPreviewCardCaption">Detail card pertama akan tampil di sini.</p>
                                 </div>

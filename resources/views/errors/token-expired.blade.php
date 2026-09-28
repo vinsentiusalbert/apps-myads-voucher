@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Sesi Berakhir - GOTO MyAds</title>
+        <title>Sesi Berakhir - ShopAds</title>
         <link rel="icon" type="image/svg+xml" href="{{ asset('assets/goto-icon.svg') }}">
         <link rel="apple-touch-icon" href="{{ asset('assets/goto-icon.svg') }}">
 
@@ -20,8 +20,8 @@
 
             <section class="token-expired-card">
                 <div class="token-expired-brand">
-                    <img src="{{ asset('assets/logo.png') }}" alt="MyAds Logo" class="token-expired-logo">
-                    <span class="token-expired-kicker">GOTO Ads Portal</span>
+                    <img src="{{ asset('assets/logo.png') }}" alt="Shopee" class="token-expired-logo">
+                    <span class="token-expired-kicker">ShopAds Portal</span>
                 </div>
 
                 <div class="token-expired-badge">Session Notice</div>
@@ -36,7 +36,7 @@
 
                 <h1 class="token-expired-title">Sesi Anda Sudah Berakhir</h1>
                 <p class="token-expired-text">
-                    Token akses ke layanan MyAds sudah tidak aktif, jadi proses sebelumnya tidak bisa dilanjutkan.
+                    Token akses ke layanan ShopAds sudah tidak aktif, jadi proses sebelumnya tidak bisa dilanjutkan.
                 </p>
                 <p class="token-expired-text token-expired-text--muted">
                     Silakan login ulang melalui Gofood Merchant agar token baru bisa dibuat, lalu buka kembali halaman campaign Anda.

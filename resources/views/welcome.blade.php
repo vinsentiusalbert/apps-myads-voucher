@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>GOTO Ads Portal</title>
+        <title>ShopAds Portal</title>
         <link rel="icon" type="image/svg+xml" href="{{ asset('assets/goto-icon.svg') }}">
         <link rel="apple-touch-icon" href="{{ asset('assets/goto-icon.svg') }}">
 

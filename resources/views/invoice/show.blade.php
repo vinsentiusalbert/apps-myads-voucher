@@ -283,9 +283,9 @@
                     <tr>
                         <td>
                             @if($campaign)
-                                {{ $campaign['campaign_name'] ?? $campaign['campaignName'] ?? 'Kampanye Iklan MyAds' }}
+                                {{ $campaign['campaign_name'] ?? $campaign['campaignName'] ?? 'Kampanye Iklan ShopAds' }}
                             @else
-                                {{ $transaction['product_detail'] ?? 'Kampanye Iklan MyAds' }}
+                                {{ $transaction['product_detail'] ?? 'Kampanye Iklan ShopAds' }}
                             @endif
                         </td>
                         <td>

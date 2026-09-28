@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Unauthorized - GOTO MyAds</title>
+        <title>Unauthorized - ShopAds</title>
         <link rel="icon" type="image/svg+xml" href="{{ asset('assets/goto-icon.svg') }}">
         <link rel="apple-touch-icon" href="{{ asset('assets/goto-icon.svg') }}">
 
@@ -25,9 +25,9 @@
                     <!-- Header Section -->
                     <div class="error-header">
                         <div class="error-logo-wrapper">
-                            <img src="{{ asset('assets/logo.png') }}" alt="MyAds Logo" class="error-logo">
+                            <img src="{{ asset('assets/logo.png') }}" alt="Shopee" class="error-logo">
                         </div>
-                        <p class="error-subtitle">Shopee Ads Portal</p>
+                        <p class="error-subtitle">ShopAds Portal</p>
                     </div>
 
                     <!-- Error Code & Status -->
@@ -65,7 +65,7 @@
 
                 <!-- Bottom Info -->
                 <div class="error-footer">
-                    <p>&copy; Shopee MyAds, {{ date('Y') }}</p>
+                    <p>&copy; ShopAds, {{ date('Y') }}</p>
                 </div>
             </div>
         </main>

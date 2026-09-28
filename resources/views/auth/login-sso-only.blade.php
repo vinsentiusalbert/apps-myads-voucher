@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Login - GOTO MyAds</title>
+        <title>Login - ShopAds</title>
         <link rel="icon" type="image/svg+xml" href="{{ asset('assets/goto-icon.svg') }}">
         <link rel="apple-touch-icon" href="{{ asset('assets/goto-icon.svg') }}">
 
@@ -85,9 +85,9 @@
     <body>
         <div class="sso-container">
             <div class="sso-card">
-                <img src="{{ asset('assets/logo.png') }}" alt="MyAds Logo" class="sso-logo">
+                <img src="{{ asset('assets/logo.png') }}" alt="Shopee" class="sso-logo">
                 
-                <h1 class="sso-title">GOTO Ads Portal</h1>
+                <h1 class="sso-title">ShopAds Portal</h1>
                 
                 <p class="sso-subtitle">
                     Silakan login melalui SSO untuk mengakses portal

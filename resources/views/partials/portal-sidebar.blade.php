@@ -11,8 +11,8 @@
         </div>
 
         <div class="portal-brand">
-            <img src="{{ asset('assets/logo.png') }}" alt="MyAds Logo" class="portal-brand__logo">
-            <p class="portal-brand__text">MyAds</p>
+            <img src="{{ asset('assets/logo.png') }}" alt="Shopee" class="portal-brand__logo">
+            <p class="portal-brand__text">ShopAds</p>
         </div>
 
         @if (! empty($createButtonHref))

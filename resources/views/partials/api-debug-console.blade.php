@@ -18,7 +18,7 @@
         <!-- Drawer Header -->
         <div style="background: #f8f9fa; padding: 12px 20px; border-bottom: 1px solid #eaeaea; display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 8px;">
-                <strong style="color: #333; font-size: 14px;">MyAds API Debug Console</strong>
+                <strong style="color: #333; font-size: 14px;">ShopAds API Debug Console</strong>
                 <span style="background: #E1000C; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700;">Local Environment</span>
             </div>
             <div style="display: flex; gap: 12px; align-items: center;">

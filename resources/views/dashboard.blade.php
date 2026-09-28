@@ -106,7 +106,7 @@
             <div class="membership-banner__left">
                 <span class="membership-banner__icon">✨</span>
                 <div>
-                    <p class="membership-banner__title">MyAds Membership</p>
+                    <p class="membership-banner__title">ShopAds Membership</p>
                     <p class="membership-banner__desc">Kirim <strong>Unlimited SMS (Maks. 5.000 penerima/iklan)</strong> — hanya Rp {{ number_format($membershipPrice, 0, ',', '.') }}/bln (belum termasuk pajak)</p>
                 </div>
             </div>
@@ -263,7 +263,7 @@
         {{-- Step 1: Form --}}
         <div id="membership-step-form">
             <div class="membership-modal__icon">⭐</div>
-            <h2 class="membership-modal__title" id="membership-modal-title">MyAds Membership</h2>
+            <h2 class="membership-modal__title" id="membership-modal-title">ShopAds Membership</h2>
             <p class="membership-modal__subtitle">Dapatkan keuntungan eksklusif untuk bisnis Anda</p>
 
             <ul class="membership-modal__benefits">
@@ -354,7 +354,7 @@
         <div id="membership-step-success" style="display:none;padding:24px 12px;text-align:center">
             <div style="font-size:56px;color:#10b981;margin-bottom:12px;line-height:1">✓</div>
             <h2 class="membership-modal__title" style="color:#071d3a;margin-bottom:8px">Pembayaran Berhasil!</h2>
-            <p class="membership-modal__subtitle" style="margin-bottom:20px;font-size:14px">Terima kasih! MyAds Membership Anda telah aktif. Unlimited SMS gratis (maks. 5.000 penerima per campaign) siap digunakan.</p>
+            <p class="membership-modal__subtitle" style="margin-bottom:20px;font-size:14px">Terima kasih! ShopAds Membership Anda telah aktif. Unlimited SMS gratis (maks. 5.000 penerima per campaign) siap digunakan.</p>
             <button type="button" id="membership-success-btn" class="membership-modal__cta" style="background:#10b981;border:none;color:#fff;cursor:pointer">
                 Lanjutkan ke Dashboard
             </button>

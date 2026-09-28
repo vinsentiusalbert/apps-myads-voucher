@@ -39,8 +39,8 @@
                     </div>
 
                     <div class="portal-brand">
-                        <img src="{{ asset('assets/logo.png') }}" alt="MyAds Logo" class="portal-brand__logo">
-                        <p class="portal-brand__text">MyAds</p>
+                        <img src="{{ asset('assets/logo.png') }}" alt="Shopee" class="portal-brand__logo">
+                        <p class="portal-brand__text">ShopAds</p>
                     </div>
 
                     <a href="{{ route('dashboard') }}" class="portal-create-btn portal-create-btn--link">Dashboard Utama</a>
@@ -124,7 +124,7 @@
                             <span></span>
                             <span></span>
                         </button>
-                        <div class="portal-topbar__spacer"></div>
+                        <div class="portal-topbar__spacer">ShopAds<span class="portal-topbar__context"> / Seller Portal</span></div>
                     </div>
                     <div class="portal-topbar__actions">
                         <div class="portal-user">

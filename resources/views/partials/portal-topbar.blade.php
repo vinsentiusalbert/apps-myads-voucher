@@ -5,7 +5,7 @@
             <span></span>
             <span></span>
         </button>
-        <div class="portal-topbar__spacer"></div>
+        <div class="portal-topbar__spacer">ShopAds<span class="portal-topbar__context"> / Seller Portal</span></div>
     </div>
     <div class="portal-topbar__actions">
         <div class="portal-user">

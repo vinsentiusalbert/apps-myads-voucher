@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Daftar Akun Merchant - Shopee MyAds</title>
+        <title>Daftar Akun Merchant - ShopAds</title>
         <link rel="icon" type="image/svg+xml" href="{{ asset('assets/logo.png') }}">
         <link rel="apple-touch-icon" href="{{ asset('assets/logo.png') }}">
 
@@ -18,11 +18,11 @@
 
                 <div class="simple-header">
                     <div class="brand-mark" style="margin-bottom: 1rem;">
-                        <img src="{{ asset('assets/logo.png') }}" alt="MyAds Logo" style="height: 36px;">
+                        <img src="{{ asset('assets/logo.png') }}" alt="Shopee" style="height: 36px;">
                     </div>
                     <h1 class="simple-title">Daftar Akun Merchant</h1>
                     <p class="simple-copy">
-                        Lengkapi data berikut untuk mendaftarkan akun Shopee Merchant Anda di MyAds.
+                        Lengkapi data berikut untuk mendaftarkan akun Shopee Merchant Anda di ShopAds.
                     </p>
                 </div>
 

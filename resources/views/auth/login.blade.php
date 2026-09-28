@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Masuk - Shopee MyAds</title>
+        <title>Masuk - ShopAds</title>
         <link rel="icon" type="image/svg+xml" href="{{ asset('assets/logo.png') }}">
         <link rel="apple-touch-icon" href="{{ asset('assets/logo.png') }}">
 
@@ -19,22 +19,22 @@
                         <div>
                             <div class="brand-lockup">
                                 <div class="brand-mark">
-                                    <img src="{{ asset('assets/logo.png') }}" alt="MyAds Logo" class="brand-logo">
+                                    <img src="{{ asset('assets/logo.png') }}" alt="Shopee" class="brand-logo">
                                 </div>
                                 <div>
-                                    <p class="brand-subtitle">Shopee Ads Portal</p>
+                                    <p class="brand-subtitle">ShopAds Portal</p>
                                 </div>
                             </div>
 
                             <div class="hero-copy">
                                 <p class="eyebrow">Selamat Datang</p>
-                                <h1 class="auth-title">Tingkatkan penjualan toko Anda dengan periklanan tertarget MyAds.</h1>
+                                <h1 class="auth-title">Tingkatkan penjualan toko Anda dengan periklanan tertarget ShopAds.</h1>
                             </div>
                         </div>
 
                         <div class="hero-footer">
                             <p>Senang berjumpa kembali. Masuk ke akun Anda untuk mulai mengelola iklan.</p>
-                            <span>&copy; Shopee MyAds, {{ date('Y') }}</span>
+                            <span>&copy; ShopAds, {{ date('Y') }}</span>
                         </div>
                     </div>
                 </div>
@@ -45,7 +45,7 @@
                             <span class="panel-register">Belum punya akun?</span>
                             <a href="{{ route('register') }}" class="panel-link">Daftar sekarang</a>
                         </div>
-                        <h2 class="panel-title">Masuk akun Shopee MyAds</h2>
+                        <h2 class="panel-title">Masuk akun ShopAds</h2>
                         <p class="panel-copy">Masukkan Merchant ID dan password Anda untuk melanjutkan.</p>
 
                         @if (session('status'))
