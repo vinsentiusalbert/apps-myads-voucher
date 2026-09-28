@@ -33,7 +33,7 @@ class EnsureMyadsTokens
         }
 
         if (trim($accessToken) === '') {
-            return response()->view('errors.401', [], 401);
+            return redirect()->route('login');
         }
 
         $client = app(MyadsApiClient::class);
@@ -54,7 +54,7 @@ class EnsureMyadsTokens
         }
 
         if (trim((string) $session->get('myads.access_token', $accessToken)) === '') {
-            return response()->view('errors.401', [], 401);
+            return redirect()->route('login');
         }
 
         // Fetch gateway token kalau belum ada
@@ -75,16 +75,6 @@ class EnsureMyadsTokens
             }
         }
 
-        // // Admin tidak perlu gw_token — mereka tidak menggunakan fitur campaign API Gateway.
-        // // Non-admin (merchant) wajib punya gw_token untuk mengakses halaman campaign.
-        // $user = $session->get('myads.user');
-        // $userRole = is_array($user) ? (string) ($user['role'] ?? 'user') : 'user';
-        // $isAdmin = $userRole === 'admin';
-
-        // if (! $isAdmin && trim($gwToken) === '') {
-        //     return response()->view('errors.401', [], 401);
-        // }
-
         return $next($request);
 
     }
@@ -96,7 +86,6 @@ class EnsureMyadsTokens
             return in_array($routeName, [
                 'login',
                 'login.store',
-                'sso.complete',
                 'register',
                 'register.store',
                 'password.request',
@@ -112,7 +101,6 @@ class EnsureMyadsTokens
         return in_array($path, [
             '/',
             '/login',
-            '/sso/complete',
             '/register',
             '/forgot-password',
         ], true) || str_starts_with($path, '/reset-password');

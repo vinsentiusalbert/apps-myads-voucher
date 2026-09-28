@@ -11,51 +11,36 @@ use Illuminate\Validation\ValidationException;
 
 class RegisteredUserController extends Controller
 {
-    public function create(Request $request, MyadsApiClient $client): ViewContract|RedirectResponse
+    public function create(Request $request): ViewContract|RedirectResponse
     {
         $merchantId = trim((string) $request->query('merchant_id', ''));
-        $partnerId = trim((string) ($request->query('partner_id') ?? $request->query('parent_id', '')));
-
-        if ($merchantId === '') {
-            $merchantId = 'M-' . strtoupper(bin2hex(random_bytes(6)));
-        }
-        if ($partnerId === '') {
-            $partnerId = 'P-' . strtoupper(bin2hex(random_bytes(6)));
-        }
-
-        $contextResp = [];
-        $contextMessage = null;
-
-        try {
-            $contextResp = $client->registrationContext($merchantId, $partnerId);
-        } catch (\Throwable) {
-            abort(401, 'Akses Ditolak');
-        }
-
-        if ($contextResp !== [] && ! (bool) data_get($contextResp, 'success', false)) {
-            abort(401, 'Akses Ditolak');
-        }
-
-        $resolvedMerchantId = (string) data_get($contextResp, 'data.merchant_id', $merchantId);
-        $resolvedPartnerId = (string) data_get($contextResp, 'data.partner_id', $partnerId);
+        $partnerId = trim((string) ($request->query('partner_id') ?? $request->query('parent_id', 'shopee')));
 
         return view('auth.register', [
-            'merchantId' => $resolvedMerchantId,
-            'partnerId' => $resolvedPartnerId,
-            'contextMessage' => $contextMessage,
-            'hasExistingSsoUser' => false,
+            'merchantId' => $merchantId,
+            'partnerId' => $partnerId !== '' ? $partnerId : 'shopee',
         ]);
     }
 
     public function store(Request $request, MyadsApiClient $client): RedirectResponse
     {
         $validated = $request->validate([
+            'merchant_id' => ['required', 'string', 'max:128'],
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255'],
-            'password' => ['required', 'confirmed', 'min:8'],
-            'merchant_id' => ['required', 'string', 'max:128'],
-            'partner_id' => ['required', 'string', 'max:128'],
+            'password' => ['required', 'confirmed', 'min:6'],
+            'partner_id' => ['nullable', 'string', 'max:128'],
+        ], [
+            'merchant_id.required' => 'Merchant ID wajib diisi.',
+            'name.required' => 'Nama lengkap / nama toko wajib diisi.',
+            'email.required' => 'Alamat email wajib diisi.',
+            'email.email' => 'Format email tidak valid.',
+            'password.required' => 'Password wajib diisi.',
+            'password.confirmed' => 'Konfirmasi password tidak cocok.',
+            'password.min' => 'Password minimal 6 karakter.',
         ]);
+
+        $partnerId = ! empty($validated['partner_id']) ? $validated['partner_id'] : 'shopee';
 
         try {
             $registerResp = $client->register(
@@ -63,75 +48,62 @@ class RegisteredUserController extends Controller
                 $validated['password'],
                 $validated['name'],
                 $validated['merchant_id'],
-                $validated['partner_id']
+                $partnerId
             );
         } catch (\Throwable $e) {
             throw ValidationException::withMessages([
-                'email' => $this->cleanApiMessage($e->getMessage()),
+                'merchant_id' => $this->cleanApiMessage($e->getMessage()),
             ]);
         }
 
         if (! (bool) data_get($registerResp, 'success', false)) {
-            $message = $this->cleanApiMessage((string) (data_get($registerResp, 'message') ?: 'Register gagal.'));
+            $message = $this->cleanApiMessage((string) (data_get($registerResp, 'message') ?: 'Registrasi gagal.'));
 
             throw ValidationException::withMessages([
-                'email' => $message,
+                'merchant_id' => $message,
             ]);
         }
 
+        // Auto login after registration
         try {
-            $loginResp = $client->login($validated['email'], $validated['password']);
-        } catch (\Throwable $e) {
-            throw ValidationException::withMessages([
-                'email' => $this->cleanApiMessage($e->getMessage()),
-            ]);
-        }
+            $loginResp = $client->login($validated['merchant_id'], $validated['password']);
+            if ((bool) data_get($loginResp, 'success', false)) {
+                $accessToken = (string) data_get($loginResp, 'data.access_token');
+                $refreshToken = (string) data_get($loginResp, 'data.refresh_token');
+                $apiUser = (array) data_get($loginResp, 'data.user', []);
 
-        if (! (bool) data_get($loginResp, 'success', false)) {
-            $message = $this->cleanApiMessage((string) (data_get($loginResp, 'message') ?: 'Email atau password belum sesuai.'));
+                $request->session()->regenerate();
+                $request->session()->put([
+                    'myads.access_token' => $accessToken,
+                    'myads.refresh_token' => $refreshToken,
+                    'myads.merchant_id' => $validated['merchant_id'],
+                    'myads.partner_id' => $partnerId,
+                    'myads.user' => [
+                        'id' => (string) ($apiUser['id'] ?? $validated['merchant_id']),
+                        'name' => (string) ($apiUser['name'] ?? $validated['name']),
+                        'email' => (string) ($apiUser['email'] ?? $validated['email']),
+                        'role' => (string) ($apiUser['role'] ?? 'merchant'),
+                        'merchant_id' => $validated['merchant_id'],
+                        'partner_id' => $partnerId,
+                    ],
+                ]);
 
-            throw ValidationException::withMessages([
-                'email' => $message,
-            ]);
-        }
+                try {
+                    $gwResp = $client->getGatewayToken($accessToken);
+                    $gwToken = $client->extractGatewayToken($gwResp);
+                    if ($gwToken !== '') {
+                        $request->session()->put('myads.gw_token', $gwToken);
+                    }
+                } catch (\Throwable) {
+                }
 
-        $apiUser = (array) data_get($loginResp, 'data.user', []);
-        $userEmail = (string) ($apiUser['email'] ?? $validated['email']);
-        $userName = (string) ($apiUser['name'] ?? $validated['name'] ?? $userEmail);
-
-        $request->session()->regenerate();
-
-        $request->session()->put([
-            'myads.access_token' => data_get($loginResp, 'data.access_token'),
-            'myads.refresh_token' => data_get($loginResp, 'data.refresh_token'),
-            'myads.user' => [
-                'id' => (string) ($apiUser['id'] ?? $apiUser['user_id'] ?? $userEmail),
-                'name' => $userName,
-                'email' => $userEmail,
-                'merchant_id' => $validated['merchant_id'],
-                'partner_id' => $validated['partner_id'],
-            ],
-        ]);
-
-        try {
-            $gwResp = $client->getGatewayToken((string) data_get($loginResp, 'data.access_token'));
-            $gwToken = $client->extractGatewayToken($gwResp);
-
-            if ($gwToken === '') {
-                throw new \RuntimeException('Gagal ambil token gateway (format response tidak sesuai).');
+                return redirect()->route('dashboard');
             }
-
-            $request->session()->put('myads.gw_token', $gwToken);
-        } catch (\Throwable $e) {
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            throw ValidationException::withMessages([
-                'email' => $this->cleanApiMessage($e->getMessage()),
-            ]);
+        } catch (\Throwable) {
+            // Auto login failed, redirect to login page with success flash
         }
 
-        return redirect()->route('dashboard');
+        return redirect()->route('login')->with('status', 'Registrasi berhasil! Silakan masuk dengan Merchant ID dan password Anda.');
     }
 
     private function cleanApiMessage(string $message): string

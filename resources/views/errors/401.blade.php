@@ -27,7 +27,7 @@
                         <div class="error-logo-wrapper">
                             <img src="{{ asset('assets/logo.png') }}" alt="MyAds Logo" class="error-logo">
                         </div>
-                        <p class="error-subtitle">GOTO Ads Portal</p>
+                        <p class="error-subtitle">Shopee Ads Portal</p>
                     </div>
 
                     <!-- Error Code & Status -->
@@ -48,11 +48,12 @@
                         <h1 class="error-title">Akses Ditolak</h1>
                         <p class="error-message">
                             Maaf, Anda tidak memiliki akses ke halaman ini.
-                            <span class="error-message-hint">Silakan login atau hubungi administrator.</span>
+                            <span class="error-message-hint">Silakan login terlebih dahulu.</span>
                         </p>
+                        <div style="margin-top: 1.5rem;">
+                            <a href="{{ route('login') }}" class="submit-btn" style="display: inline-block; padding: 0.75rem 1.5rem; text-decoration: none; border-radius: 8px;">Kembali ke Login</a>
+                        </div>
                     </div>
-
-
 
                     <!-- Decorative Element -->
                     <div class="error-decoration">
@@ -64,7 +65,7 @@
 
                 <!-- Bottom Info -->
                 <div class="error-footer">
-                    <p>© PT GOTO Digital Nusantara, 2026</p>
+                    <p>&copy; Shopee MyAds, {{ date('Y') }}</p>
                 </div>
             </div>
         </main>

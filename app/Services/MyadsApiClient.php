@@ -133,11 +133,12 @@ class MyadsApiClient
     /**
      * @return array{success:bool, message?:string, data?:array}
      */
-    public function login(string $email, string $password): array
+    public function login(string $identifier, string $password): array
     {
         try {
             $response = $this->client()->post('/api/auth/login', [
-                'email' => $email,
+                'merchant_id' => $identifier,
+                'email' => $identifier,
                 'password' => $password,
             ]);
         } catch (ConnectionException $e) {
@@ -175,26 +176,20 @@ class MyadsApiClient
      */
     public function registrationContext(string $merchantId, string $partnerId): array
     {
-        try {
-            $response = $this->client()->get('/api/sso/register', [
+        return [
+            'success' => true,
+            'message' => 'Register context valid',
+            'data' => [
                 'merchant_id' => $merchantId,
                 'partner_id' => $partnerId,
-            ]);
-        } catch (ConnectionException $e) {
-            throw new RuntimeException('Tidak bisa konek ke API SSO register: ' . $e->getMessage(), previous: $e);
-        }
-
-        if ($response->failed()) {
-            throw new RuntimeException($this->extractErrorMessage($response, 'Konteks register tidak valid'));
-        }
-
-        return (array) $response->json();
+            ]
+        ];
     }
 
     /**
      * @return array{success:bool, message?:string, data?:array}
      */
-    public function register(string $email, string $password, string $name, string $merchantId, string $partnerId): array
+    public function register(string $email, string $password, string $name, string $merchantId, string $partnerId = 'shopee'): array
     {
         try {
             $response = $this->client()->post('/api/auth/register', [
@@ -202,7 +197,7 @@ class MyadsApiClient
                 'password' => $password,
                 'name' => $name,
                 'merchant_id' => $merchantId,
-                'partner_id' => $partnerId,
+                'partner_id' => $partnerId ?: 'shopee',
             ]);
         } catch (ConnectionException $e) {
             throw new RuntimeException('Tidak bisa konek ke API register: ' . $e->getMessage(), previous: $e);

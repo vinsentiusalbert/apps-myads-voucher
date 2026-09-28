@@ -3,9 +3,9 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Login Page</title>
-        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/goto-icon.svg') }}">
-        <link rel="apple-touch-icon" href="{{ asset('assets/goto-icon.svg') }}">
+        <title>Masuk - Shopee MyAds</title>
+        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/logo.png') }}">
+        <link rel="apple-touch-icon" href="{{ asset('assets/logo.png') }}">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=space-grotesk:500,700|plus-jakarta-sans:400,500,600,700,800" rel="stylesheet" />
@@ -22,34 +22,31 @@
                                     <img src="{{ asset('assets/logo.png') }}" alt="MyAds Logo" class="brand-logo">
                                 </div>
                                 <div>
-                                    {{-- <p class="brand-name">myAds</p> --}}
-                                    <p class="brand-subtitle">GOTO Ads Portal</p>
+                                    <p class="brand-subtitle">Shopee Ads Portal</p>
                                 </div>
                             </div>
 
                             <div class="hero-copy">
                                 <p class="eyebrow">Selamat Datang</p>
-                                {{-- <h1 class="auth-title">Kelola campaign digital Anda dalam satu workspace yang rapi dan fokus.</h1> --}}
-                                {{-- <p class="auth-copy">
-                                    Senang berjumpa kembali. Ikuti langkah berikut untuk mulai beriklan dengan myAds.
-                                </p> --}}
+                                <h1 class="auth-title">Tingkatkan penjualan toko Anda dengan periklanan tertarget MyAds.</h1>
                             </div>
                         </div>
 
                         <div class="hero-footer">
-                            <p>Senang berjumpa kembali. Ikuti langkah berikut untuk mulai beriklan dengan myAds.</p>
-                            <span>&copy;PT GOTO Digital Nusantara, 2026</span>
+                            <p>Senang berjumpa kembali. Masuk ke akun Anda untuk mulai mengelola iklan.</p>
+                            <span>&copy; Shopee MyAds, {{ date('Y') }}</span>
                         </div>
                     </div>
-                        </div>
+                </div>
 
                 <div class="auth-panel">
                     <div class="panel-card">
                         <div class="panel-topbar">
-                            <p class="panel-register">Akses portal menggunakan akun MyAds.</p>
+                            <span class="panel-register">Belum punya akun?</span>
+                            <a href="{{ route('register') }}" class="panel-link">Daftar sekarang</a>
                         </div>
-                        <h2 class="panel-title">Masuk akun MyAds</h2>
-                        <p class="panel-copy">Masukkan ID atau email dan password untuk melanjutkan ke portal.</p>
+                        <h2 class="panel-title">Masuk akun Shopee MyAds</h2>
+                        <p class="panel-copy">Masukkan Merchant ID dan password Anda untuk melanjutkan.</p>
 
                         @if (session('status'))
                             <div class="status-box status-box--success">{{ session('status') }}</div>
@@ -59,9 +56,9 @@
                             @csrf
 
                             <div class="field-group">
-                                <label for="email" class="field-label">ID / Email</label>
-                                <input id="email" name="email" type="text" value="{{ old('email') }}" required autofocus class="text-input">
-                                @error('email')
+                                <label for="merchant_id" class="field-label">Merchant ID</label>
+                                <input id="merchant_id" name="merchant_id" type="text" value="{{ old('merchant_id') }}" placeholder="Contoh: SHOP12345" required autofocus class="text-input">
+                                @error('merchant_id')
                                     <p class="error-text">{{ $message }}</p>
                                 @enderror
                             </div>
@@ -71,7 +68,7 @@
                                     <label for="password" class="field-label">Password</label>
                                     <a href="{{ route('password.request') }}" class="field-link">Lupa password?</a>
                                 </div>
-                                <input id="password" name="password" type="password" required class="text-input">
+                                <input id="password" name="password" type="password" placeholder="Masukkan password" required class="text-input">
                                 @error('password')
                                     <p class="error-text">{{ $message }}</p>
                                 @enderror
@@ -85,6 +82,10 @@
                             </div>
 
                             <button type="submit" class="submit-btn">Masuk</button>
+
+                            <div class="register-prompt" style="margin-top: 1.25rem; text-align: center; font-size: 0.875rem; color: #64748b;">
+                                Belum memiliki akun merchant? <a href="{{ route('register') }}" style="color: #ee4d2d; font-weight: 600; text-decoration: none;">Daftar di sini</a>
+                            </div>
                         </form>
                     </div>
                 </div>
