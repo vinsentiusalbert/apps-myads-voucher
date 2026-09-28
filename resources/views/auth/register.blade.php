@@ -38,7 +38,8 @@
 
                     <div class="field-group">
                         <label for="merchant_id" class="field-label">Merchant ID</label>
-                        <input id="merchant_id" name="merchant_id" type="text" value="{{ old('merchant_id', $merchantId ?? '') }}" placeholder="Contoh: SHOP12345" required autofocus class="text-input">
+                        <input id="merchant_id" name="merchant_id" type="text" value="{{ old('merchant_id', $merchantId ?? '') }}" placeholder="Bebas diisi, contoh: BJG78783" required autofocus class="text-input">
+                        <p class="field-hint" style="font-size: 0.8rem; color: #64748b; margin-top: 0.25rem;">Bebas diisi (ID unik toko/merchant Anda).</p>
                         @error('merchant_id')
                             <p class="error-text">{{ $message }}</p>
                         @enderror
