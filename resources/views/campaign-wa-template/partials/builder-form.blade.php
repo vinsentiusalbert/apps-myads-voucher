@@ -106,15 +106,12 @@
                 <label>Body</label>
                 <div class="template-builder-editor">
                     <div class="template-builder-editor__toolbar">
-                        <select>
-                            <option>Paragraph</option>
-                        </select>
-                        <button type="button">B</button>
-                        <button type="button"><i>I</i></button>
-                        <button type="button"><u>U</u></button>
-                        <button type="button">S</button>
-                        <button type="button">-</button>
-                        <button type="button">1.</button>
+                        <button type="button" data-template-format="bold" aria-label="Tebal" @disabled($isWaTemplateRead)>B</button>
+                        <button type="button" data-template-format="italic" aria-label="Miring" @disabled($isWaTemplateRead)><i>I</i></button>
+                        <button type="button" data-template-format="code" aria-label="Monospace" @disabled($isWaTemplateRead)>&lt;/&gt;</button>
+                        <button type="button" data-template-format="strike" aria-label="Coret" @disabled($isWaTemplateRead)><s>S</s></button>
+                        <button type="button" data-template-format="bullet" aria-label="Daftar poin" @disabled($isWaTemplateRead)>-</button>
+                        <button type="button" data-template-format="number" aria-label="Daftar nomor" @disabled($isWaTemplateRead)>1.</button>
                     </div>
                     <textarea id="templateBodyInput" name="body" maxlength="550" placeholder="Isi Pesan" required @readonly($isWaTemplateRead)>{{ $templateValue('body') }}</textarea>
                     <span class="template-builder-editor__count" id="templateBodyCount">0/550 Karakter</span>

@@ -658,7 +658,7 @@ ${defaultCtaLink}
                             </div>
                             <div class="template-builder-button-card__field">
                                 <label>Website URL</label>
-                                <input type="text" value="" maxlength="2000" placeholder="Website URL" data-template-button-url readonly>
+                                <input type="url" value="" maxlength="2000" placeholder="https://example.com/promo" data-template-button-url>
                                 <span class="template-builder-button-card__meta" data-template-url-meta>0 / 2000</span>
                             </div>
                             <button type="button" class="template-builder-button-card__remove" data-template-button-remove aria-label="Hapus tombol">×</button>

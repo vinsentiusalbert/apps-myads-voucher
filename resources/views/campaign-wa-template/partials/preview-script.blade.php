@@ -328,6 +328,32 @@
 
         templateBodyInput?.addEventListener('input', syncTemplateBodyPreview);
 
+        document.querySelectorAll('[data-template-format]').forEach((button) => {
+            button.addEventListener('click', () => {
+                if (!templateBodyInput || isTemplateRead) {
+                    return;
+                }
+                const start = templateBodyInput.selectionStart;
+                const end = templateBodyInput.selectionEnd;
+                const selected = templateBodyInput.value.slice(start, end);
+                const format = button.dataset.templateFormat;
+                const markers = { bold: '*', italic: '_', code: '```', strike: '~' };
+                const marker = markers[format] || '';
+                const replacement = marker
+                    ? `${marker}${selected}${marker}`
+                    : selected.split('\n').map((line, index) => `${format === 'number' ? `${index + 1}.` : '-'} ${line}`).join('\n');
+                if (templateBodyInput.value.length - selected.length + replacement.length > templateBodyInput.maxLength) {
+                    return;
+                }
+                templateBodyInput.setRangeText(replacement, start, end, 'select');
+                templateBodyInput.focus();
+                if (marker) {
+                    templateBodyInput.setSelectionRange(start + marker.length, start + replacement.length - marker.length);
+                }
+                templateBodyInput.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+        });
+
         if (!isTemplateRead) {
             syncTemplateAssetPreview();
             syncHeaderFields();
@@ -388,8 +414,8 @@
                     </div>
                     <div class="template-builder-button-card__field" data-template-url-field ${hasDefault ? '' : 'hidden'}>
                         <label>Website URL</label>
-                        <input type="url" value="${defaultUrl}" maxlength="2000" placeholder="https://gofood.link/..." data-template-button-url-suffix readonly>
-                        <input type="hidden" name="${inputName}[action_url_target]" value="${defaultUrl}" data-template-button-url>
+                        <input type="url" maxlength="2000" placeholder="https://example.com/promo" data-template-button-url-suffix>
+                        <input type="hidden" name="${inputName}[action_url_target]" data-template-button-url>
                         <span class="template-builder-button-card__meta" data-template-url-meta>0 / 2000</span>
                     </div>
                     <input type="hidden" name="${inputName}[action_replay]" value="" data-template-button-replay>
@@ -401,6 +427,7 @@
             `;
 
             templateButtonList.appendChild(card);
+            card.querySelector('[data-template-button-url-suffix]').value = defaultUrl;
             bindTemplateButtonCard(card);
             syncTemplateButtons();
         });

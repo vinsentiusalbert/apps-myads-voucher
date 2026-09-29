@@ -338,7 +338,7 @@
             </div>
         </div>
         <div class="campaign-report-head__actions">
-            <button type="button" class="campaign-report-head__primary">Download Laporan</button>
+            <button type="button" class="campaign-report-head__primary" id="campaignDownloadReport">Download Laporan</button>
         </div>
     </section>
 
@@ -489,6 +489,41 @@
 @push('scripts')
     <script>
         (() => {
+            const reportRows = {{ Illuminate\Support\Js::from([
+                ['Informasi', 'Nilai'],
+                ['ID Campaign', $campaignId],
+                ['Nama Campaign', $campaignTitle],
+                ['Tanggal', $campaignDate],
+                ['Kategori', $categoryLabel],
+                ['Channel', $channelLabel],
+                ['Pengirim', $senderName],
+                ['Isi Pesan', $messageText],
+                ['Total Penerima', $totalRecipient],
+                ['Sukses', $successCount],
+                ['Gagal', $failedCount],
+                ['Total Klik', $totalClick],
+                ['Click Rate', $clickRate],
+                ['Link Singkat', $shortUrl],
+                ['Harga Satuan', $unitPrice],
+                ['Total Biaya', $grandTotal],
+            ]) }};
+            document.getElementById('campaignDownloadReport')?.addEventListener('click', () => {
+                const csvCell = (value) => {
+                    const text = String(value ?? '');
+                    const safeText = /^[\s]*[=+@-]/.test(text) ? `'${text}` : text;
+                    return `"${safeText.replaceAll('"', '""')}"`;
+                };
+                const csv = '\uFEFF' + reportRows.map((row) => row.map(csvCell).join(',')).join('\r\n');
+                const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `laporan-campaign-${String(reportRows[1][1]).replace(/[^a-z0-9_-]/gi, '_')}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+            });
+
             fetch("{{ route('campaign.track-event') }}", {
                 method: 'POST',
                 headers: {

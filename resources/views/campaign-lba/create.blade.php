@@ -1746,7 +1746,7 @@
             let message = messageInput.value;
 
             if (previousUrl !== '') {
-                message = message.replace(new RegExp(`\\s*${escapeRegExp(previousUrl)}`, 'g'), '');
+                message = message.replace(new RegExp(`(^|\\s)${escapeRegExp(previousUrl)}(?=\\s|$)`), '').trimStart();
             }
 
             if (nextUrl !== '') {
@@ -1756,6 +1756,7 @@
             card.dataset.syncedUrl = nextUrl;
             messageInput.value = message;
             syncMessagePreview();
+            syncStepOneValidity();
         };
 
         const updateButtonCardMeta = (card) => {
@@ -1806,7 +1807,7 @@
                         </div>
                         <div class="campaign-button-card__field">
                             <label>Website URL</label>
-                            <input type="url" class="text-input" data-action-url maxlength="2000" value="${defaultUrl}" placeholder="https://gofood.link/..." readonly>
+                            <input type="url" class="text-input" data-action-url maxlength="2000" placeholder="https://example.com/promo">
                             <div class="campaign-button-card__meta" data-url-meta>0 / 2000</div>
                         </div>
                     </div>
@@ -1817,6 +1818,7 @@
             const removeButton = card.querySelector('[data-remove-button]');
             const websiteInput = card.querySelector('[data-action-url]');
 
+            websiteInput.value = defaultUrl;
             const syncCard = () => updateButtonCardMeta(card);
 
             websiteInput.addEventListener('input', syncCard);
@@ -2070,7 +2072,11 @@
         window.openCampaignLocationModal = openLocationModal;
         window.closeCampaignLocationModal = closeLocationModal;
 
-        await loadProfileDropdownOptions();
+        loadProfileDropdownOptions().then(() => {
+            initCampaignMultiselects();
+            syncTargetedProfileBuilder();
+            syncStepTwoValidity();
+        });
         syncMessagePreview();
         syncSenderPreview();
         initCampaignMultiselects();
@@ -2307,7 +2313,6 @@
         addButton?.addEventListener('click', createButtonCard);
         createButtonCard();
 
-            const isMember = @json((bool) ($isMember ?? false));
             let formSubmitted = false;
 
             const gwSubmitButton = document.getElementById('campaignGwSubmitButton');
