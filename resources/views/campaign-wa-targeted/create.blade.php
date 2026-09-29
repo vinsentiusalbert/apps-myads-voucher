@@ -57,7 +57,7 @@
     ];
     $activeNav = 'wa-business';
     $activeSubnav = 'wa-targeted';
-    $autoCampaignName = 'gotoads_waba_targeted_' . now()->format('YmdHis');
+    $autoCampaignName = 'shopads_waba_targeted_' . now()->format('YmdHis');
     $waTemplates = collect($waTemplates ?? []);
 @endphp
 

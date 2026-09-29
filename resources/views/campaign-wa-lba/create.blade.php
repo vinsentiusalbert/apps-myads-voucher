@@ -56,7 +56,7 @@
     ];
     $activeNav = 'wa-business';
     $activeSubnav = 'wa-location-based-area';
-    $autoCampaignName = 'gotoads_waba_lba_' . now()->format('YmdHis');
+    $autoCampaignName = 'shopads_waba_lba_' . now()->format('YmdHis');
     $waTemplates = collect($waTemplates ?? []);
 @endphp
 
@@ -1399,7 +1399,7 @@
 
                 const selectedTemplate = templates.find((template) => String(template.id) === String(templateSelect?.value));
                 const templateId = Number(selectedTemplate?.id || templateSelect?.value || 0);
-                const campaignName = `gotoads_waba_lba_${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`;
+                const campaignName = `shopads_waba_lba_${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`;
                 const recipientCount = Number(recipientCountInput?.value || 0);
                 const controlNumbers = String(testRecipient?.value || '').trim();
                 const phone = paymentCustomerPhone;

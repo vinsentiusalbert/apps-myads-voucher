@@ -790,7 +790,7 @@ class ApiGatewayController extends Controller
 
 	private function generateSmsLbaCampaignName(): string
 	{
-		return 'gotoads_sms_lba_' . now()->format('YmdHis');
+		return 'shopads_sms_lba_' . now()->format('YmdHis');
 	}
 
 	private function resolveInvoiceEmail(?string $email): string
@@ -802,17 +802,17 @@ class ApiGatewayController extends Controller
 
 	private function generateSmsTargetedCampaignName(): string
 	{
-		return 'gotoads_sms_targeted_' . now()->format('YmdHis');
+		return 'shopads_sms_targeted_' . now()->format('YmdHis');
 	}
 
 	private function generateWabaLbaCampaignName(): string
 	{
-		return 'gotoads_waba_lba_' . now()->format('YmdHis');
+		return 'shopads_waba_lba_' . now()->format('YmdHis');
 	}
 
 	private function generateWabaTargetedCampaignName(): string
 	{
-		return 'gotoads_waba_targeted_' . now()->format('YmdHis');
+		return 'shopads_waba_targeted_' . now()->format('YmdHis');
 	}
 
 	private function campaignPrices(MyadsApiClient $client, string $gatewayToken, ?callable $refreshGatewayToken = null): array

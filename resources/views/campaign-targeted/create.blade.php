@@ -1,6 +1,6 @@
 @php
     $title = $page['title'];
-    $autoCampaignName = 'gotoads_sms_targeted_' . now()->format('YmdHis');
+    $autoCampaignName = 'shopads_sms_targeted_' . now()->format('YmdHis');
     $bodyClass = 'campaign-title-ready';
     $mainClass = 'campaign-main';
     $contentClass = 'campaign-content';
