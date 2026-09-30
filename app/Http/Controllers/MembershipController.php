@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\MyadsApiClient;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class MembershipController extends Controller
 {
@@ -14,7 +15,7 @@ class MembershipController extends Controller
     public function join(Request $request, MyadsApiClient $client): JsonResponse
     {
         $validated = $request->validate([
-            'customer_phone' => ['nullable', 'string', 'max:32'],
+            'customer_phone' => ['required', 'string', 'max:32'],
             'customer_email' => ['nullable', 'email', 'max:255'],
         ]);
 
@@ -47,14 +48,12 @@ class MembershipController extends Controller
         if (trim($rawPhone) === '' && is_array($sessionUser)) {
             $rawPhone = (string) ($sessionUser['msisdn'] ?? $sessionUser['phone'] ?? $sessionUser['mobile'] ?? '');
         }
-        if (trim($rawPhone) === '') {
-            $rawPhone = '6285129640197';
-        }
-
         // Normalize phone
         $phone = $this->normalizeMsisdn($rawPhone);
         if ($phone === null) {
-            $phone = '6285129640197';
+            throw ValidationException::withMessages([
+                'customer_phone' => 'Masukkan nomor telepon Indonesia yang valid, misalnya 081234567890.',
+            ]);
         }
 
         try {
@@ -64,7 +63,7 @@ class MembershipController extends Controller
                 'customer_name'    => trim($name) !== '' ? $name : $email,
                 'product_category' => 'MYADS',
                 'product_type'     => 'MYADS_MEMBERSHIP',
-                'product_detail'   => 'MyAds Membership - 30 Hari (Unlimited SMS, Maks. 5.000 Penerima/Campaign)',
+                'product_detail'   => 'ShopAds Membership - 30 Hari (Unlimited SMS, Maks. 5.000 Penerima/Campaign)',
                 'email_invoice'    => $email,
                 'send_invoice'     => true,
             ]);
@@ -87,6 +86,9 @@ class MembershipController extends Controller
 
         try {
             $result = $client->getMembershipStatus($accessToken);
+            if (($result['success'] ?? false) === true) {
+                $request->session()->put('myads.membership', (array) ($result['data'] ?? []));
+            }
             return response()->json($result);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -98,10 +100,11 @@ class MembershipController extends Controller
      */
     private function normalizeMsisdn(string $phone): ?string
     {
-        $phone = preg_replace('/[^0-9]/', '', $phone);
-        if (strlen($phone) < 9 || strlen($phone) > 15) {
+        $phone = preg_replace('/[\s()\-]/', '', trim($phone));
+        if (! preg_match('/^(?:\+?62|0)?8[0-9]{8,11}$/', $phone)) {
             return null;
         }
+        $phone = ltrim($phone, '+');
         if (str_starts_with($phone, '0')) {
             $phone = '62' . substr($phone, 1);
         } elseif (!str_starts_with($phone, '62')) {

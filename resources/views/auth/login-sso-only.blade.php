@@ -4,12 +4,12 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Login - ShopAds</title>
-        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/goto-icon.svg') }}">
-        <link rel="apple-touch-icon" href="{{ asset('assets/goto-icon.svg') }}">
+        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/shopads-icon.svg') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/shopads-touch-icon.png') }}">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=space-grotesk:500,700|plus-jakarta-sans:400,500,600,700,800" rel="stylesheet" />
-        <link rel="stylesheet" href="{{ asset('css/auth-portal.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/auth-portal.css') }}?v={{ filemtime(public_path('css/auth-portal.css')) }}">
         <style>
             .sso-container {
                 min-height: 100vh;
@@ -22,11 +22,11 @@
             .sso-card {
                 background: rgba(255, 255, 255, 0.85);
                 backdrop-filter: blur(20px);
-                border: 1px solid rgba(0, 166, 153, 0.2);
+                border: 1px solid rgba(225, 0, 12, 0.2);
                 border-radius: 40px;
                 padding: 60px 40px;
                 max-width: 500px;
-                box-shadow: 0 8px 32px rgba(0, 166, 153, 0.15);
+                box-shadow: 0 8px 32px rgba(225, 0, 12, 0.15);
                 text-align: center;
             }
 
@@ -54,8 +54,8 @@
             }
 
             .sso-info {
-                background: rgba(0, 166, 153, 0.05);
-                border: 1px solid rgba(0, 166, 153, 0.2);
+                background: rgba(225, 0, 12, 0.05);
+                border: 1px solid rgba(225, 0, 12, 0.2);
                 border-radius: 16px;
                 padding: 20px;
                 margin: 30px 0;
@@ -63,7 +63,7 @@
 
             .sso-info p {
                 margin: 0;
-                color: var(--brand-teal);
+                color: var(--brand-primary);
                 font-size: 14px;
                 font-weight: 500;
             }
@@ -85,7 +85,7 @@
     <body>
         <div class="sso-container">
             <div class="sso-card">
-                <img src="{{ asset('assets/logo.png') }}" alt="Shopee" class="sso-logo">
+                <img src="{{ asset('assets/shopads-icon.svg') }}" alt="ShopAds" class="sso-logo">
                 
                 <h1 class="sso-title">ShopAds Portal</h1>
                 
@@ -102,7 +102,7 @@
                 </p>
 
                 <div class="sso-footer">
-                    <p>© PT GOTO Digital Nusantara, 2026</p>
+                    <p>&copy; ShopAds, {{ date('Y') }}</p>
                 </div>
             </div>
         </div>

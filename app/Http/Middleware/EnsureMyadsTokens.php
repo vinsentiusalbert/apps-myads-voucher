@@ -33,7 +33,9 @@ class EnsureMyadsTokens
         }
 
         if (trim($accessToken) === '') {
-            return redirect()->route('login');
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => 'Sesi berakhir. Silakan masuk kembali.'], 401)
+                : redirect()->route('login');
         }
 
         $client = app(MyadsApiClient::class);

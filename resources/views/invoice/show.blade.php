@@ -1,5 +1,5 @@
 @php
-    $title = 'Invoice - Telkomsel MyAds';
+    $title = 'Invoice - ShopAds';
     
     $formatIDR = function ($val) {
         return 'Rp ' . number_format((float) $val, 0, ',', '.');
@@ -220,7 +220,7 @@
         <!-- Header -->
         <div class="invoice-header">
             <div class="invoice-header__brand">
-                <h1>Telkomsel MyAds</h1>
+                <h1>ShopAds</h1>
                 <p>Official Invoice Notification</p>
             </div>
             <div class="invoice-header__meta">

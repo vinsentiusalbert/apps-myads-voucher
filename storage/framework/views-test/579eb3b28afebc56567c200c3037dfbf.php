@@ -61,20 +61,22 @@
         const categoryOpenButtons = document.querySelectorAll('[data-campaign-category-open]');
         const categoryCloseButtons = document.querySelectorAll('[data-campaign-category-close]');
         let pricesLoaded = false;
+        let pricesLoading = false;
+        let previousFocus = null;
 
         const formatPrice = (value) => {
             const amount = Number(value);
-            return Number.isFinite(amount)
+            return value !== null && value !== '' && Number.isFinite(amount)
                 ? `Rp ${new Intl.NumberFormat('id-ID').format(amount)} / pesan`
                 : 'Harga belum tersedia';
         };
 
         const loadPrices = async () => {
-            if (pricesLoaded || !categoryModal?.dataset.priceUrl) {
+            if (pricesLoaded || pricesLoading || !categoryModal?.dataset.priceUrl) {
                 return;
             }
 
-            pricesLoaded = true;
+            pricesLoading = true;
 
             try {
                 const response = await fetch(categoryModal.dataset.priceUrl, {
@@ -88,7 +90,9 @@
                 }
 
                 const payload = await response.json();
+                if (payload.success === false) return;
                 const prices = payload?.prices || {};
+                pricesLoaded = true;
                 document.querySelectorAll('[data-campaign-price-key]').forEach((node) => {
                     const key = node.dataset.campaignPriceKey;
                     if (Object.prototype.hasOwnProperty.call(prices, key)) {
@@ -97,6 +101,8 @@
                 });
             } catch (error) {
                 console.warn('Harga campaign gagal dimuat', error);
+            } finally {
+                pricesLoading = false;
             }
         };
 
@@ -105,9 +111,12 @@
                 return;
             }
 
+            previousFocus = document.activeElement;
+            document.dispatchEvent(new Event('portal:close-menu'));
             categoryModal.hidden = false;
             categoryModal.setAttribute('aria-hidden', 'false');
             document.body.classList.add('portal-category-open');
+            categoryModal.querySelector('button[data-campaign-category-close]')?.focus();
             loadPrices();
         };
 
@@ -119,6 +128,8 @@
             categoryModal.hidden = true;
             categoryModal.setAttribute('aria-hidden', 'true');
             document.body.classList.remove('portal-category-open');
+            if (previousFocus && !previousFocus.closest('[inert]')) previousFocus.focus();
+            else document.querySelector('[data-menu-toggle]')?.focus();
         };
 
         categoryOpenButtons.forEach((button) => {
@@ -152,6 +163,12 @@
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Escape' && categoryModal && !categoryModal.hidden) {
                 closeCategoryModal();
+            }
+            if (event.key === 'Tab' && categoryModal && !categoryModal.hidden) {
+                const items = [...categoryModal.querySelectorAll('a[href],button')].filter(el => el.getClientRects().length);
+                const first = items[0], last = items[items.length - 1];
+                if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+                else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
             }
         });
     })();

@@ -4,8 +4,8 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{{ $page['title'] }}</title>
-        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/goto-icon.svg') }}">
-        <link rel="apple-touch-icon" href="{{ asset('assets/goto-icon.svg') }}">
+        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/shopads-icon.svg') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/shopads-touch-icon.png') }}">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=space-grotesk:500,700|plus-jakarta-sans:400,500,600,700,800" rel="stylesheet" />
@@ -39,7 +39,7 @@
                     </div>
 
                     <div class="portal-brand">
-                        <img src="{{ asset('assets/logo.png') }}" alt="Shopee" class="portal-brand__logo">
+                        <img src="{{ asset('assets/shopads-icon.svg') }}" alt="ShopAds" class="portal-brand__logo">
                         <p class="portal-brand__text">ShopAds</p>
                     </div>
 
@@ -298,7 +298,7 @@
                                 <h2>Template Preview</h2>
                                 <div class="template-builder-phone">
                                     <div class="template-builder-phone__message">
-                                        <img src="{{ $isWaTemplateRead && $templateRow->asset_path ? asset('storage/' . $templateRow->asset_path) : asset('assets/logo.png') }}" alt="Preview asset" class="template-builder-phone__image" id="templatePreviewImage">
+                                        <img src="{{ $isWaTemplateRead && $templateRow->asset_path ? asset('storage/' . $templateRow->asset_path) : asset('assets/shopads-icon.svg') }}" alt="Preview asset" class="template-builder-phone__image" id="templatePreviewImage">
                                         <div class="template-builder-phone__body" id="templatePreviewBody">
                                             Halo Pelanggan Setia ComboFit, kamu mendapatkan akses Exercise Plan GRATIS selama 30 hari 🔥
 
@@ -428,8 +428,8 @@
                         </div>
 
                         <div class="flow-summary-card">
-                            <p class="flow-summary-card__label">Sumber Referensi</p>
-                            <p class="flow-summary-card__title">SMS.pptx</p>
+                            <p class="flow-summary-card__label">Panduan Kampanye</p>
+                            <p class="flow-summary-card__title">ShopAds</p>
                             <p class="flow-summary-card__copy">{{ $page['headline'] }}</p>
                         </div>
                     </section>
@@ -451,13 +451,12 @@
                     </section>
 
                     <section class="flow-section">
-                        <h2 class="portal-section__title">Screen Mapping dari PPT</h2>
+                        <h2 class="portal-section__title">Panduan Langkah demi Langkah</h2>
                         <div class="flow-gallery">
                             @foreach ($page['screenshots'] as $image => $caption)
                                 <article class="flow-shot">
-                                    <img src="{{ asset('assets/ppt/' . $image) }}" alt="{{ $caption }}" class="flow-shot__image">
                                     <div class="flow-shot__body">
-                                        <p class="flow-shot__name">{{ basename($image, '.png') }}</p>
+                                        <p class="flow-shot__name">Langkah {{ $loop->iteration }}</p>
                                         <p class="flow-shot__caption">{{ $caption }}</p>
                                     </div>
                                 </article>
@@ -469,52 +468,9 @@
             </section>
         </main>
 
+        @include('partials.portal-menu-script')
         <script>
             (() => {
-                const root = document.documentElement;
-                const toggleButtons = document.querySelectorAll('[data-menu-toggle]');
-                const closeButtons = document.querySelectorAll('[data-menu-close]');
-
-                const setMenuState = (isOpen) => {
-                    root.classList.toggle('portal-menu-open', isOpen);
-                    toggleButtons.forEach((button) => {
-                        button.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-                    });
-                };
-
-                setMenuState(false);
-
-                toggleButtons.forEach((button) => {
-                    button.addEventListener('click', () => {
-                        const nextState = !root.classList.contains('portal-menu-open');
-                        setMenuState(nextState);
-                    });
-                });
-
-                closeButtons.forEach((button) => {
-                    button.addEventListener('click', () => setMenuState(false));
-                });
-
-                document.addEventListener('keydown', (event) => {
-                    if (event.key === 'Escape') {
-                        setMenuState(false);
-                    }
-                });
-
-                window.addEventListener('resize', () => {
-                    if (window.innerWidth > 1080) {
-                        setMenuState(false);
-                    }
-                });
-
-                document.querySelectorAll('[data-nav-toggle]').forEach((button) => {
-                    button.addEventListener('click', () => {
-                        const parent = button.closest('[data-nav-group]');
-                        const isOpen = parent?.classList.toggle('portal-nav__item--open');
-                        button.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-                    });
-                });
-
                 const templateBodyInput = document.getElementById('templateBodyInput');
                 const templateBodyCount = document.getElementById('templateBodyCount');
                 const templatePreviewBody = document.getElementById('templatePreviewBody');
@@ -555,7 +511,7 @@ ${defaultCtaLink}
 
                     const [file] = templateAssetInput.files || [];
                     if (!file) {
-                        templatePreviewImage.src = "{{ asset('assets/logo.png') }}";
+                        templatePreviewImage.src = "{{ asset('assets/shopads-icon.svg') }}";
                         templateAssetLabel.textContent = 'Upload an asset';
                         return;
                     }

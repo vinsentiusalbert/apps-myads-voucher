@@ -11,7 +11,7 @@
         </div>
 
         <div class="portal-brand">
-            <img src="<?php echo e(asset('assets/logo.png')); ?>" alt="Shopee" class="portal-brand__logo">
+            <img src="<?php echo e(asset('assets/shopads-icon.svg')); ?>" alt="ShopAds" class="portal-brand__logo">
             <p class="portal-brand__text">ShopAds</p>
         </div>
 
@@ -51,7 +51,7 @@
 
                 <div class="<?php echo e(implode(' ', $itemClasses)); ?>" <?php if($hasChildren): ?> data-nav-group <?php endif; ?>>
                     <?php if($hasChildren): ?>
-                        <button type="button" class="portal-nav__head portal-nav__toggle" data-nav-toggle aria-expanded="<?php echo e($isSelected ? 'true' : 'false'); ?>">
+                        <button type="button" class="portal-nav__head portal-nav__toggle" data-nav-toggle aria-controls="portal-subnav-<?php echo e($menu['key']); ?>" aria-expanded="<?php echo e($isSelected ? 'true' : 'false'); ?>">
                             <?php echo $__env->make('partials.portal-sidebar-icon', ['icon' => $menu['icon']], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                             <span><?php echo e($menu['label']); ?></span>
                             <span class="portal-nav__caret" aria-hidden="true">
@@ -61,13 +61,13 @@
                             </span>
                         </button>
 
-                        <div class="portal-subnav">
+                        <div class="portal-subnav" id="portal-subnav-<?php echo e($menu['key']); ?>" <?php if(! $isSelected): ?> inert <?php endif; ?>>
                             <?php $__currentLoopData = $menu['children']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $child): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                 <?php
                                     $childHref = $child['href'] ?? '#';
                                     $isChildActive = ($activeSubnav ?? null) === $child['key'];
                                 ?>
-                                <a href="<?php echo e($childHref); ?>" class="portal-subnav__item<?php echo e($isChildActive ? ' portal-subnav__item--active' : ''); ?>" <?php if(! empty($child['interactive'])): ?> data-subnav-link <?php endif; ?>>
+                                <a href="<?php echo e($childHref); ?>" class="portal-subnav__item<?php echo e($isChildActive ? ' portal-subnav__item--active' : ''); ?>" <?php if($isChildActive): ?> aria-current="page" <?php endif; ?> <?php if(! empty($child['interactive'])): ?> data-subnav-link <?php endif; ?>>
                                     <span class="portal-subnav__icon" aria-hidden="true">
                                         <?php echo $__env->make('partials.portal-sidebar-icon', ['icon' => $child['icon'], 'subnav' => true], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                                     </span>
@@ -84,7 +84,7 @@
                             }
                         ?>
                         <?php if(($menu['href'] ?? null) !== null): ?>
-                            <a href="<?php echo e($menuHref); ?>" class="<?php echo e($linkClasses); ?>" <?php if(! empty($menu['dashboard'])): ?> data-dashboard-link <?php endif; ?>>
+                            <a href="<?php echo e($menuHref); ?>" class="<?php echo e($linkClasses); ?>" <?php if($isActive): ?> aria-current="page" <?php endif; ?> <?php if(! empty($menu['dashboard'])): ?> data-dashboard-link <?php endif; ?>>
                                 <?php echo $__env->make('partials.portal-sidebar-icon', ['icon' => $menu['icon']], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                                 <span><?php echo e($menu['label']); ?></span>
                             </a>
@@ -132,5 +132,4 @@
         <?php endif; ?>
     </div>
 </aside>
-
 <?php /**PATH D:\1 Kerja\shop-myads\resources\views/partials/portal-sidebar.blade.php ENDPATH**/ ?>

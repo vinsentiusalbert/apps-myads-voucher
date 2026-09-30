@@ -133,7 +133,21 @@ class DashboardController extends Controller
 
         try {
             $resp = $client->getMembershipStatus($accessToken);
-            return array_merge($defaults, (array) data_get($resp, 'data', []));
+            if (data_get($resp, 'success') !== true) {
+                return $defaults;
+            }
+            $data = (array) data_get($resp, 'data', []);
+            $price = max(0, (float) ($data['price'] ?? $defaults['price']));
+            $tax = max(0, (float) ($data['tax_percentage'] ?? $defaults['tax_percentage']));
+            $taxAmount = max(0, (float) ($data['tax_amount'] ?? round($price * $tax / 100)));
+
+            return array_merge($defaults, $data, [
+                'is_member' => filter_var($data['is_member'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'price' => $price,
+                'tax_percentage' => $tax,
+                'tax_amount' => $taxAmount,
+                'total_price' => max(0, (float) ($data['total_price'] ?? ($price + $taxAmount))),
+            ]);
         } catch (\Throwable) {
             return $defaults;
         }

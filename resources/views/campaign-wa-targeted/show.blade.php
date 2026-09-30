@@ -155,7 +155,7 @@
                             </div>
 
                             <div class="campaign-wa-lba-preview__carousel">
-                                <img src="{{ asset('assets/logo.png') }}" alt="Preview template" id="waTargetedPreviewAsset">
+                                <img src="{{ asset('assets/shopads-icon.svg') }}" alt="Preview template" id="waTargetedPreviewAsset">
                                 <div class="campaign-wa-lba-preview__carousel-copy">
                                     <span class="campaign-wa-lba-preview__brand">ShopAds</span>
                                     <strong id="waTargetedPreviewCardTitle">Template Carousel</strong>
@@ -273,7 +273,7 @@
                 previewSubtitle.textContent = selected.channel_kind === 'Carousel' ? 'Carousel Business Account' : 'Business Account';
                 previewHeadline.textContent = selected.bubble_headline || '-';
                 previewMessage.textContent = selected.bubble_message || '-';
-                previewAsset.src = selected.asset_url || @json(asset('assets/logo.png'));
+                previewAsset.src = selected.asset_url || @json(asset('assets/shopads-icon.svg'));
                 previewCardTitle.textContent = (selected.cards && selected.cards[0] && selected.cards[0].title) || 'Template Carousel';
                 previewCardCaption.textContent = (selected.cards && selected.cards[0] && selected.cards[0].caption) || selected.bubble_message || 'Detail card pertama akan tampil di sini.';
                 previewCta.textContent = selected.cta || 'Coba Sekarang';

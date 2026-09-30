@@ -322,12 +322,10 @@ class ApiGatewayController extends Controller
 			$isMember = false;
 			try {
 				$memberResp = $client->getMembershipStatus($this->ensureValidAccessToken($request, $client));
-				$isMember = (bool) data_get($memberResp, 'data.is_member', false);
+				$isMember = data_get($memberResp, 'success') === true
+					&& filter_var(data_get($memberResp, 'data.is_member', false), FILTER_VALIDATE_BOOLEAN);
 			} catch (Throwable) {}
 
-			if (! $isMember && $paymentTransactionId !== '') {
-				$isMember = str_starts_with(strtoupper($paymentTransactionId), 'MEMBER');
-			}
 
 			// Jika bukan member, validasi pembayaran Finnet
 			if (! $isMember) {
@@ -452,8 +450,8 @@ class ApiGatewayController extends Controller
 			'delivery_end_time' => ['nullable', 'date_format:H:i'],
 			'control_number' => ['required', 'string', 'max:1000'],
 			'location_name' => ['required', 'string', 'max:255'],
-			'location_lat' => ['required', 'numeric'],
-			'location_lng' => ['required', 'numeric'],
+			'location_lat' => ['required', 'numeric', 'between:-90,90'],
+			'location_lng' => ['required', 'numeric', 'between:-180,180'],
 			'location_radius' => ['required', 'integer', 'min:1', 'max:50000'],
 			'location_type' => ['nullable', 'string', 'in:ALL,HOME,MALL'],
 		]);
@@ -465,12 +463,10 @@ class ApiGatewayController extends Controller
 			$isMember = false;
 			try {
 				$memberResp = $client->getMembershipStatus($this->ensureValidAccessToken($request, $client));
-				$isMember = (bool) data_get($memberResp, 'data.is_member', false);
+				$isMember = data_get($memberResp, 'success') === true
+					&& filter_var(data_get($memberResp, 'data.is_member', false), FILTER_VALIDATE_BOOLEAN);
 			} catch (Throwable) {}
 
-			if (! $isMember && $paymentTransactionId !== '') {
-				$isMember = str_starts_with(strtoupper($paymentTransactionId), 'MEMBER');
-			}
 
 			// Jika bukan member, validasi pembayaran Finnet
 			if (! $isMember) {
@@ -587,8 +583,8 @@ class ApiGatewayController extends Controller
 			'delivery_end_time' => ['required', 'date_format:H:i'],
 			'control_number' => ['required', 'string', 'max:1000'],
 			'location_name' => ['required', 'string', 'max:255'],
-			'location_lat' => ['required', 'numeric'],
-			'location_lng' => ['required', 'numeric'],
+			'location_lat' => ['required', 'numeric', 'between:-90,90'],
+			'location_lng' => ['required', 'numeric', 'between:-180,180'],
 			'location_radius' => ['required', 'integer', 'min:1', 'max:50000'],
 			'location_type' => ['nullable', 'string', 'in:ALL,HOME,MALL'],
 			'recipient_max' => ['nullable', 'string', 'max:64'],

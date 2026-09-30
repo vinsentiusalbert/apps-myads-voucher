@@ -169,7 +169,7 @@
                             </div>
 
                             <div class="campaign-wa-lba-preview__carousel">
-                                <img src="{{ asset('assets/logo.png') }}" alt="Preview template" id="waLbaPreviewAsset">
+                                <img src="{{ asset('assets/shopads-icon.svg') }}" alt="Preview template" id="waLbaPreviewAsset">
                                 <div class="campaign-wa-lba-preview__carousel-copy">
                                     <span class="campaign-wa-lba-preview__brand">ShopAds</span>
                                     <strong id="waLbaPreviewCardTitle">Template Carousel</strong>
@@ -382,7 +382,7 @@
                     <label class="campaign-terms">
                         <input type="checkbox" id="waLbaTermsCheck">
                         <span>
-                            Saya menyetujui <a href="{{ route('campaign.terms') }}" data-campaign-terms-trigger>Syarat dan Ketentuan</a> yang berlaku di website Telkomsel MyAds. Atas setiap pesan iklan yang dibuat oleh pengguna menggunakan produk dan/atau layanan melalui portal myAds, pengguna dilarang untuk mempergunakan kata-kata, komentar, gambar atau konten apapun yang mengandung unsur SARA atau diskriminasi terhadap pihak manapun, bersifat vulgar dan ancaman, atau hal-hal lain yang dapat dianggap tidak sesuai dengan nilai dan norma sosial.
+                            Saya menyetujui <a href="{{ route('campaign.terms') }}" data-campaign-terms-trigger>Syarat dan Ketentuan</a> yang berlaku di website ShopAds. Atas setiap pesan iklan yang dibuat oleh pengguna menggunakan produk dan/atau layanan melalui portal ShopAds, pengguna dilarang untuk mempergunakan kata-kata, komentar, gambar atau konten apapun yang mengandung unsur SARA atau diskriminasi terhadap pihak manapun, bersifat vulgar dan ancaman, atau hal-hal lain yang dapat dianggap tidak sesuai dengan nilai dan norma sosial.
                         </span>
                     </label>
                 </div>
@@ -1322,7 +1322,7 @@
                 previewSubtitle.textContent = selected.channel_kind === 'Carousel' ? 'Carousel Business Account' : 'Business Account';
                 previewHeadline.textContent = selected.bubble_headline || '-';
                 previewMessage.textContent = selected.bubble_message || '-';
-                previewAsset.src = selected.asset_url || @json(asset('assets/logo.png'));
+                previewAsset.src = selected.asset_url || @json(asset('assets/shopads-icon.svg'));
                 previewCardTitle.textContent = (selected.cards && selected.cards[0] && selected.cards[0].title) || 'Template Carousel';
                 previewCardCaption.textContent = (selected.cards && selected.cards[0] && selected.cards[0].caption) || selected.bubble_message || 'Detail card pertama akan tampil di sini.';
                 previewCta.textContent = selected.cta || 'Coba Sekarang';

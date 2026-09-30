@@ -152,7 +152,7 @@
             <div class="template-builder-phone">
                 <div class="template-builder-phone__message">
                     <strong class="template-builder-phone__header-text" id="templatePreviewHeaderText" @hidden($previewHeaderType !== 'TEXT' || $previewHeaderLabel === '')>{{ $previewHeaderLabel }}</strong>
-                    <img src="{{ $isWaTemplateRead && $templateRow->asset_path ? asset('storage/' . $templateRow->asset_path) : asset('assets/logo.png') }}" alt="Preview asset" class="template-builder-phone__image" id="templatePreviewImage" @hidden($previewHeaderType !== 'IMAGE')>
+                    <img src="{{ $isWaTemplateRead && $templateRow->asset_path ? asset('storage/' . $templateRow->asset_path) : asset('assets/shopads-icon.svg') }}" alt="Preview asset" class="template-builder-phone__image" id="templatePreviewImage" @hidden($previewHeaderType !== 'IMAGE')>
                     <div class="template-builder-phone__body" id="templatePreviewBody">{{ $templateValue('body') }}</div>
                     <div class="template-builder-phone__actions" id="templatePreviewActions">
                         @foreach ($previewButtons as $button)

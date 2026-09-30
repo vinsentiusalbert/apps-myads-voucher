@@ -11,7 +11,7 @@
         </div>
 
         <div class="portal-brand">
-            <img src="{{ asset('assets/logo.png') }}" alt="Shopee" class="portal-brand__logo">
+            <img src="{{ asset('assets/shopads-icon.svg') }}" alt="ShopAds" class="portal-brand__logo">
             <p class="portal-brand__text">ShopAds</p>
         </div>
 
@@ -51,7 +51,7 @@
 
                 <div class="{{ implode(' ', $itemClasses) }}" @if($hasChildren) data-nav-group @endif>
                     @if ($hasChildren)
-                        <button type="button" class="portal-nav__head portal-nav__toggle" data-nav-toggle aria-expanded="{{ $isSelected ? 'true' : 'false' }}">
+                        <button type="button" class="portal-nav__head portal-nav__toggle" data-nav-toggle aria-controls="portal-subnav-{{ $menu['key'] }}" aria-expanded="{{ $isSelected ? 'true' : 'false' }}">
                             @include('partials.portal-sidebar-icon', ['icon' => $menu['icon']])
                             <span>{{ $menu['label'] }}</span>
                             <span class="portal-nav__caret" aria-hidden="true">
@@ -61,13 +61,13 @@
                             </span>
                         </button>
 
-                        <div class="portal-subnav">
+                        <div class="portal-subnav" id="portal-subnav-{{ $menu['key'] }}" @if(! $isSelected) inert @endif>
                             @foreach ($menu['children'] as $child)
                                 @php
                                     $childHref = $child['href'] ?? '#';
                                     $isChildActive = ($activeSubnav ?? null) === $child['key'];
                                 @endphp
-                                <a href="{{ $childHref }}" class="portal-subnav__item{{ $isChildActive ? ' portal-subnav__item--active' : '' }}" @if(! empty($child['interactive'])) data-subnav-link @endif>
+                                <a href="{{ $childHref }}" class="portal-subnav__item{{ $isChildActive ? ' portal-subnav__item--active' : '' }}" @if($isChildActive) aria-current="page" @endif @if(! empty($child['interactive'])) data-subnav-link @endif>
                                     <span class="portal-subnav__icon" aria-hidden="true">
                                         @include('partials.portal-sidebar-icon', ['icon' => $child['icon'], 'subnav' => true])
                                     </span>
@@ -84,7 +84,7 @@
                             }
                         @endphp
                         @if (($menu['href'] ?? null) !== null)
-                            <a href="{{ $menuHref }}" class="{{ $linkClasses }}" @if(! empty($menu['dashboard'])) data-dashboard-link @endif>
+                            <a href="{{ $menuHref }}" class="{{ $linkClasses }}" @if($isActive) aria-current="page" @endif @if(! empty($menu['dashboard'])) data-dashboard-link @endif>
                                 @include('partials.portal-sidebar-icon', ['icon' => $menu['icon']])
                                 <span>{{ $menu['label'] }}</span>
                             </a>
@@ -132,4 +132,3 @@
         @endif
     </div>
 </aside>
-

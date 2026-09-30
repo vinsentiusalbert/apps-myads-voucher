@@ -5,8 +5,8 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title>ShopAds Portal</title>
-        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/goto-icon.svg') }}">
-        <link rel="apple-touch-icon" href="{{ asset('assets/goto-icon.svg') }}">
+        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/shopads-icon.svg') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/shopads-touch-icon.png') }}">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

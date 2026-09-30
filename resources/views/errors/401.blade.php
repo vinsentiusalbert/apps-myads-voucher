@@ -4,13 +4,13 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Unauthorized - ShopAds</title>
-        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/goto-icon.svg') }}">
-        <link rel="apple-touch-icon" href="{{ asset('assets/goto-icon.svg') }}">
+        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/shopads-icon.svg') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/shopads-touch-icon.png') }}">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=space-grotesk:500,700|plus-jakarta-sans:400,500,600,700,800" rel="stylesheet" />
-        <link rel="stylesheet" href="{{ asset('css/auth-portal.css') }}">
-        <link rel="stylesheet" href="{{ asset('css/error-401.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/auth-portal.css') }}?v={{ filemtime(public_path('css/auth-portal.css')) }}">
+        <link rel="stylesheet" href="{{ asset('css/error-401.css') }}?v={{ filemtime(public_path('css/error-401.css')) }}">
     </head>
     <body class="error-body">
         <main class="error-container">
@@ -25,7 +25,7 @@
                     <!-- Header Section -->
                     <div class="error-header">
                         <div class="error-logo-wrapper">
-                            <img src="{{ asset('assets/logo.png') }}" alt="Shopee" class="error-logo">
+                            <img src="{{ asset('assets/shopads-icon.svg') }}" alt="ShopAds" class="error-logo">
                         </div>
                         <p class="error-subtitle">ShopAds Portal</p>
                     </div>

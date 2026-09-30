@@ -58,6 +58,11 @@ class SessionController extends Controller
         }
 
         $accessToken = (string) data_get($loginResp, 'data.access_token');
+        if (trim($accessToken) === '') {
+            throw ValidationException::withMessages([
+                'merchant_id' => 'Sesi login tidak dapat dibuat. Silakan coba kembali.',
+            ]);
+        }
         $refreshToken = (string) data_get($loginResp, 'data.refresh_token');
         $apiUser = (array) data_get($loginResp, 'data.user', []);
 

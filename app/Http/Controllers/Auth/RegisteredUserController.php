@@ -67,7 +67,7 @@ class RegisteredUserController extends Controller
         // Auto login after registration
         try {
             $loginResp = $client->login($validated['merchant_id'], $validated['password']);
-            if ((bool) data_get($loginResp, 'success', false)) {
+            if (data_get($loginResp, 'success') === true && trim((string) data_get($loginResp, 'data.access_token', '')) !== '') {
                 $accessToken = (string) data_get($loginResp, 'data.access_token');
                 $refreshToken = (string) data_get($loginResp, 'data.refresh_token');
                 $apiUser = (array) data_get($loginResp, 'data.user', []);

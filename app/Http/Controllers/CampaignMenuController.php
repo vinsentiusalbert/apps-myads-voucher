@@ -658,7 +658,7 @@ class CampaignMenuController extends Controller
         }
 
         $headerPathFile = (string) (data_get($raw, 'headerPathFile') ?? data_get($raw, 'header_path_file') ?? '');
-        $assetUrl = $headerPathFile !== '' ? $headerPathFile : asset('assets/logo.png');
+        $assetUrl = $headerPathFile !== '' ? $headerPathFile : asset('assets/shopads-touch-icon.png');
         $category = strtolower((string) ($row['category'] ?? ''));
         $isCarousel = str_contains($category, 'carousel');
 
@@ -732,7 +732,7 @@ class CampaignMenuController extends Controller
                 'channel_kind' => 'Carousel',
                 'bubble_headline' => 'Semangat pagi, sobat sehat! 👋 ☀️',
                 'bubble_message' => 'Di tengah ramainya suasana CFD, jangan lewatkan kesempatan untuk menjangkau pelanggan yang tepat untuk bisnis Anda.',
-                'asset_url' => asset('assets/logo.png'),
+                'asset_url' => asset('assets/shopads-touch-icon.png'),
                 'cards' => [
                     ['title' => 'Card 1', 'caption' => 'Slide utama campaign WA Business'],
                     ['title' => 'Card 2', 'caption' => 'Slide lanjutan untuk menampilkan informasi tambahan'],
@@ -749,7 +749,7 @@ class CampaignMenuController extends Controller
                 'channel_kind' => 'Basic',
                 'bubble_headline' => 'Promo spesial akhir pekan untuk pelanggan sekitar toko!',
                 'bubble_message' => 'Jangkau pelanggan di sekitar area bisnis Anda dengan penawaran yang relevan dan langsung mengundang aksi.',
-                'asset_url' => asset('assets/logo.png'),
+                'asset_url' => asset('assets/shopads-touch-icon.png'),
                 'cards' => [],
                 'price_note' => 'Template yang dipilih menggunakan Display Name Default, sehingga akan dikenakan biaya sebesar Rp 1.100 per pesan.',
                 'cta' => 'Lihat Promo',

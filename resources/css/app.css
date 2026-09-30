@@ -9,19 +9,21 @@
     --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
     --font-display: 'Space Grotesk', 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
-    --color-brand-teal: #00a699;
-    --color-brand-teal-deep: #007f73;
-    --color-brand-blue: #0058a3;
-    --color-brand-lime: #beff28;
-    --color-surface: #f2f7f5;
+    --color-brand-primary: #e1000c;
+    --color-brand-dark: #b0000a;
+    --color-brand-deep: #89000a;
+    --color-brand-soft: #fff1f2;
+    --color-brand-highlight: #ffd6db;
+    --color-surface: #faf7f8;
 }
 
 @layer base {
     :root {
-        --brand-teal: var(--color-brand-teal);
-        --brand-teal-deep: var(--color-brand-teal-deep);
-        --brand-blue: var(--color-brand-blue);
-        --brand-lime: var(--color-brand-lime);
+        --brand-primary: var(--color-brand-primary);
+        --brand-dark: var(--color-brand-dark);
+        --brand-deep: var(--color-brand-deep);
+        --brand-soft: var(--color-brand-soft);
+        --brand-highlight: var(--color-brand-highlight);
         --surface: var(--color-surface);
     }
 

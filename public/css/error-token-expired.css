@@ -3,9 +3,9 @@
     min-height: 100vh;
     overflow-x: hidden;
     background:
-        radial-gradient(circle at top left, rgba(0, 166, 153, 0.2), transparent 32%),
-        radial-gradient(circle at 85% 20%, rgba(0, 88, 163, 0.16), transparent 30%),
-        linear-gradient(145deg, #f4f8f7 0%, #edf7f4 50%, #f9fcfb 100%);
+        radial-gradient(circle at top left, rgba(225, 0, 12, 0.2), transparent 32%),
+        radial-gradient(circle at 85% 20%, rgba(176, 0, 10, 0.16), transparent 30%),
+        linear-gradient(145deg, #fff7f8 0%, #fff1f2 50%, #fffafb 100%);
 }
 
 .token-expired-shell {
@@ -29,7 +29,7 @@
     left: -80px;
     width: 320px;
     height: 320px;
-    background: rgba(0, 166, 153, 0.22);
+    background: rgba(225, 0, 12, 0.22);
 }
 
 .token-expired-orb--2 {
@@ -37,7 +37,7 @@
     right: -120px;
     width: 420px;
     height: 420px;
-    background: rgba(0, 88, 163, 0.18);
+    background: rgba(176, 0, 10, 0.18);
     animation-delay: 1.5s;
 }
 
@@ -46,7 +46,7 @@
     left: 18%;
     width: 300px;
     height: 300px;
-    background: rgba(190, 255, 40, 0.18);
+    background: rgba(255, 214, 219, 0.18);
     animation-delay: 3s;
 }
 
@@ -55,12 +55,12 @@
     z-index: 1;
     width: min(100%, 720px);
     padding: 42px;
-    border: 1px solid rgba(0, 166, 153, 0.18);
+    border: 1px solid rgba(225, 0, 12, 0.18);
     border-radius: 36px;
     background: rgba(255, 255, 255, 0.86);
     box-shadow:
         0 16px 60px rgba(15, 23, 42, 0.12),
-        0 32px 100px rgba(0, 88, 163, 0.08);
+        0 32px 100px rgba(176, 0, 10, 0.08);
     backdrop-filter: blur(18px);
 }
 
@@ -102,7 +102,7 @@
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--brand-blue);
+    color: var(--brand-dark);
 }
 
 .token-expired-badge {
@@ -129,7 +129,7 @@
     width: 160px;
     height: 160px;
     border-radius: 50%;
-    border: 1px dashed rgba(0, 88, 163, 0.24);
+    border: 1px dashed rgba(176, 0, 10, 0.24);
     animation: token-expired-spin 18s linear infinite;
 }
 
@@ -138,10 +138,10 @@
     width: 120px;
     height: 120px;
     border-radius: 50%;
-    background: linear-gradient(180deg, #0e3b59 0%, #005953 100%);
+    background: linear-gradient(180deg, #89000a 0%, #b0000a 100%);
     box-shadow:
         inset 0 0 0 10px rgba(255, 255, 255, 0.12),
-        0 18px 40px rgba(0, 88, 163, 0.24);
+        0 18px 40px rgba(176, 0, 10, 0.24);
 }
 
 .token-expired-clock::before {
@@ -160,9 +160,9 @@
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: var(--brand-lime);
+    background: var(--brand-highlight);
     transform: translate(-50%, -50%);
-    box-shadow: 0 0 0 6px rgba(190, 255, 40, 0.18);
+    box-shadow: 0 0 0 6px rgba(255, 214, 219, 0.18);
 }
 
 .token-expired-clock-hand {
@@ -183,7 +183,7 @@
 
 .token-expired-clock-hand--long {
     height: 40px;
-    background: var(--brand-lime);
+    background: var(--brand-highlight);
     transform: translateX(-50%) rotate(128deg);
 }
 
@@ -210,10 +210,10 @@
 .token-expired-alert {
     margin-top: 24px;
     padding: 18px 20px;
-    border: 1px solid rgba(0, 88, 163, 0.14);
+    border: 1px solid rgba(176, 0, 10, 0.14);
     border-radius: 20px;
-    background: rgba(0, 88, 163, 0.05);
-    color: #0d274c;
+    background: rgba(176, 0, 10, 0.05);
+    color: #89000a;
 }
 
 .token-expired-alert-label {
@@ -223,7 +223,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--brand-blue);
+    color: var(--brand-dark);
 }
 
 .token-expired-actions {
@@ -252,15 +252,15 @@
 }
 
 .token-expired-btn--primary {
-    background: linear-gradient(135deg, var(--brand-teal) 0%, var(--brand-blue) 100%);
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-dark) 100%);
     color: #ffffff;
-    box-shadow: 0 14px 28px rgba(0, 88, 163, 0.22);
+    box-shadow: 0 14px 28px rgba(176, 0, 10, 0.22);
 }
 
 .token-expired-btn--ghost {
     background: rgba(255, 255, 255, 0.78);
-    border-color: rgba(0, 88, 163, 0.14);
-    color: var(--brand-blue);
+    border-color: rgba(176, 0, 10, 0.14);
+    color: var(--brand-dark);
 }
 
 .token-expired-help {

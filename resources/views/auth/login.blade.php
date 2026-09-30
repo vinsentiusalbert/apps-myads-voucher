@@ -4,12 +4,12 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Masuk - ShopAds</title>
-        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/logo.png') }}">
-        <link rel="apple-touch-icon" href="{{ asset('assets/logo.png') }}">
+        <link rel="icon" type="image/svg+xml" href="{{ asset('assets/shopads-icon.svg') }}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/shopads-touch-icon.png') }}">
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=space-grotesk:500,700|plus-jakarta-sans:400,500,600,700,800" rel="stylesheet" />
-        <link rel="stylesheet" href="{{ asset('css/auth-portal.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/auth-portal.css') }}?v={{ filemtime(public_path('css/auth-portal.css')) }}">
     </head>
     <body>
         <main class="auth-shell">
@@ -19,10 +19,10 @@
                         <div>
                             <div class="brand-lockup">
                                 <div class="brand-mark">
-                                    <img src="{{ asset('assets/logo.png') }}" alt="Shopee" class="brand-logo">
+                                    <img src="{{ asset('assets/shopads-icon.svg') }}" alt="ShopAds" class="brand-logo">
                                 </div>
                                 <div>
-                                    <p class="brand-subtitle">ShopAds Portal</p>
+                                    <p class="brand-subtitle">ShopAds</p>
                                 </div>
                             </div>
 
@@ -84,7 +84,7 @@
                             <button type="submit" class="submit-btn">Masuk</button>
 
                             <div class="register-prompt" style="margin-top: 1.25rem; text-align: center; font-size: 0.875rem; color: #64748b;">
-                                Belum memiliki akun merchant? <a href="{{ route('register') }}" style="color: #ee4d2d; font-weight: 600; text-decoration: none;">Daftar di sini</a>
+                                Belum memiliki akun merchant? <a href="{{ route('register') }}" style="color: #e1000c; font-weight: 600; text-decoration: none;">Daftar di sini</a>
                             </div>
                         </form>
                     </div>

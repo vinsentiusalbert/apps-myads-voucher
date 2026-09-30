@@ -5,24 +5,31 @@ namespace Tests\Feature;
 use App\Services\MyadsApiClient;
 use Illuminate\Support\Facades\Http;
 use Mockery;
-use RuntimeException;
 use Tests\TestCase;
 
 class AuthLoginTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Http::preventStrayRequests();
+        Http::fake(fn () => Http::response(['success' => true, 'data' => []]));
+    }
+
     public function test_login_page_is_accessible(): void
     {
         $response = $this->get('/');
 
-        $response->assertStatus(401);
-        $response->assertSee('Akses Ditolak');
+        $response->assertOk();
+        $response->assertSee('Masuk akun ShopAds');
     }
 
-    public function test_register_page_requires_merchant_and_partner_context(): void
+    public function test_register_page_allows_merchant_registration(): void
     {
         $response = $this->get('/register');
 
-        $response->assertForbidden();
+        $response->assertOk();
+        $response->assertSee('Daftar Akun Merchant');
     }
 
     public function test_register_page_is_accessible_with_merchant_and_partner_context(): void
@@ -62,70 +69,50 @@ class AuthLoginTest extends TestCase
 
     public function test_guest_is_redirected_from_dashboard(): void
     {
-        $response = $this->get('/dashboard');
-
-        $response->assertStatus(401);
-        $response->assertSee('Akses Ditolak');
+        $this->get('/dashboard')->assertRedirect(route('login'));
     }
 
-    public function test_sso_complete_without_token_shows_access_denied(): void
+    public function test_removed_sso_route_is_not_exposed(): void
     {
-        $response = $this->get('/sso/complete?merchant_id=merchant-001');
-
-        $response->assertStatus(401);
-        $response->assertSee('Akses Ditolak');
+        $this->get('/sso/complete?access_token=token-001')->assertNotFound();
     }
 
-    public function test_sso_complete_without_merchant_context_shows_access_denied(): void
-    {
-        $response = $this->get('/sso/complete?access_token=token-001');
-
-        $response->assertStatus(401);
-        $response->assertSee('Akses Ditolak');
-    }
-
-    public function test_sso_complete_api_user_error_shows_access_denied(): void
+    public function test_success_response_without_access_token_does_not_create_a_session(): void
     {
         $client = Mockery::mock(MyadsApiClient::class);
-        $client->shouldReceive('getMe')
-            ->once()
-            ->with('token-001')
-            ->andThrow(new RuntimeException('SSO error'));
-
+        $client->shouldReceive('login')->once()->andReturn(['success' => true, 'data' => []]);
         $this->app->instance(MyadsApiClient::class, $client);
-
-        $response = $this->get('/sso/complete?access_token=token-001&merchant_id=merchant-001');
-
-        $response->assertStatus(401);
-        $response->assertSee('Akses Ditolak');
+        $this->post('/login', ['merchant_id' => 'merchant-001', 'password' => 'secret'])
+            ->assertSessionHasErrors('merchant_id')->assertSessionMissing('myads.access_token');
     }
 
-    public function test_sso_complete_gateway_token_error_shows_access_denied(): void
+    public function test_valid_credentials_create_a_session_and_redirect(): void
     {
         $client = Mockery::mock(MyadsApiClient::class);
-        $client->shouldReceive('getMe')
-            ->once()
-            ->with('token-001')
-            ->andReturn([
-                'data' => [
-                    'user' => [
-                        'id' => 'user-001',
-                        'name' => 'SSO User',
-                        'email' => 'sso-user@example.test',
-                    ],
-                ],
-            ]);
-        $client->shouldReceive('getGatewayToken')
-            ->once()
-            ->with('token-001')
-            ->andThrow(new RuntimeException('Gateway error'));
-
+        $client->shouldReceive('login')->with('merchant-001', 'secret')->once()->andReturn([
+            'success' => true, 'data' => ['access_token' => 'token-001', 'user' => ['name' => 'Merchant']],
+        ]);
+        $client->shouldReceive('getGatewayToken')->with('token-001')->once()->andReturn(['data' => ['token' => 'gateway']]);
+        $client->shouldReceive('extractGatewayToken')->once()->andReturn('gateway');
         $this->app->instance(MyadsApiClient::class, $client);
+        $this->post('/login', ['merchant_id' => 'merchant-001', 'password' => 'secret'])
+            ->assertRedirect(route('dashboard'))->assertSessionHas('myads.access_token', 'token-001');
+    }
 
-        $response = $this->get('/sso/complete?access_token=token-001&merchant_id=merchant-001');
+    public function test_invalid_credentials_show_validation_error(): void
+    {
+        $client = Mockery::mock(MyadsApiClient::class);
+        $client->shouldReceive('login')->once()->andReturn(['success' => false, 'message' => 'Password tidak sesuai.']);
+        $this->app->instance(MyadsApiClient::class, $client);
+        $this->post('/login', ['merchant_id' => 'merchant-001', 'password' => 'wrong'])
+            ->assertSessionHasErrors('merchant_id')->assertSessionMissing('myads.access_token');
+    }
 
-        $response->assertStatus(401);
-        $response->assertSee('Akses Ditolak');
+    public function test_logout_clears_membership_and_login_session(): void
+    {
+        $this->withApiSession()->withSession(['myads.membership' => ['is_member' => true]])
+            ->post('/logout')->assertRedirect(route('login'))
+            ->assertSessionMissing('myads.access_token')->assertSessionMissing('myads.membership');
     }
 
     public function test_authenticated_user_can_open_dashboard(): void
