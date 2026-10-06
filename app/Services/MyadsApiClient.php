@@ -342,6 +342,126 @@ class MyadsApiClient
     /**
      * @return array{success:bool, data?:array}
      */
+    public function campaignBroadcastAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/broadcast-add', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function calculatePotentialLba(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/lba-receive', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function calculatePotentialTargeted(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/targeted-receive', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function contentPreview(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/content-preview', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function rcsAgentList(string $gatewayToken, array $payload = [], ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/rcs-agent-list', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function rcsAgentAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/rcs-agent-add', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function rcsAgentView(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/rcs-agent-view', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function rcsCampaignList(string $gatewayToken, array $payload = [], ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/rcs-campaign-list', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function rcsBroadcastAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/rcs-broadcast-add', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function rcsTargetedAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/rcs-targeted-add', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function rcsLbaAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/rcs-lba-add', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function rcsBroadcastView(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/rcs-broadcast-view', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function rcsTargetedView(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/rcs-targeted-view', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function rcsLbaView(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/rcs-lba-view', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
+    public function calculatePotentialRcsTargeted(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
+    {
+        return $this->postGw('/api/gw/rcs-targeted-receive', $gatewayToken, $payload, $refreshGatewayToken);
+    }
+
+    /**
+     * @return array{success:bool, data?:array}
+     */
     public function wabaLbaAdd(string $gatewayToken, array $payload, ?callable $refreshGatewayToken = null): array
     {
         return $this->postGw('/api/gw/waba-lba-add', $gatewayToken, $payload, $refreshGatewayToken);
