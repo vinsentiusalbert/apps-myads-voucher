@@ -64,7 +64,7 @@
     // Membership data
     $isMember = (bool) data_get($membership ?? [], 'is_member', false);
     $membershipData = data_get($membership ?? [], 'membership', null);
-    $membershipPrice = (int) data_get($membership ?? [], 'price', 25000);
+    $membershipPrice = (int) data_get($membership ?? [], 'price', 50000);
     $membershipTaxPercentage = (float) data_get($membership ?? [], 'tax_percentage', 11);
     $membershipTaxRate = $membershipTaxPercentage / 100;
     $membershipTaxAmount = (int) data_get($membership ?? [], 'tax_amount', round($membershipPrice * $membershipTaxRate));

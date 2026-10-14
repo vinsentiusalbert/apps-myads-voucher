@@ -118,10 +118,10 @@ class DashboardController extends Controller
         $defaults = [
             'is_member' => false,
             'membership' => null,
-            'price' => 25000,
+            'price' => 50000,
             'tax_percentage' => 11.00,
-            'tax_amount' => 2750,
-            'total_price' => 27750,
+            'tax_amount' => 5500,
+            'total_price' => 55500,
             'quota' => 5000,
             'max_per_campaign' => 5000,
         ];
