@@ -10,6 +10,39 @@ class DashboardController extends Controller
 {
     public function index(Request $request, MyadsApiClient $client): View
     {
+        if ($request->session()->has('voucher')) {
+            if ($request->session()->get('voucher.report_demo', false) && $request->session()->has('voucher_report')) {
+                $report = $request->session()->get('voucher_report');
+
+                return view('voucher.report', [
+                    'voucher' => $request->session()->get('voucher'),
+                    'campaign' => $request->session()->get('voucher_campaign'),
+                    'report' => $report,
+                    'deliveryRate' => $report['sent'] > 0 ? round($report['delivered'] / $report['sent'] * 100, 1) : 0,
+                ]);
+            }
+
+            $earliest = now('Asia/Jakarta')->addHours(4)->ceilMinute();
+            $defaultStart = $earliest->copy()->ceilHour();
+            if ($defaultStart->format('H:i') < '06:00') {
+                $defaultStart->setTime(6, 0);
+            } elseif ($defaultStart->format('H:i') > '16:00') {
+                $defaultStart->addDay()->setTime(6, 0);
+            }
+
+            return view('voucher.dashboard', [
+                'voucher' => $request->session()->get('voucher'),
+                'campaign' => $request->session()->get('voucher_campaign', []),
+                'scheduleDefaults' => [
+                    'delivery_start_date' => $defaultStart->format('Y-m-d'),
+                    'delivery_end_date' => $defaultStart->format('Y-m-d'),
+                    'delivery_start_time' => $defaultStart->format('H:i'),
+                    'delivery_end_time' => $defaultStart->copy()->addHours(4)->format('H:i'),
+                ],
+                'earliestStartDate' => $earliest->format('Y-m-d'),
+            ]);
+        }
+
         $gatewayToken = $this->resolveGatewayToken($request, $client);
 
         $balanceFormatted = 'Rp 0';

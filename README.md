@@ -1,3 +1,46 @@
+## Demo voucher MyAds
+
+Halaman masuk menggunakan kode alfanumerik 6-8 karakter dan tombol Masuk.
+Kode dummy didefinisikan di `config/vouchers.php`:
+
+| Kode | Harga | Report | SMS LBA |
+| --- | --- | --- | --- |
+| MYADS20K | Rp 20.000 | 7 hari | 400 pesan |
+| MYADS25K | Rp 25.000 | 7 hari | 800 pesan |
+| MYADS50K | Rp 50.000 | 30 hari | 10.000 pesan |
+| RPT20K01 | Rp 20.000 | 7 hari | 400 pesan (campaign selesai + report dummy) |
+
+Kupon `RPT20K01` langsung membuka report campaign SMS LBA yang sudah selesai:
+400 pesan dikirim, 368 berhasil, 32 gagal (92%). Report mencakup ringkasan pengiriman,
+lokasi, jadwal, dan pesan campaign dalam tampilan mobile. Data dan tanggal campaign
+dibuat sebagai simulasi saat redeem; kupon ini hanya untuk melihat report.
+
+Kode menerima huruf besar/kecil. Setelah redeem, form setup campaign SMS LBA
+langsung tampil di `/dashboard` dengan tampilan mobile dan kuota sesuai kode.
+Jumlah penerima dikunci sesuai kode: 400, 800, atau 10.000; server mengabaikan
+perubahan jumlah dari form. Isi pesan, lokasi melalui popup peta LBA, radius,
+rentang tanggal dan jam WIB, serta nomor HP testing Anda, lalu simpan
+setup campaign. Draft dapat diedit dan hanya tersimpan selama sesi. Jenis campaign
+dan durasi report berasal dari kode; paket 50K menampilkan jumlah tetap 10.000.
+Pengiriman tersedia 06.00-20.00 WIB dengan rentang jam minimal 4 jam per hari dan
+waktu mulai minimal 4 jam dari sekarang. Default rentang adalah 4 jam; jika tidak
+cukup sebelum 20.00, default pindah ke hari berikutnya 06.00-10.00.
+Satu kolom nomor testing menampilkan prefix 62 tetap yang tidak bisa dihapus.
+Gunakan Tambah nomor testing untuk menambahkan nomor ke daftar vertikal di bawah
+input, atau Hapus untuk menghapus nomor dari daftar. Pengguna mengisi nomor mulai dari 8; server menyimpan daftar
+nomor lengkap dengan awalan 628 dan menggabungkan nomor yang duplikat.
+Setelah setup campaign tersimpan, popup meminta email report secara opsional.
+Tombol Lewati menutup popup tanpa mengubah campaign. Email dapat ditambahkan
+atau diubah kemudian dan tetap tersimpan saat draft diedit. Mode dummy belum
+mengirim report melalui email.
+Tombol Keluar / Ganti kode mengakhiri sesi dan menghapus draft. Ini hanya demo:
+pengiriman SMS dan report belum terhubung ke API, kode dapat dipakai ulang.
+
+Jalankan `composer install`, siapkan `.env` dan `APP_KEY`, lalu
+`php artisan serve`. Uji alur akses dengan `php artisan test --filter=AuthLoginTest`.
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">

@@ -1,0 +1,145 @@
+.voucher-badge {
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-dark);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.panel-card h2 { margin: 24px 0 12px; font-size: clamp(24px, 3vw, 32px); }
+.voucher-description { color: var(--muted); line-height: 1.7; margin-bottom: 28px; }
+.voucher-code { text-transform: uppercase; letter-spacing: .3em; font-size: 24px; font-weight: 700; }
+.voucher-help, .voucher-demo-note { font-size: 13px; line-height: 1.7; color: var(--muted); }
+.voucher-demo-note { margin: 24px 0; }
+.voucher-packages { display: grid; gap: 12px; margin-top: 32px; }
+.voucher-package { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 16px; border: 1px solid #ffffff40; border-radius: 14px; background: #ffffff0d; }
+.voucher-package strong { width: 100%; font-size: 20px; }
+.voucher-package span { font-size: 13px; }
+.voucher-details { margin: 28px 0; }
+.voucher-details > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 18px 0; border-bottom: 1px solid var(--border); }
+.voucher-details dt { color: var(--muted); }
+.voucher-details dd { margin: 0; font-weight: 700; }
+.submit-btn { cursor: pointer; }
+.submit-btn:focus-visible, .voucher-code:focus-visible { outline: 3px solid var(--brand-primary); outline-offset: 4px; }
+
+@media (max-width: 720px) {
+    .auth-frame { grid-template-columns: 1fr; }
+    .auth-hero, .auth-panel { padding: 28px 24px; }
+    .auth-hero-inner { gap: 24px; }
+    .auth-title { font-size: 30px; }
+}
+
+.voucher-mobile-preview .auth-shell {
+    width: 100%;
+    max-width: 468px;
+    min-height: 100vh;
+    min-height: 100svh;
+    padding: 24px;
+}
+
+.voucher-mobile-preview .auth-frame {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 640px;
+    border-radius: 24px;
+}
+
+.voucher-mobile-preview .auth-hero { padding: 28px 24px; }
+.voucher-mobile-preview .auth-hero-inner { gap: 0; }
+.voucher-mobile-preview .brand-lockup { justify-content: center; }
+.voucher-mobile-preview .brand-subtitle { margin: 0; font-size: 22px; }
+.voucher-mobile-preview .hero-copy,
+.voucher-mobile-preview .voucher-packages,
+.voucher-mobile-preview .hero-footer { display: none; }
+.voucher-mobile-preview .auth-panel { flex: 1; padding: 32px 24px; align-items: flex-start; }
+.voucher-mobile-preview .panel-card { min-width: 0; }
+.voucher-mobile-preview .panel-card h2 { font-size: 26px; }
+.voucher-mobile-preview .text-input { width: 100%; min-width: 0; }
+.voucher-mobile-preview .submit-btn { width: 100%; min-height: 48px; }
+
+.voucher-campaign-page .auth-shell { align-items: flex-start; }
+.voucher-campaign-page .auth-frame { min-height: 0; }
+.voucher-package-summary { display: grid; gap: 12px; padding: 16px; margin: 0 0 28px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.voucher-package-summary > div { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; }
+.voucher-package-summary dt { color: var(--muted); }
+.voucher-package-summary dd { margin: 0; font-weight: 700; text-align: right; }
+.voucher-campaign-form { display: grid; gap: 24px; }
+.voucher-campaign-form fieldset { display: grid; gap: 20px; min-width: 0; margin: 0; padding: 20px 0 0; border: 0; border-top: 1px solid var(--border); }
+.voucher-campaign-form legend { padding: 0 12px 0 0; font-size: 15px; font-weight: 700; }
+.voucher-campaign-form .field-group { min-width: 0; margin: 0; }
+.voucher-campaign-form .text-input[readonly] { background: var(--surface); color: var(--muted); cursor: default; }
+.voucher-phone-input { display: flex; align-items: stretch; min-width: 0; }
+.voucher-phone-prefix { display: flex; align-items: center; padding: 0 16px; border: 1px solid var(--border); border-right: 0; border-radius: 12px 0 0 12px; background: var(--surface); font-weight: 700; }
+.voucher-phone-input .text-input { flex: 1; border-radius: 0 12px 12px 0; }
+.voucher-testing-numbers { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.voucher-testing-number { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.voucher-testing-number [data-testing-number-label] { overflow-wrap: anywhere; min-width: 0; }
+.voucher-remove-number { flex-shrink: 0; padding: 8px; border: 0; background: transparent; color: var(--brand-dark); cursor: pointer; }
+.voucher-remove-number[hidden] { display: none; }
+.voucher-campaign-form .field-label { display: block; margin-bottom: 8px; }
+.voucher-campaign-form .voucher-help { margin: 8px 0 0; }
+.voucher-campaign-form textarea { resize: vertical; line-height: 1.6; }
+.voucher-campaign-form .voucher-demo-note { margin: 0; }
+.voucher-coordinate-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.voucher-location-summary { padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow-wrap: anywhere; }
+.voucher-location-summary p { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+.voucher-campaign-page .campaign-map-modal { padding: 12px; touch-action: auto; }
+.voucher-campaign-page .campaign-map-modal__card { width: min(100%, 420px); }
+.voucher-campaign-page .campaign-map-modal__layout { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+.voucher-campaign-page .campaign-map-panel { min-height: 280px; }
+.voucher-campaign-page .campaign-map-controls { padding: 24px; }
+.voucher-campaign-page .campaign-map-controls__top h2 { font-size: 24px; }
+.voucher-campaign-page .campaign-map-panel__hint { font-size: 12px; }
+.voucher-campaign-page .campaign-map-actions { flex-wrap: wrap; }
+.voucher-campaign-page .campaign-map-search-host .leaflet-control-geocoder { width: 100%; margin: 16px 0 0; }
+.voucher-campaign-page .leaflet-control-geocoder-form { min-width: 0; }
+.voucher-campaign-page .leaflet-control-geocoder-form input { box-sizing: border-box; width: 100%; min-width: 0; }
+.voucher-campaign-page .leaflet-control-geocoder-alternatives { white-space: normal; overflow-wrap: anywhere; }
+.voucher-campaign-page .leaflet-control-geocoder-alternatives a { white-space: normal; }
+.voucher-success { padding: 16px; margin-bottom: 24px; border: 1px solid #bbdec5; border-radius: 12px; color: #205f36; background: #f0faf3; font-size: 14px; }
+.voucher-switch-form { margin-top: 24px; text-align: center; }
+.voucher-switch-button { min-height: 44px; padding: 8px 16px; border: 0; background: transparent; color: var(--brand-dark); text-decoration: underline; cursor: pointer; }
+.voucher-message-preview { margin-top: 28px; padding: 20px; border-radius: 12px; border: 1px solid var(--border); overflow-wrap: anywhere; }
+.voucher-message-preview h3 { margin: 16px 0 8px; font-size: 15px; }
+.voucher-message-preview p { white-space: pre-wrap; }
+.voucher-message-preview small { color: var(--muted); }
+.voucher-report-status { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.voucher-report-status span { padding: 6px 10px; border-radius: 8px; background: #f0faf3; color: #205f36; font-size: 12px; font-weight: 700; }
+.voucher-report-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.voucher-report-metrics > div { padding: 16px 12px; border: 1px solid var(--border); border-radius: 12px; }
+.voucher-report-metrics dt, .voucher-report-metrics small { font-size: 12px; color: var(--muted); }
+.voucher-report-metrics dd { margin: 8px 0 0; font-size: 30px; font-weight: 800; }
+.voucher-report-section { margin-top: 28px; }
+.voucher-report-section h3 { margin: 0 0 16px; font-size: 16px; }
+.voucher-report-bar { display: flex; height: 16px; overflow: hidden; border-radius: 999px; background: var(--surface); }
+.voucher-report-bar-success { background: #218347; }
+.voucher-report-bar-failed { background: var(--brand-primary); }
+.voucher-report-details { margin-top: 0; }
+.voucher-report-details > div { font-size: 13px; }
+.voucher-report-details dd { max-width: 65%; text-align: right; overflow-wrap: anywhere; }
+.voucher-report-email-summary { margin-top: 20px; overflow-wrap: anywhere; }
+.voucher-report-email-summary .voucher-switch-button { padding-left: 0; }
+.voucher-email-modal { width: min(420px, calc(100% - 32px)); max-height: calc(100dvh - 32px); padding: 24px; border: 0; border-radius: 20px; color: var(--text); box-shadow: var(--shadow-strong); overflow-y: auto; }
+.voucher-email-modal::backdrop { background: rgb(15 23 42 / 55%); }
+.voucher-email-modal-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.voucher-email-modal-close { width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--muted); font-size: 28px; cursor: pointer; }
+.voucher-email-modal h2 { margin: 20px 0 12px; font-size: 24px; }
+.voucher-email-modal .field-label { display: block; margin-bottom: 8px; }
+.voucher-email-modal .text-input { width: 100%; min-width: 0; }
+.voucher-email-form { display: grid; gap: 16px; }
+.voucher-email-form .voucher-help { margin: 0; }
+.voucher-email-form .submit-btn { width: 100%; min-height: 48px; }
+
+@media (max-width: 468px) {
+    .voucher-mobile-preview .auth-shell { padding: 0; }
+    .voucher-mobile-preview .auth-frame {
+        min-height: 100vh;
+        min-height: 100svh;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+}

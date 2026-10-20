@@ -13,6 +13,31 @@ class EnsureMyadsTokens
     public function handle(Request $request, Closure $next): Response
     {
         $session = $request->session();
+
+        // Dummy vouchers grant access to campaign setup, never the live API.
+        if ($session->has('voucher')) {
+            $code = (string) $session->get('voucher.code', '');
+            $package = config('vouchers.'.$code);
+            if (is_array($package)) {
+                $oldQuota = $session->get('voucher.sms_quota');
+                $session->put('voucher', array_merge($package, ['code' => $code]));
+                if (($package['report_demo'] ?? false) && $oldQuota !== $package['sms_quota']) {
+                    $demo = app(\App\Services\DummyVoucherReport::class)->create($code, $package);
+                    $session->put('voucher_campaign', $demo['campaign']);
+                    $session->put('voucher_report', $demo['report']);
+                } elseif ($session->get('voucher_campaign.status') === 'draft') {
+                    $session->put('voucher_campaign.recipient_total', $package['sms_quota']);
+                }
+            }
+
+            if ($request->routeIs('dashboard', 'voucher.campaign.store', 'voucher.campaign.report-email', 'logout', 'login', 'login.store')) {
+                return $next($request);
+            }
+
+            return $request->expectsJson()
+                ? response()->json(['success' => false, 'message' => 'Voucher dummy belum terhubung ke API MyAds.'], 403)
+                : redirect()->route('dashboard');
+        }
         
         // Bypass middleware SSO untuk route admin atau jika session user adalah admin
         if ($request->is('admin') || $request->routeIs('admin.*')) {

@@ -2,9 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Services\MyadsApiClient;
 use Illuminate\Support\Facades\Http;
-use Mockery;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class AuthLoginTest extends TestCase
@@ -16,55 +15,65 @@ class AuthLoginTest extends TestCase
         Http::fake(fn () => Http::response(['success' => true, 'data' => []]));
     }
 
-    public function test_login_page_is_accessible(): void
+    public function test_login_page_only_requires_a_voucher_code(): void
     {
-        $response = $this->get('/');
-
-        $response->assertOk();
-        $response->assertSee('Masuk akun ShopAds');
+        $this->get('/')->assertOk()->assertSee('Masukkan kode voucher')
+            ->assertSee('name="code"', false)->assertSee('Masuk')
+            ->assertDontSee('name="password"', false)
+            ->assertDontSee('name="merchant_id"', false);
+        Http::assertNothingSent();
     }
 
-    public function test_register_page_allows_merchant_registration(): void
+    public static function voucherPackages(): array
     {
-        $response = $this->get('/register');
-
-        $response->assertOk();
-        $response->assertSee('Daftar Akun Merchant');
+        return [
+            ['MYADS20K', 20000, 7, 400, '400 pesan'],
+            ['MYADS25K', 25000, 7, 800, '800 pesan'],
+            ['MYADS50K', 50000, 30, 10000, '10.000 pesan'],
+        ];
     }
 
-    public function test_register_page_is_accessible_with_merchant_and_partner_context(): void
+    #[DataProvider('voucherPackages')]
+    public function test_dummy_code_opens_the_matching_package(string $code, int $price, int $days, ?int $quota, string $label): void
     {
-        Http::fake([
-            '*' => Http::response([
-                'success' => true,
-                'data' => [
-                    'merchant_id' => 'merchant-001',
-                    'partner_id' => 'partner-001',
-                ],
-            ]),
-        ]);
-
-        $response = $this->get('/register?merchant_id=merchant-001&partner_id=partner-001');
-
-        $response->assertOk();
-        $response->assertSee('merchant-001');
-        $response->assertSee('partner-001');
+        $this->post('/login', ['code' => $code])->assertRedirect(route('dashboard'))
+            ->assertSessionHas('voucher', ['price' => $price, 'report_days' => $days, 'sms_quota' => $quota, 'campaign_type' => 'sms_lba', 'code' => $code])
+            ->assertSessionMissing('myads.access_token');
+        $this->get('/dashboard')->assertOk()->assertSee($code)->assertSee($days.' hari')->assertSee($label);
+        Http::assertNothingSent();
     }
 
-    public function test_forgot_password_page_is_accessible(): void
+    public function test_codes_accept_lowercase_and_surrounding_spaces(): void
     {
-        $response = $this->get('/forgot-password');
-
-        $response->assertOk();
-        $response->assertSee('Lupa password');
+        $this->post('/login', ['code' => ' myads20k '])->assertRedirect(route('dashboard'))
+            ->assertSessionHas('voucher.code', 'MYADS20K');
     }
 
-    public function test_reset_password_page_is_accessible(): void
+    public static function invalidCodes(): array
     {
-        $response = $this->get('/reset-password/sample-token?email=operator@myads.test');
+        return [[''], ['AB12'], ['ABCDE'], ['ABCDEFGHI'], ['AB-123'], ['ZZ9999'], [['MYADS20K']]];
+    }
 
-        $response->assertOk();
-        $response->assertSee('Reset password');
+    public static function validCodeLengths(): array
+    {
+        return [['ABC123'], ['ABC1234'], ['ABC12345']];
+    }
+
+    #[DataProvider('validCodeLengths')]
+    public function test_registered_codes_accept_six_to_eight_alphanumeric_characters(string $code): void
+    {
+        config(['vouchers.'.$code => config('vouchers.MYADS20K')]);
+        $this->post('/login', ['code' => $code])->assertRedirect(route('dashboard'))
+            ->assertSessionHas('voucher.code', $code);
+        Http::assertNothingSent();
+    }
+
+    #[DataProvider('invalidCodes')]
+    public function test_invalid_codes_do_not_grant_access(mixed $code): void
+    {
+        $this->post('/login', ['code' => $code])->assertSessionHasErrors('code')
+            ->assertSessionMissing('voucher')->assertSessionMissing('myads.access_token');
+        Http::assertNothingSent();
     }
 
     public function test_guest_is_redirected_from_dashboard(): void
@@ -72,47 +81,31 @@ class AuthLoginTest extends TestCase
         $this->get('/dashboard')->assertRedirect(route('login'));
     }
 
-    public function test_removed_sso_route_is_not_exposed(): void
+    public function test_voucher_session_redirects_from_login_and_cannot_call_live_api(): void
     {
-        $this->get('/sso/complete?access_token=token-001')->assertNotFound();
+        $this->post('/login', ['code' => 'MYADS20K']);
+        $this->get('/')->assertRedirect(route('dashboard'));
+        $this->get('/campaign/sms/location-based-area')->assertRedirect(route('dashboard'));
+        $this->getJson('/campaign/sms/report')->assertForbidden();
+        Http::assertNothingSent();
     }
 
-    public function test_success_response_without_access_token_does_not_create_a_session(): void
+    public function test_password_and_registration_routes_are_removed(): void
     {
-        $client = Mockery::mock(MyadsApiClient::class);
-        $client->shouldReceive('login')->once()->andReturn(['success' => true, 'data' => []]);
-        $this->app->instance(MyadsApiClient::class, $client);
-        $this->post('/login', ['merchant_id' => 'merchant-001', 'password' => 'secret'])
-            ->assertSessionHasErrors('merchant_id')->assertSessionMissing('myads.access_token');
+        $this->get('/register')->assertNotFound();
+        $this->get('/forgot-password')->assertNotFound();
+        $this->get('/reset-password/sample-token')->assertNotFound();
+        $this->post('/login', ['merchant_id' => 'merchant', 'password' => 'secret'])
+            ->assertSessionHasErrors('code')->assertSessionMissing('voucher');
     }
 
-    public function test_valid_credentials_create_a_session_and_redirect(): void
+    public function test_logout_clears_voucher_and_login_session(): void
     {
-        $client = Mockery::mock(MyadsApiClient::class);
-        $client->shouldReceive('login')->with('merchant-001', 'secret')->once()->andReturn([
-            'success' => true, 'data' => ['access_token' => 'token-001', 'user' => ['name' => 'Merchant']],
-        ]);
-        $client->shouldReceive('getGatewayToken')->with('token-001')->once()->andReturn(['data' => ['token' => 'gateway']]);
-        $client->shouldReceive('extractGatewayToken')->once()->andReturn('gateway');
-        $this->app->instance(MyadsApiClient::class, $client);
-        $this->post('/login', ['merchant_id' => 'merchant-001', 'password' => 'secret'])
-            ->assertRedirect(route('dashboard'))->assertSessionHas('myads.access_token', 'token-001');
-    }
-
-    public function test_invalid_credentials_show_validation_error(): void
-    {
-        $client = Mockery::mock(MyadsApiClient::class);
-        $client->shouldReceive('login')->once()->andReturn(['success' => false, 'message' => 'Password tidak sesuai.']);
-        $this->app->instance(MyadsApiClient::class, $client);
-        $this->post('/login', ['merchant_id' => 'merchant-001', 'password' => 'wrong'])
-            ->assertSessionHasErrors('merchant_id')->assertSessionMissing('myads.access_token');
-    }
-
-    public function test_logout_clears_membership_and_login_session(): void
-    {
-        $this->withApiSession()->withSession(['myads.membership' => ['is_member' => true]])
-            ->post('/logout')->assertRedirect(route('login'))
-            ->assertSessionMissing('myads.access_token')->assertSessionMissing('myads.membership');
+        $this->post('/login', ['code' => 'MYADS50K']);
+        $this->post('/logout')->assertRedirect(route('login'))
+            ->assertSessionMissing('voucher')->assertSessionMissing('myads');
+        $this->get('/dashboard')->assertRedirect(route('login'));
+        $this->post('/login', ['code' => 'MYADS25K'])->assertSessionHas('voucher.code', 'MYADS25K');
     }
 
     public function test_authenticated_user_can_open_dashboard(): void
@@ -131,6 +124,10 @@ class AuthLoginTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('SMS Location Based Area');
+
+        $this->get('/campaign/sms/location-based-area?view=create')->assertOk()
+            ->assertSee('id="campaignMapModal"', false)
+            ->assertSee('name="location_radius" form="campaignGwSubmitForm"', false);
     }
 
     public function test_authenticated_user_can_open_sms_targeted_page(): void

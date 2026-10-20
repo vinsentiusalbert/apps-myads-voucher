@@ -10,6 +10,10 @@ class RedirectIfApiSessionAuthenticated
 {
     public function handle(Request $request, Closure $next, mixed ...$guards): Response
     {
+        if ($request->session()->has('voucher')) {
+            return redirect()->route('dashboard');
+        }
+
         $user = $request->session()->get('myads.user');
         $accessToken = (string) $request->session()->get('myads.access_token', '');
         $gatewayToken = (string) $request->session()->get('myads.gw_token', '');
